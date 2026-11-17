@@ -1,0 +1,73 @@
+name: Convert and publish benchmark datasets
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: 'New frozen migration ID; pause Blob publishing first'
+        required: true
+        type: string
+      expected_runs:
+        description: 'Expected number of cataloged runs (review before publishing)'
+        required: true
+        default: 50
+        type: number
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huggingface-data-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: vars.HF_DATA_PUBLISH_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    environment: huggingface-data
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    defaults:
+      run:
+        working-directory: viewer
+    env:
+      HF_BENCHMARK_REPO: ${{ vars.HF_BENCHMARK_REPO }}
+      HF_RUNS_REPO: ${{ vars.HF_RUNS_REPO }}
+      RELEASE_ID: ${{ inputs.release_id }}
+      EXPECTED_RUNS: ${{ inputs.expected_runs }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: viewer/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: python3 -m pip install -r scripts/requirements-hf.txt
+      - name: Convert only the frozen catalog selection
+        run: npm run migrate:blob -- --id "$RELEASE_ID" --expected-runs "$EXPECTED_RUNS" --license "$DATA_LICENSE"
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          BLOB_PREFIX: ${{ vars.BLOB_PREFIX || 'observe-bench' }}
+          DATA_LICENSE: ${{ vars.HF_DATASET_LICENSE || 'bsd' }}
+      - name: Verify round-trip data before any public upload
+        run: npm run verify:migration -- --dir ".migration/$RELEASE_ID" --report verification-report.json
+      - name: Upload benchmark first, pin it in runs, then verify both anonymously
+        run: python3 scripts/publish-release.py --dir ".migration/$RELEASE_ID" --manifest datasets/candidate.json
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dataset-release-${{ github.run_id }}
+          path: |
+            viewer/datasets/candidate.json
+            viewer/verification-report.json
+            viewer/.migration/*/conversion-report.json
+            viewer/.migration/*/verification-report.json
+            viewer/.migration/*/remote-verification.json
+          retention-days: 30
+      - run: echo 'Review score warnings and the verified candidate. Promote candidate.json to viewer/datasets/production.json in a PR. Pages is not enabled or deployed by this workflow.' >> "$GITHUB_STEP_SUMMARY"

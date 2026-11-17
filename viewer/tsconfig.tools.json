@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "scripts/data/**/*.ts",
+    "scripts/pages/**/*.ts",
+    "scripts/pages-config.ts",
+    "scripts/build-pages.ts",
+    "scripts/export-blob.ts",
+    "scripts/verify-export.ts",
+    "scripts/verify-hf-release.ts",
+    "scripts/dataset-selection.ts",
+    "scripts/smoke-pages.ts",
+    "scripts/migrate-blob.ts",
+    "scripts/verify-migration.ts",
+    "scripts/pin-release.ts"
+  ]
+}

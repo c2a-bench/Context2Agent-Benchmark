@@ -1,0 +1,627 @@
+/*
+ * Landing page. Hero, then the journey (one figure morphing doc → prompt → agent → chat → checklist as the steps scroll by), then the
+ * four cross-builder charts, environments, grading and the closing. Normal scroll; only the nav and the journey figure are pinned.
+ */
+import { Suspense, use, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { Link } from "react-router";
+import { publicAsset } from "@/lib/assets";
+import { ArrowRight } from "lucide-react";
+import { Nav } from "@/landing/nav";
+import { Journey } from "@/landing/journey";
+import { ArchPass, ArchTradeoff, ArchTypes, BuilderLegend, BuilderPareto, FailureBars, PacksChart, RankTable, RecallScatter, StageChart, type ArchRun, type TicketType, type FailureRow, type PackBuilder, type RecallPoint, type StageRow, type StagePoint } from "@/landing/charts";
+import { CONDITIONS, CONFOUND, ENV, SKYWAY_ARCH, catalog, crashed, harnessName, loadMetas, pooled, shortModel, stagesOf, style, type Builder, type FailureGroup } from "@/landing/data";
+import type { JobSummary } from "@/lib/data";
+import "@/landing/landing.css";
+
+
+const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "");
+const fmt = (n: number) => n.toLocaleString("en-US");
+
+/**
+ * One title that travels. The hero's h1 keeps its place in the layout (invisible); a fixed copy is drawn over it and,
+ * as the page scrolls, it shrinks and slides into the nav's slot, reaching it exactly when the h1 would pass under the
+ * nav, and stays docked there. Scrolling back reverses it. Positions are measured, so it fits any width.
+ */
+function useDockedTitle(hero: React.RefObject<HTMLElement | null>, slot: React.RefObject<HTMLElement | null>, title: React.RefObject<HTMLAnchorElement | null>, divider: React.RefObject<HTMLElement | null>) {
+  useLayoutEffect(() => {
+    const h = hero.current, n = slot.current, t = title.current, d = divider.current;
+    if (!h || !n || !t || !d) return;
+    let m = { left: 0, top: 0, size: 0, toLeft: 0, toTop: 0, toSize: 0 };
+    const measure = () => {
+      const hr = h.getBoundingClientRect(), nr = n.getBoundingClientRect();
+      m = { left: hr.left, top: hr.top + scrollY, size: parseFloat(getComputedStyle(h).fontSize), toLeft: nr.left, toTop: nr.top, toSize: parseFloat(getComputedStyle(n).fontSize) };
+      t.style.fontSize = `${m.size}px`;
+      draw();
+    };
+    const draw = () => {
+      const travel = Math.max(1, m.top - m.toTop);
+      const p = Math.min(1, Math.max(0, scrollY / travel));
+      const e = p * p * (3 - 2 * p);
+      const x = m.left + (m.toLeft - m.left) * e;
+      const y = p < 1 ? m.top - scrollY : m.toTop;
+      const sc = 1 + (m.toSize / m.size - 1) * e;
+      t.style.transform = `translate(${x}px, ${y}px) scale(${sc})`;
+      t.style.pointerEvents = p >= 1 ? "auto" : "none";
+      d.style.opacity = String(Math.max(0, (p - 0.8) / 0.2));
+    };
+    let raf = 0;
+    const onScroll = () => (raf ||= requestAnimationFrame(() => ((raf = 0), draw())));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.documentElement);
+    addEventListener("scroll", onScroll, { passive: true });
+    document.fonts?.ready.then(measure);
+    return () => {
+      ro.disconnect();
+      removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [hero, slot, title, divider]);
+}
+
+function SectionHead({ id, title, lead, from, right }: { id?: string; title: string; lead?: ReactNode; from: string; right?: ReactNode }) {
+  return (
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4 sm:mb-10">
+      <div className="max-w-[62ch]">
+        <span className="chip">From: {from}</span>
+        <h2 id={id} className="mt-4">{title}</h2>
+        {lead && <p className="lead muted mt-4">{lead}</p>}
+      </div>
+      {right}
+    </div>
+  );
+}
+
+/** A landing section, or with `bare` only its figure (the blog post embeds the figures). */
+function Sec({ bare, id, className, head, children }: { bare?: boolean; id: string; className: string; head: ReactNode; children: ReactNode }) {
+  if (bare) return <>{children}</>;
+  return (
+    <section id={id} className={className}>
+      <div className="lp-wrap">
+        {head}
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function SkywayEmpty({ what }: { what: string }) {
+  return (
+    <div className="card flex min-h-[300px] flex-col justify-center p-8 sm:p-12">
+      <h3>No Skyway runs yet</h3>
+      <p className="muted mt-3 max-w-[56ch]">
+        In Skyway every builder uses the same set architectures, so {what} compares the architectures themselves. It fills in
+        once we publish the first runs.
+      </p>
+    </div>
+  );
+}
+
+// ---------------- sections ----------------
+
+const TYPE_NAMES = [
+  ["New tickets, new facts", "discovery"],
+  ["Old tickets, old facts", "regression"],
+  ["Old tickets, new facts", "adaptability"],
+] as const;
+const stagePoints = (meta: Awaited<ReturnType<typeof loadMetas>>[number]): StagePoint[] =>
+  stagesOf(meta).map((s) => ({
+    passed: s.passed,
+    total: s.total,
+    crashed: crashed(s),
+    types: TYPE_NAMES.flatMap(([plain, term]) => {
+      const c = s.ticket_types?.[term];
+      return c ? [[plain, term, c.passed, c.total] as [string, string, number, number]] : [];
+    }),
+  }));
+const sum = (j: JobSummary, k: "passed" | "total") => j.scores.reduce((a, s) => a + (s[k] ?? 0), 0);
+
+function Seg<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
+  return (
+    <div className="seg" role="group">
+      {options.map(([v, label]) => (
+        <button key={v} type="button" aria-pressed={v === value} onClick={() => onChange(v)}>{label}</button>
+      ))}
+    </div>
+  );
+}
+
+/** Pass rate by stage, comparing builder models and harnesses. Redwood: one line per builder.
+ *  Skyway: one line per model, pooled over the prescribed architectures; hover draws those architectures. */
+function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compact?: boolean; redwood: Builder[]; metas: Awaited<ReturnType<typeof loadMetas>>; skyway?: JobSummary[]; skywayMetas?: Awaited<ReturnType<typeof loadMetas>>; bare?: boolean }) {
+  const [env, setEnvRaw] = useState<"redwood" | "skyway">("redwood");
+  const [picked, setPicked] = useState<string | null>(null);
+  const setEnv = (e: "redwood" | "skyway") => { setEnvRaw(e); setPicked(null); };
+  const sky = env === "skyway" && skyway?.length && skywayMetas;
+  const rows: StageRow[] = sky
+    ? [...new Set(skyway.map((j) => shortModel(j.builder.model)))]
+        .map((model) => {
+          const runs = skyway.flatMap((j, i) => (shortModel(j.builder.model) === model ? [{ j, st: stagePoints(skywayMetas[i]) }] : []));
+          const n = Math.max(...runs.map((r) => r.st.length));
+          const stages: StagePoint[] = Array.from({ length: n }, (_, k) => {
+            const at = runs.flatMap((r) => (r.st[k] ? [r.st[k]] : []));
+            const types = TYPE_NAMES.flatMap(([plain, term]) => {
+              const c = at.flatMap((s) => s.types.filter((t) => t[1] === term));
+              return c.length ? [[plain, term, c.reduce((a, t) => a + t[2], 0), c.reduce((a, t) => a + t[3], 0)] as [string, string, number, number]] : [];
+            });
+            return { passed: at.reduce((a, s) => a + (s.crashed ? 0 : s.passed), 0), total: at.reduce((a, s) => a + s.total, 0), crashed: at.every((s) => s.crashed), types };
+          });
+          const band = Array.from({ length: n }, (_, k) => {
+            const v = runs.flatMap((r) => {
+              const s = r.st[k];
+              return s && s.total ? [{ name: r.j.architecture!, rate: s.crashed ? 0 : s.passed / s.total }] : [];
+            });
+            if (!v.length) return { lo: 0, hi: 0, loName: "", hiName: "" };
+            const lo = v.reduce((a, b) => (b.rate < a.rate ? b : a)), hi = v.reduce((a, b) => (b.rate > a.rate ? b : a));
+            return { lo: lo.rate, hi: hi.rate, loName: lo.name, hiName: hi.name };
+          });
+          const passed = runs.reduce((a, r) => a + sum(r.j, "passed"), 0), total = runs.reduce((a, r) => a + sum(r.j, "total"), 0);
+          return {
+            model, harness: `${harnessName(runs[0].j.builder.agent)} · ${runs.length} architectures`, ...style(model), rate: passed / total, passed, total, stages, band,
+            parts: runs.map((r) => ({ name: SKYWAY_ARCH[r.j.architecture!] ?? r.j.architecture!, stages: r.st })),
+          };
+        })
+        .sort((a, b) => b.rate - a.rate)
+    : redwood
+        .map((b, i) => ({ model: b.model, harness: b.harness, ...style(b.model), rate: pooled(b.job), passed: sum(b.job, "passed"), total: sum(b.job, "total"), stages: stagePoints(metas[i]) }))
+        .sort((a, b) => b.rate - a.rate);
+  const costs = redwood.filter((b) => b.job.cost != null).map((b) => ({ model: b.model, harness: b.harness, ...style(b.model), rate: pooled(b.job), cost: b.job.cost! }));
+  const toggle = skyway?.length ? <Seg value={env} onChange={setEnv} options={[["redwood", "Redwood Inference"], ["skyway", "Skyway Air"]]} /> : undefined;
+  return (
+    <Sec bare={bare} id="results" className="lp-sec" head={
+          <SectionHead
+            from={sky ? "Skyway Air" : "Redwood Inference"}
+            title="Pass rate by model and harness"
+            lead={sky
+              ? "Each line is one builder model and its harness, pooled over the architectures it was assigned. Hover the line to see those architectures."
+              : "Each line is one builder model and its harness, with the design that builder chose."}
+            right={toggle}
+          />
+        }>
+        <div className="grid gap-x-12 gap-y-8 lg:grid-cols-12">
+          <div className="lg:col-span-8">
+            <StageChart rows={rows} selected={picked} onSelect={setPicked} />
+            <p className="label muted mt-2">
+              {picked
+                ? <>Showing {picked} only. <button type="button" className="underline cursor-pointer" onClick={() => setPicked(null)}>Show all models</button></>
+                : "Pick a model in the table to see its line alone."}
+            </p>
+          </div>
+          <div className="lg:col-span-4"><RankTable rows={rows} compact={compact} selected={picked} onSelect={setPicked} /></div>
+        </div>
+        <p className="label muted mt-6 max-w-[90ch]">
+          {sky
+            ? "The band runs from that model's lowest architecture to its highest. Hover the line to draw each architecture in a lighter shade."
+            : <>A cross marks a stage where the builder's agent never started, so all its tickets count as failed. * {CONFOUND} is also the model behind the support agent and the customer in every run.</>}
+        </p>
+        {!bare && !sky && costs.length > 1 && <div className="mt-14"><BuilderPareto points={costs} /></div>}
+    </Sec>
+  );
+}
+
+type Focus = { focus: FailureGroup | null; onFocus: (g: FailureGroup | null) => void };
+
+type Metas = Awaited<ReturnType<typeof loadMetas>>;
+// Failed tickets per run, from the failure_summary in its meta.json (publish-run writes it); null for a run published without it.
+function runFailures(meta: Metas[number]) {
+  const summary = meta.failure_summary;
+  if (!summary) return null;
+  return { failed: summary.failed, total: summary.total, groups: new Map(Object.entries(summary.groups).map(([k, v]) => [k.replace(/^Bot\|/, "Agent|"), v])) };
+}
+const recallPoints = (model: string, meta: Metas[number]): RecallPoint[] =>
+  stagesOf(meta).flatMap((s, i) => (!crashed(s) && s.facts?.rule_recall != null ? [{ model, ...style(model), stage: i, recall: s.facts.rule_recall, pass: s.passed / s.total }] : []));
+
+/** Failed tickets by type. Redwood: one row per builder. Skyway: one row per builder too, either pooled over its runs with
+ *  the prescribed architectures ("Overall") or for one architecture. */
+function Failures({ redwood, metas, skyway, skywayMetas, focus, onFocus, bare, compact }: { compact?: boolean; redwood: Builder[]; metas: Metas; skyway?: JobSummary[]; skywayMetas?: Metas; bare?: boolean } & Focus) {
+  const [env, setEnv] = useState<"redwood" | "skyway">("redwood");
+  const [arch, setArch] = useState("overall");
+  const sky = env === "skyway" && !!skyway?.length && !!skywayMetas;
+  const rows: FailureRow[] = [];
+  const points: RecallPoint[] = [];
+  if (sky) {
+    const picked = skyway!.flatMap((j, i) => (arch === "overall" || j.architecture === arch ? [{ j, meta: skywayMetas![i] }] : []));
+    for (const model of [...new Set(picked.map((r) => shortModel(r.j.builder.model)))]) {
+      const mine = picked.filter((r) => shortModel(r.j.builder.model) === model);
+      const fs = mine.map((r) => runFailures(r.meta));
+      if (fs.some((f) => !f)) continue;
+      const groups = new Map<string, number>();
+      for (const f of fs) f!.groups.forEach((v, k) => groups.set(k, (groups.get(k) ?? 0) + v));
+      const passed = mine.reduce((a, r) => a + sum(r.j, "passed"), 0), total = mine.reduce((a, r) => a + sum(r.j, "total"), 0);
+      rows.push({
+        model,
+        harness: `${harnessName(mine[0].j.builder.agent)} · ${arch === "overall" ? `${mine.length} architectures` : arch}`,
+        failed: fs.reduce((a, f) => a + f!.failed, 0),
+        total: fs.reduce((a, f) => a + f!.total, 0),
+        rate: passed / total,
+        groups,
+        crashedStages: mine.reduce((a, r) => a + stagesOf(r.meta).filter(crashed).length, 0),
+      });
+      for (const r of mine) points.push(...recallPoints(model, r.meta));
+    }
+  } else {
+    redwood.forEach((b, i) => {
+      points.push(...recallPoints(b.model, metas[i]));
+      const f = runFailures(metas[i]);
+      if (f) rows.push({ model: b.model, harness: b.harness, ...f, rate: pooled(b.job), crashedStages: stagesOf(metas[i]).filter(crashed).length });
+    });
+  }
+  rows.sort((a, b) => b.rate - a.rate);
+  return (
+    <Sec bare={bare} id="failures" className="lp-sec lp-alt" head={
+          <SectionHead
+            from={sky ? `Skyway Air${arch === "overall" ? "" : ` · ${SKYWAY_ARCH[arch]}`}` : "Redwood Inference"}
+            title="Failed tickets by type"
+            right={skyway?.length ? <Seg value={env} onChange={setEnv} options={[["redwood", "Redwood Inference"], ["skyway", "Skyway Air"]]} /> : undefined}
+          />
+        }>
+        {/* The architecture picker sits here, not in the header, so the header (and its Redwood/Skyway toggle) is the same
+            in both views; its row keeps its height on Redwood too, so nothing below moves when switching. */}
+        {!bare && skyway?.length ? (
+          <div className="mb-6 min-h-[40px]" style={{ visibility: sky ? "visible" : "hidden" }} aria-hidden={!sky}>
+            <Seg value={arch} onChange={setArch} options={[["overall", "Overall"], ...Object.keys(SKYWAY_ARCH).filter((a) => skyway.some((j) => j.architecture === a)).map((a) => [a, a] as [string, string])]} />
+          </div>
+        ) : null}
+        <div className="grid gap-x-12 gap-y-10 lg:grid-cols-12">
+          <div className="lg:col-span-8"><FailureBars rows={rows} focus={focus} onFocus={onFocus} /></div>
+          <div className="lg:col-span-4">
+            <h3>Rule recall vs pass rate</h3>
+            <p className="muted mt-2 text-[15px]">An agent built with all the rules can still fail to apply them to a ticket.</p>
+            <div className="mt-4"><RecallScatter points={points} height={compact ? 200 : 300} /></div>
+          </div>
+        </div>
+    </Sec>
+  );
+}
+
+function Architecture({ runs, metas, bare }: { runs: JobSummary[]; metas: Awaited<ReturnType<typeof loadMetas>>; bare?: boolean }) {
+  const arch: ArchRun[] = runs.map((j, i) => {
+    const st = stagesOf(metas[i]);
+    const ok = st.filter((s) => !crashed(s));
+    const total = st.reduce((a, s) => a + s.total, 0);
+    const types: ArchRun["types"] = {};
+    for (const s of st)
+      for (const [t, c] of Object.entries(s.ticket_types ?? {}) as [TicketType, { passed: number; total: number }][]) {
+        const v = (types[t] ??= [0, 0]);
+        v[0] += c.passed;
+        v[1] += c.total;
+      }
+    const model = shortModel(j.builder.model);
+    return {
+      arch: j.architecture!,
+      name: SKYWAY_ARCH[j.architecture!] ?? j.architecture!,
+      model,
+      harness: harnessName(j.builder.agent),
+      ...style(model),
+      passed: st.reduce((a, s) => a + s.passed, 0),
+      total,
+      stages: st.map((s) => s.passed / s.total),
+      usd: st.reduce((a, s) => a + (s.cost?.bot?.usd ?? 0), 0) / total,
+      time: ok.reduce((a, s) => a + (s.latency?.ticket?.median ?? 0), 0) / Math.max(1, ok.length),
+      tok: st.reduce((a, s) => a + (s.cost?.bot?.in ?? 0), 0) / total / 1000,
+      types,
+    };
+  });
+  const mean = (a: string) => { const rs = arch.filter((r) => r.arch === a); return rs.reduce((x, r) => x + r.passed / r.total, 0) / rs.length; };
+  const order = [...new Set(arch.map((r) => r.arch))].sort((a, b) => mean(b) - mean(a));
+  const builders = [...new Map(arch.map((r) => [r.model, { model: r.model, color: r.color, shape: r.shape }])).values()];
+  return (
+    <Sec bare={bare} id="architecture" className="lp-sec" head={
+          <SectionHead
+            from="Skyway Air"
+            title="Pass rate by architecture"
+          />
+        }>
+        {order.length ? (
+          <>
+            <ArchPass runs={arch} order={order} />
+            <BuilderLegend items={builders} />
+            <p className="label muted mt-2 max-w-[90ch]">Lines show 95% intervals over {arch[0]?.total} tickets.</p>
+            <div className="mt-14 grid gap-x-12 gap-y-12 lg:grid-cols-12">
+              <div className="lg:col-span-7"><ArchTradeoff runs={arch} order={order} /></div>
+              <div className="lg:col-span-5"><ArchTypes runs={arch} order={order} /></div>
+            </div>
+          </>
+        ) : (
+          <SkywayEmpty what="this chart" />
+        )}
+    </Sec>
+  );
+}
+
+function Packs({ packs, bare }: { packs: Builder[]; bare?: boolean }) {
+  const builders: PackBuilder[] = packs.map((b) => ({
+    model: b.model,
+    ...style(b.model),
+    pass: CONDITIONS.map((_, i) => {
+      const s = b.job.scores[i];
+      return !s || crashed({ passed: s.passed ?? 0 }) ? null : (s.passed ?? 0) / (s.total || 1);
+    }),
+  }));
+  const never = builders.flatMap((b) => b.pass.flatMap((v, i) => (v == null ? [`${b.model} (${CONDITIONS[i]})`] : [])));
+  return (
+    <Sec bare={bare} id="packs" className="lp-sec lp-alt" head={
+          <SectionHead
+            from="Knowledge perturbations"
+            title="Pass rate by knowledge perturbation"
+          />
+        }>
+        <PacksChart builders={builders} />
+        <BuilderLegend items={builders} />
+        <ul className="mt-5 grid gap-x-8 gap-y-1.5 text-[14px] sm:grid-cols-2 lg:grid-cols-4">
+          <li><span className="font-medium">R-fragmented</span><span className="muted">: rules split across docs</span></li>
+          <li><span className="font-medium">R-incomplete</span><span className="muted">: some needed facts removed</span></li>
+          <li><span className="font-medium">R-conflicting</span><span className="muted">: contradicting versions added</span></li>
+          <li><span className="font-medium">R-noisy</span><span className="muted">: irrelevant and stale pages added</span></li>
+        </ul>
+        <p className="label muted mt-4 max-w-[90ch]">
+          Whiskers show one standard deviation across builders, whose R-complete scores vary a lot. Colour only shows whether a pack
+          scored above or below R-complete.
+          {never.length > 0 && <> The agent never started for {never.join(", ")}, so those runs are left out of the bars.</>}
+        </p>
+    </Sec>
+  );
+}
+
+/** The hero's way in: each environment as one row, with its current leader and that leader's pass rate per stage. */
+type Pick = { name: string; word: string; href?: string; cases: string; best: string; rate: number; bars: number[] };
+
+function Spark({ bars, label }: { bars: number[]; label: string }) {
+  const w = 5, gap = 3, h = 26;
+  return (
+    <svg width={bars.length * (w + gap) - gap} height={h} role="img" aria-label={label} className="shrink-0">
+      <title>{label}</title>
+      {bars.map((v, i) => (
+        <g key={i}>
+          <rect x={i * (w + gap)} y={0} width={w} height={h} rx={1} fill="currentColor" opacity={0.1} />
+          <rect x={i * (w + gap)} y={h - Math.max(2, v * h)} width={w} height={Math.max(2, v * h)} rx={1} fill="currentColor" />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function HeroEnvs({ picks, cases }: { picks: Pick[]; cases: string }) {
+  return (
+    <div className="lp-picks">
+      <div className="flex items-baseline justify-between gap-4 pb-3">
+        <span className="caps muted">Environments</span>
+        <span className="text-[13px] muted"><span className="num font-medium" style={{ color: "var(--ink)" }}>{cases}</span> test cases</span>
+      </div>
+      {picks.map((p) => {
+        const body = (
+          <>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                <span className="text-[17px] font-medium">{p.name}</span>
+                <span className="caps muted">{p.word}</span>
+              </div>
+              <div className="mt-1 text-[13px] muted">
+                {p.cases}
+                {p.href && <> · <span className="whitespace-nowrap">Best: <span style={{ color: "var(--ink)" }}>{p.best}</span> <span className="num font-medium" style={{ color: "var(--ink)" }}>{Math.round(p.rate * 100)}%</span></span></>}
+              </div>
+            </div>
+            {p.href ? (
+              <>
+                <Spark bars={p.bars} label={`${p.best}: pass rate by ${p.name === "Knowledge perturbations" ? "pack" : "stage"}, ${p.bars.map((v) => Math.round(v * 100) + "%").join(", ")}`} />
+                <ArrowRight className="lp-pick-arrow size-4 shrink-0" />
+              </>
+            ) : (
+              <span className="text-[13px] muted">First runs coming</span>
+            )}
+          </>
+        );
+        return p.href ? (
+          <Link key={p.name} to={p.href} className="lp-pick">{body}</Link>
+        ) : (
+          <div key={p.name} className="lp-pick">{body}</div>
+        );
+      })}
+    </div>
+  );
+}
+
+type Env = { name: string; word: string; line: string; rows: [string, string][]; href?: string; foot: string };
+
+function Environments({ envs }: { envs: Env[] }) {
+  return (
+    <section id="environments" className="lp-sec lp-alt">
+      <div className="lp-wrap">
+        <h2>Environments</h2>
+        <div className="mt-10 grid gap-6 lg:grid-cols-3">
+          {envs.map((e) => {
+            const body = (
+              <>
+                <div className="caps muted">{e.word}</div>
+                <h3 className="mt-1 text-[24px]">{e.name}</h3>
+                <p className="mt-3 text-[16px]">{e.line}</p>
+                <dl className="mt-6">
+                  {e.rows.map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-4 border-t py-2.5 text-[15px]" style={{ borderColor: "var(--line)" }}>
+                      <dt className="muted">{k}</dt>
+                      <dd className="m-0 text-right font-medium">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="mt-auto pt-6">
+                  {e.href ? (
+                    <span className="btn btn--secondary btn--sm">
+                      {e.foot}
+                      <ArrowRight className="size-4" />
+                    </span>
+                  ) : (
+                    <span className="text-[15px] font-medium">{e.foot}</span>
+                  )}
+                </div>
+              </>
+            );
+            return e.href ? (
+              <Link key={e.name} to={e.href} className="card flex flex-col p-6 sm:p-8">{body}</Link>
+            ) : (
+              <div key={e.name} className="card flex flex-col p-6 sm:p-8">{body}</div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Closing({ last }: { last: string | null }) {
+  return (
+    <footer className="lp-sec lp-foot flex flex-col" style={{ background: "var(--ink)", color: "var(--bg)" }}>
+      <div className="lp-wrap flex flex-1 flex-col">
+        <div>
+          <h2>Resolve customer requests with Observe.AI</h2>
+          <p className="lead mt-4 max-w-[56ch]" style={{ opacity: 0.75 }}>
+            A business never stops changing, and its AI agents have to keep up. Observe.AI builds AI agents that resolve
+            customer requests across voice and chat, with full visibility on one CX platform.
+          </p>
+        </div>
+        <div className="mt-auto pt-16">
+          <div className="grid gap-8 border-t pt-8 text-[15px] sm:grid-cols-2" style={{ borderColor: "color-mix(in srgb, var(--bg) 20%, transparent)" }}>
+            <div>
+              <div className="label" style={{ opacity: 0.6 }}>Environments</div>
+              <ul className="mt-2 space-y-1.5">
+                <li><Link className="link" to={`/t/${ENV.skywayArch}`}>Skyway Air</Link></li>
+                <li><Link className="link" to={`/t/${ENV.redwood}`}>Redwood Inference</Link></li>
+                <li><Link className="link" to={`/t/${ENV.packs}`}>Knowledge perturbations</Link></li>
+              </ul>
+            </div>
+            <div className="text-[14px]" style={{ opacity: 0.75 }}>
+              <div>Data updated {day(last)}.</div>
+              <div className="mt-2 flex items-center gap-2">
+                <span>Built with</span>
+                <a href="https://newmeasure.ai" target="_blank" rel="noreferrer" className="flex items-center">
+                  <img src={publicAsset("new-measure.png")} alt="New Measure" className="block h-[0.8rem] w-auto -translate-y-[2px] invert dark:invert-0" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="lp-wordmark lp-wordmark--ghost" aria-hidden>Resolve Bench</div>
+      </div>
+    </footer>
+  );
+}
+
+/** One landing figure on its own, from live data, for the blog post. */
+export type FigureName = "results" | "failures" | "architecture" | "packs";
+/** compact (the blog): shorter versions of the same charts, for its narrow column. */
+export function LandingFigure({ name, compact }: { name: FigureName; compact?: boolean }) {
+  const c = use(catalog());
+  const metas = use(loadMetas(c.redwood.map((b) => b.job.key)));
+  const archMetas = use(loadMetas(c.skywayArch.map((j) => j.key)));
+  const [focus, setFocus] = useState<FailureGroup | null>(null);
+  if (name === "results") return <Results bare compact={compact} redwood={c.redwood} metas={metas} />;
+  if (name === "failures") return <Failures bare compact={compact} redwood={c.redwood} metas={metas} focus={focus} onFocus={setFocus} />;
+  if (name === "architecture") return <Architecture bare runs={c.skywayArch} metas={archMetas} />;
+  return <Packs bare packs={c.packs} />;
+}
+
+// ---------------- page ----------------
+
+function Charts({ redwood, packs, skywayArch, focus, onFocus }: { redwood: Builder[]; packs: Builder[]; skywayArch: JobSummary[] } & Focus) {
+  const metas = use(loadMetas(redwood.map((b) => b.job.key)));
+  const archMetas = use(loadMetas(skywayArch.map((j) => j.key)));
+  return (
+    <>
+      <Results redwood={redwood} metas={metas} skyway={skywayArch} skywayMetas={archMetas} />
+      <Failures redwood={redwood} metas={metas} skyway={skywayArch} skywayMetas={archMetas} focus={focus} onFocus={onFocus} />
+      <Architecture runs={skywayArch} metas={archMetas} />
+      <Packs packs={packs} />
+    </>
+  );
+}
+
+export default function Home() {
+  const c = use(catalog());
+  const [failFocus, setFailFocus] = useState<FailureGroup | null>(null);
+  const heroName = useRef<HTMLHeadingElement>(null);
+  const navSlot = useRef<HTMLSpanElement>(null);
+  const navDivider = useRef<HTMLSpanElement>(null);
+  const flyTitle = useRef<HTMLAnchorElement>(null);
+  useDockedTitle(heroName, navSlot, flyTitle, navDivider);
+  const showFailure = (g: FailureGroup) => {
+    setFailFocus(g);
+    document.getElementById("failures")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
+
+  // Test cases: Redwood's and Skyway's tickets, plus the knowledge packs' own set (the same tickets in every pack, so
+  // counted once; 28 of them also appear in Redwood's first stage). 290 + 311 + 67 = 668, as in the blog.
+  const tickets = (j?: JobSummary) => (j ? j.scores.reduce((a, s) => a + (s.total ?? 0), 0) : 0);
+  const packTickets = c.packs[0]?.job.scores[0]?.total ?? 67;
+  const facts = [
+    { value: fmt(tickets(c.redwood[0]?.job) + tickets(c.skywayArch[0]) + packTickets), label: "test cases" },
+    { value: "3", label: "environments" },
+  ];
+  // Docs at stage 0, counted from tasks/<env>/environment/app/docs (Confluence pages + Slack files) and tasks/support-agent-knowledge/packs.
+  const envs: Env[] = [
+    {
+      name: "Skyway Air",
+      word: "Fixed architecture",
+      line: "An airline. Each run uses one of six set agent architectures.",
+      rows: [["Stages", "6"], ["Docs", "9,999"], ["Test cases", c.skywayArch[0] ? fmt(tickets(c.skywayArch[0])) : "–"]],
+      ...(c.skywayArch.length ? { href: `/t/${ENV.skywayArch}`, foot: "See the runs" } : { foot: "First runs coming" }),
+    },
+    {
+      name: "Redwood Inference",
+      word: "Free architecture",
+      line: "An AI inference company. The builder picks the agent architecture.",
+      rows: [["Stages", "6"], ["Docs", "26"], ["Test cases", c.redwood[0] ? fmt(tickets(c.redwood[0].job)) : "–"]],
+      href: `/t/${ENV.redwood}`,
+      foot: "See the runs",
+    },
+    {
+      name: "Knowledge perturbations",
+      word: "Changed docs",
+      line: "Redwood's first-stage tickets, with the docs rewritten five ways.",
+      rows: [["Stages", "1 per pack, 5 packs"], ["Docs", "22 to 60 per pack"], ["Test cases", String(c.packs[0]?.job.scores[0]?.total ?? 67)]],
+      href: `/t/${ENV.packs}`,
+      foot: "See the runs",
+    },
+  ];
+  const stageRates = (j: JobSummary) => j.scores.map((x) => (x.passed ?? 0) / (x.total || 1));
+  const bestOf = <T,>(xs: T[], job: (x: T) => JobSummary) => xs.reduce<T | undefined>((a, x) => (!a || pooled(job(x)) > pooled(job(a)) ? x : a), undefined);
+  const bestArch = bestOf(c.skywayArch, (j) => j);
+  const bestRed = bestOf(c.redwood, (b) => b.job);
+  const bestPack = bestOf(c.packs, (b) => b.job);
+  const picks: Pick[] = [
+    { name: envs[0].name, word: envs[0].word, href: envs[0].href, cases: `${envs[0].rows[2][1]} cases · 6 stages`, best: bestArch?.architecture ?? "", rate: bestArch ? pooled(bestArch) : 0, bars: bestArch ? stageRates(bestArch) : [] },
+    { name: envs[1].name, word: envs[1].word, href: envs[1].href, cases: `${envs[1].rows[2][1]} cases · 6 stages`, best: bestRed?.model ?? "", rate: bestRed ? pooled(bestRed.job) : 0, bars: bestRed ? stageRates(bestRed.job) : [] },
+    { name: envs[2].name, word: envs[2].word, href: envs[2].href, cases: `${envs[2].rows[2][1]} cases · 5 packs`, best: bestPack?.model ?? "", rate: bestPack ? pooled(bestPack.job) : 0, bars: bestPack ? stageRates(bestPack.job) : [] },
+  ];
+  return (
+    <div className="lp min-h-screen">
+      <Nav slotRef={navSlot} dividerRef={navDivider} />
+      <Link ref={flyTitle} to="/#top" className="lp-title lp-fly" aria-hidden tabIndex={-1}>Resolve Bench</Link>
+      <main>
+        <section id="top" className="lp-hero">
+          <div className="lp-wrap">
+            <div className="grid gap-x-12 gap-y-12 lg:grid-cols-12 lg:items-center">
+              <div className="lg:col-span-7">
+                <h1 ref={heroName} className="lp-title" style={{ opacity: 0 }}>Resolve Bench</h1>
+                <p className="lead muted mt-5 max-w-[40ch]" style={{ fontSize: "clamp(20px, 0.8vw + 16px, 26px)", lineHeight: 1.35 }}>
+                  Can an AI agent learn and adapt to changing business context to resolve customer issues?
+                </p>
+              </div>
+              <div className="lg:col-span-5"><HeroEnvs picks={picks} cases={facts[0].value} /></div>
+            </div>
+          </div>
+        </section>
+        <section id="how" className="pb-16">
+          <div className="lp-wrap">
+            <h2 className="max-w-[24ch]">How it works</h2>
+            <p className="lead muted mt-4 max-w-[62ch]">Resolution for one customer issue needs six facts. Each step below shows where one of them can go missing.</p>
+            <div className="mt-8"><Journey onFailure={showFailure} /></div>
+          </div>
+        </section>
+        <Environments envs={envs} />
+        <Suspense fallback={<div className="lp-sec" />}>
+          <Charts redwood={c.redwood} packs={c.packs} skywayArch={c.skywayArch} focus={failFocus} onFocus={setFailFocus} />
+        </Suspense>
+      </main>
+      <Closing last={c.last} />
+    </div>
+  );
+}

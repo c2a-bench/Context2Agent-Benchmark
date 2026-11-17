@@ -1,0 +1,18 @@
+/node_modules
+/dist
+.env*
+!.env.example
+.vercel
+*.tsbuildinfo
+# replay data generated from jobs/
+/.data
+/public/monaco
+/public/published
+# Large exports, upload caches, tokens, and reports never belong in GitHub/Pages.
+/.replay-exports
+/.migration
+/.reports
+/.venv-hf
+/datasets/candidate*.json
+__pycache__/
+*.pyc

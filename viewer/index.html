@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en" class="h-full antialiased">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resolve Bench</title>
+    <meta name="description" content="Resolve Bench: can an agent learn a business well enough to resolve its customers? Every run, ticket by ticket." />
+    <link rel="icon" href="%BASE_URL%favicon.ico" sizes="any" />
+    <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
+    <!-- Before first paint: the saved theme (ThemeToggle), else follow the OS. -->
+    <script>(()=>{const saved=()=>{try{return localStorage.getItem('theme')}catch{return null}};const m=matchMedia('(prefers-color-scheme: dark)');const s=()=>{const t=saved();document.documentElement.classList.toggle('dark',t?t==='dark':m.matches)};s();m.addEventListener('change',s)})()</script>
+  </head>
+  <body class="min-h-full flex flex-col bg-background text-foreground">
+    <div id="root" class="contents"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

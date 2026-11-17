@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "provider": "huggingface",
+  "domains": ["redwood-inference", "support-agent-knowledge", "skyway-air"],
+  "benchmark": {
+    "repository": "observeai/c2a-bench",
+    "revision": null,
+    "path": "",
+    "inventorySha256": null
+  },
+  "runs": {
+    "repository": "observeai/c2a-bench-runs",
+    "revision": null,
+    "path": "",
+    "inventorySha256": null
+  }
+}

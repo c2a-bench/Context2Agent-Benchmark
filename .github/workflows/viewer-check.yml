@@ -1,0 +1,37 @@
+name: Viewer checks
+
+on:
+  pull_request:
+    paths: ['viewer/**', '.github/workflows/viewer-*.yml']
+  push:
+    branches: [main]
+    paths: ['viewer/**', '.github/workflows/viewer-*.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: viewer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: viewer/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run check:tools
+      - run: npm run test:data
+      - run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:pages
+      - name: Allow unconfigured HF repository until the team chooses it
+        run: npm run dataset:check -- --allow-unconfigured

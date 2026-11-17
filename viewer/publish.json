@@ -1,0 +1,9 @@
+{
+  "runs": [
+    { "task": "sourcegraph", "job": "2026-10-05__10-20-04" },
+    { "task": "sourcegraph", "job": "2026-10-05__09-50-34" },
+    { "task": "supabase", "job": "2026-10-05__11-28-23" },
+    { "task": "posthog", "job": "2026-10-05__12-14-45" },
+    { "task": "support-agent-knowledge", "job": "2026-10-05__11-10-47" }
+  ]
+}
