@@ -29,9 +29,9 @@ export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpa
           <span ref={dividerRef} className="h-5 w-px" style={{ background: "var(--line)", opacity: home ? 0 : 1 }} aria-hidden />
           {home ? (
             /* where the travelling title docks: same text at nav size, kept invisible to reserve and measure the spot */
-            <span ref={slotRef} className="lp-title relative top-[2px] text-[17px] sm:text-[19px]" style={{ visibility: "hidden" }} aria-hidden>C2A</span>
+            <span ref={slotRef} className="lp-title relative top-[2px] text-[17px] sm:text-[19px]" style={{ visibility: "hidden" }} aria-hidden><b>C</b><b>2</b><b>A</b></span>
           ) : (
-            <Link to="/" className="lp-title relative top-[2px] text-[17px] sm:text-[19px]" style={{ color: "var(--ink)", textDecoration: "none" }}>C2A</Link>
+            <Link to="/" className="lp-title relative top-[2px] text-[17px] sm:text-[19px]" style={{ color: "var(--ink)", textDecoration: "none" }}><b>C</b><b>2</b><b>A</b></Link>
           )}
         </div>
         <nav className="mx-auto hidden gap-7 text-[15px] font-medium lg:flex" aria-label="Sections">

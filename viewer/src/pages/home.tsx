@@ -27,11 +27,16 @@ function useDockedTitle(hero: React.RefObject<HTMLElement | null>, slot: React.R
   useLayoutEffect(() => {
     const h = hero.current, n = slot.current, t = title.current, d = divider.current;
     if (!h || !n || !t || !d) return;
-    let m = { left: 0, top: 0, size: 0, toLeft: 0, toTop: 0, toSize: 0 };
+    let m = { left: 0, top: 0, size: 0, toLeft: 0, toTop: 0, toSize: 0, cw: [] as number[], rh: 0, rw: 0 };
+    const parts = () => [...t.querySelectorAll<HTMLElement>("[data-c]")];
+    const rest = t.querySelector<HTMLElement>("[data-r]")!;
     const measure = () => {
       const hr = h.getBoundingClientRect(), nr = n.getBoundingClientRect();
-      m = { left: hr.left, top: hr.top + scrollY, size: parseFloat(getComputedStyle(h).fontSize), toLeft: nr.left, toTop: nr.top, toSize: parseFloat(getComputedStyle(n).fontSize) };
-      t.style.fontSize = `${m.size}px`;
+      t.style.fontSize = `${parseFloat(getComputedStyle(h).fontSize)}px`;
+      parts().forEach((e) => (e.style.width = ""));
+      rest.style.height = rest.style.width = "";
+      // natural (unscaled) sizes of the letters that fold away, so the name can shrink to C2A smoothly
+      m = { left: hr.left, top: hr.top + scrollY, size: parseFloat(getComputedStyle(h).fontSize), toLeft: nr.left, toTop: nr.top, toSize: parseFloat(getComputedStyle(n).fontSize), cw: parts().map((e) => e.offsetWidth), rh: rest.offsetHeight, rw: rest.offsetWidth };
       draw();
     };
     const draw = () => {
@@ -44,12 +49,19 @@ function useDockedTitle(hero: React.RefObject<HTMLElement | null>, slot: React.R
       t.style.transform = `translate(${x}px, ${y}px) scale(${sc})`;
       t.style.pointerEvents = p >= 1 ? "auto" : "none";
       d.style.opacity = String(Math.max(0, (p - 0.8) / 0.2));
+      // the rest of the name folds away on the way up, leaving the bold C, 2 and A
+      const k = Math.min(1, Math.max(0, (p - 0.05) / 0.6)), q = 1 - k * k * (3 - 2 * k);
+      parts().forEach((e, i) => ((e.style.width = `${m.cw[i] * q}px`), (e.style.opacity = String(q * q))));
+      rest.style.height = `${m.rh * q}px`;
+      rest.style.width = `${m.rw * q}px`;
+      rest.style.opacity = String(q * q);
     };
     let raf = 0;
     const onScroll = () => (raf ||= requestAnimationFrame(() => ((raf = 0), draw())));
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(document.documentElement);
+    ro.observe(n.parentElement!); // the logo next to the slot loads late and shifts it; re-measure so the title never lands on the logo
     addEventListener("scroll", onScroll, { passive: true });
     document.fonts?.ready.then(measure);
     return () => {
@@ -59,6 +71,14 @@ function useDockedTitle(hero: React.RefObject<HTMLElement | null>, slot: React.R
     };
   }, [hero, slot, title, divider]);
 }
+
+/** The benchmark's full name with the C, 2 and A that spell C2A in bold. The hero h1 and its travelling copy both use it so they wrap alike. */
+const FullName = () => (
+  <>
+    <span><b>C</b><span data-c>ontext</span><b>2</b><b>A</b><span data-c>gent</span></span>
+    <span data-r style={{ display: "block" }}>Benchmark</span>
+  </>
+);
 
 function SectionHead({ id, title, lead, from, right }: { id?: string; title: string; lead?: ReactNode; from: string; right?: ReactNode }) {
   return (
@@ -739,14 +759,13 @@ export default function Home() {
   return (
     <div className="lp min-h-screen">
       <Nav slotRef={navSlot} dividerRef={navDivider} />
-      <Link ref={flyTitle} to="/#top" className="lp-title lp-fly" aria-hidden tabIndex={-1}>C2A</Link>
+      <Link ref={flyTitle} to="/#top" className="lp-title lp-fly" aria-hidden tabIndex={-1}><FullName /></Link>
       <main>
         <section id="top" className="lp-hero">
           <div className="lp-wrap">
             <div className="grid gap-x-12 gap-y-12 lg:grid-cols-12 lg:items-center">
               <div className="lg:col-span-7">
-                <h1 ref={heroName} className="lp-title" style={{ opacity: 0 }}>C2A</h1>
-                <div className="mt-3" style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(22px, 1vw + 16px, 30px)", lineHeight: 1.2 }}>Context to Agent Benchmark</div>
+                <h1 ref={heroName} className="lp-title" style={{ opacity: 0 }}><FullName /></h1>
                 <p className="lead muted mt-5 max-w-[40ch]" style={{ fontSize: "clamp(20px, 0.8vw + 16px, 26px)", lineHeight: 1.35 }}>
                   Can an AI agent learn and adapt to changing business context to resolve customer issues?
                 </p>
@@ -757,8 +776,8 @@ export default function Home() {
         </section>
         <section id="how" className="pb-16">
           <div className="lp-wrap">
-            <h2 className="max-w-[24ch]">How it works</h2>
-            <p className="lead muted mt-4 max-w-[62ch]">Resolution for one customer issue needs six facts. Each step below shows where one of them can go missing.</p>
+            <h2 className="max-w-[24ch]">Can the agent keep up with the business?</h2>
+            <p className="lead muted mt-4 max-w-[62ch]">Policies and procedures keep changing, and a support agent has to keep up. Each step below shows how we test that, and where it can go wrong.</p>
             <div className="mt-8"><Journey onFailure={showFailure} /></div>
           </div>
         </section>

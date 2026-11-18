@@ -132,15 +132,15 @@ html:not(.dark) .lp { --bg: #ffffff; --surface: #ffffff; --ink: #0c1016; }
 
 /* The journey: a pinned figure beside five step texts that scroll normally (stacked on phones). */
 .lp-journey { display: grid; grid-template-columns: 5fr 7fr; gap: 0 56px; }
-.lp-jstick { grid-column: 2; grid-row: 1; position: sticky; top: calc(var(--nav) + 24px); height: calc(100svh - var(--nav) - 48px); display: flex; align-items: center; }
+.lp-jstick { grid-column: 2; grid-row: 1; position: sticky; top: calc(var(--nav) + 8svh); align-self: start; }
 .lp-jsteps { grid-column: 1; grid-row: 1; margin: 0; padding: 0; list-style: none; }
 .lp-jstep { min-height: 72svh; display: flex; flex-direction: column; justify-content: center; opacity: .35; }
 .lp-jstep[data-on] { opacity: 1; }
 .lp-jstep:first-child { min-height: 60svh; }
 .lp-jstep:last-child { min-height: 100svh; justify-content: flex-start; padding-top: 28svh; }
-.lp-jfig { position: relative; width: 100%; padding: 32px 0 0; }
+.lp-jfig { position: relative; width: 100%; }
 .lp-jfig svg { display: block; width: 100%; height: auto; max-height: calc(100svh - var(--nav) - 140px); }
-.lp-jcount { position: absolute; top: 4px; right: 0; font-size: 12px; color: var(--muted); }
+.lp-jcount { margin-top: 14px; text-align: center; font-size: 12px; color: var(--muted); }
 @media (max-width: 1023px) {
   .lp-journey { grid-template-columns: 1fr; }
   .lp-jstick { grid-column: 1; top: var(--nav); height: auto; z-index: 2; background: var(--bg); padding: 8px 0; }
@@ -148,7 +148,6 @@ html:not(.dark) .lp { --bg: #ffffff; --surface: #ffffff; --ink: #0c1016; }
   .lp-jstick::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 48px; pointer-events: none;
     background: linear-gradient(to bottom, var(--bg), color-mix(in srgb, var(--bg) 70%, transparent) 45%, transparent); }
   .lp-jstick + .lp-jsteps, .lp-jsteps { grid-row: 2; }
-  .lp-jfig { padding: 26px 0 0; }
   .lp-jfig svg { max-height: 36svh; }
   .lp-jstep { min-height: 62svh; justify-content: flex-start; padding-top: 24px; }
 }
@@ -165,15 +164,15 @@ svg[data-k="4"] [data-bar="card"] { fill: color-mix(in oklab, var(--ink) 9%, var
 .j-dot, .j-ink { fill: color-mix(in oklab, var(--ink) 70%, var(--bg)); }
 .j-halo { fill: color-mix(in oklab, var(--ink) 30%, var(--bg)); opacity: .35; }
 .dark .j-halo { fill: #000; opacity: .8; }
-.j-visor { fill: color-mix(in oklab, var(--ink) 78%, var(--bg)); }
-.j-visor-line { fill: color-mix(in oklab, var(--bg) 85%, var(--ink)); opacity: .9; }
 .j-faint { fill: color-mix(in oklab, var(--ink) 9%, var(--bg)); }
-.j-band-o { fill: none; stroke: color-mix(in oklab, var(--ink) 58%, var(--bg)); stroke-width: 7; stroke-linecap: round; }
-.j-band-i { fill: none; stroke: color-mix(in oklab, var(--ink) 15%, var(--bg)); stroke-width: 5.4; stroke-linecap: round; }
 .j-bubble-agent { fill: color-mix(in oklab, var(--ink) 7%, var(--bg)); }
 .j-mark { fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .j-text { font-size: 10px; fill: var(--muted); }
 .j-deco { opacity: 0; }
+.j-stroke { stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; }
+.j-count-in { animation: j-count-in 520ms cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes j-count-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .j-count-in { animation: none; } }
 .j-bar { stroke-width: 1.2; }
 .j-bar[data-role="fact"] { fill: color-mix(in oklab, var(--ink) 82%, transparent); }
 .j-bar[data-role="filler"] { fill: color-mix(in oklab, var(--ink) 16%, transparent); }
@@ -187,6 +186,10 @@ svg[data-k="4"] [data-bar="card"] { fill: color-mix(in oklab, var(--ink) 9%, var
 @media (max-width: 639px) { .lp-nav .btn { display: none; } } /* the phone nav keeps the logo, the name and the theme switch */
 /* The hero title and its nav slot share one face so the travelling copy lines up with both. */
 .lp .lp-title { font-family: var(--font-heading); font-weight: 400; letter-spacing: -0.02em; line-height: 1.05; white-space: nowrap; }
+.lp .lp-title b { font-weight: 700; }
+/* The letters of the full name that fold away as it condenses to C2A (home.tsx useDockedTitle). */
+.lp .lp-title [data-c] { display: inline-block; vertical-align: top; overflow-x: clip; white-space: nowrap; }
+.lp .lp-title [data-r] { overflow: clip; }
 /* 2: the footer wordmark, in the header serif at Light. */
 .lp .lp-wordmark { font-family: var(--font-heading); font-weight: 300; letter-spacing: -0.03em; }
 /* The footer's closing name: huge, dotted in a tint of the footer colour and cut off by the page's bottom edge, so it sinks into the background. */

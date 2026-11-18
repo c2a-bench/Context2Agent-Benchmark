@@ -1,20 +1,21 @@
 /**
  * The journey of a ticket's facts, as one figure that morphs through five familiar shapes on an isometric desk
  * (the finish of the Anatomy / Hairline figures: paper with thickness, hairline strokes, soft shadows), every sheet facing the reader:
- *   doc page → prompt file → robot head (the prompt becomes its face; the head grows out behind it) → chat window → checklist.
+ *   doc page → prompt file → support agent card → chat window → checklist.
  * The same bars (6 facts from the docs, 1 the customer holds, 8 filler lines) move between the shapes, so a fact can
  * be followed and its loss seen at the stage where it happens. Every state is laid out on one sheet (400 × 320); the
- * morph tweens the layout, the paper's thickness and the robot head's depth together. Scrolling past a step's text *triggers* the morph; it then
+ * morph tweens the layout and the paper's thickness together. Scrolling past a step's text *triggers* the morph; it then
  * runs on its own 700 ms clock (scroll never scrubs it). Reduced motion: no tween.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { GROUPS, type FailureGroup } from "./data";
+import type { FailureGroup } from "./data";
+import { REASONS, type ReasonKey } from "./simple-charts";
 
 type Box = [number, number, number, number];
 type Role = "fact" | "filler" | "lost" | "ghost" | "missing-recall" | "missing-customer" | "wrong" | "gone";
 /** x, y, w, h on the sheet, and how far the bar floats above it (screen px). */
 type Bar = [Box, Role, number?];
-/** th: how far the robot's head has grown out of the sheet (0–90); pv, fv, z are unused leftovers kept 0. */
+/** Unused leftovers (th, pv, fv, z) of an earlier 3D idea, all 0. */
 type Plane = { th: number; pv: number; fv: number; z: number };
 type State = { card: Box; rx: number; t: number; plane: Plane; bars: Record<string, Bar> };
 
@@ -22,7 +23,7 @@ const IDS = ["f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "A", "B", "C", "D",
 const gone = ([x, y, , h]: Box): Bar => [[x, y, 0, h], "gone"];
 const DESK: Plane = { th: 0, pv: 0, fv: 0, z: 0 };
 
-// ---- camera: every sheet faces the reader; depth (paper thickness, the robot's head) recedes up and to the right ----
+// ---- camera: every sheet faces the reader; depth (paper thickness) recedes up and to the right ----
 type M = [number, number, number, number, number, number];
 const OBL: [number, number] = [0.55, -0.42];
 /** Sheet (u, v) → screen. A lifted item rises a little (and keeps its shadow on the sheet). */
@@ -38,9 +39,9 @@ const mstr = (m: M) => `matrix(${m.map((x) => +x.toFixed(3)).join(" ")})`;
 const poly = (pts: [number, number][]) => pts.map((p) => p.map((x) => x.toFixed(1)).join(",")).join(" ");
 
 // ---- the five states ----
-/** The doc page, and the two docs stacked behind it (the rest of the knowledge base). */
+/** The doc page, and the chat window stacked behind it, nudged up and right (the knowledge is documents and chats). */
 const DOC: Box = [72, 34, 248, 256];
-const DOC_STACK: [number, number][] = [[34, -26], [17, -13]];
+const DOC_STACK: [number, number][] = [[20, -72]];
 const S0: State = (() => {
   const order = ["f0", "A", "f1", "f2", "B", "f3", "C", "f4", "D", "f5", "E", "f6", "F", "f7"];
   const w: Record<string, number> = { f0: 100, A: 196, f1: 170, f2: 214, B: 150, f3: 200, C: 208, f4: 140, D: 180, f5: 216, E: 160, f6: 190, F: 204, f7: 120 };
@@ -62,15 +63,18 @@ const S1: State = (() => {
   return { card: PROMPT_CARD, rx: 6, t: 5, plane: DESK, bars };
 })();
 
-/** The robot head: the prompt sheet stands up as its face; the head's box, eyes and antenna are drawn around it. */
-const HEAD = { card: [120, 40, 180, 200] as Box, depth: 84, neck: [186, 240, 48, 10] as Box, base: [136, 250, 148, 14] as Box };
+/** The support agent: a flat robot head (the sheet itself) with a headset, and a speech bubble that carries what it says. */
+const AGENT: Box = [123, 98, 168, 151]; // the head is centred under the counter
 const S2: State = (() => {
   const bars: Record<string, Bar> = {};
-  PROMPT.forEach((id, i) => (bars[id] = [[id.startsWith("f") ? 166 : 176, 120 + i * 12, PW[id] * 0.72, id === "f0" ? 7 : 6], id.startsWith("f") ? "filler" : "fact"]));
+  for (const id of PROMPT) bars[id] = gone(S1.bars[id][0]);
   for (const id of ["f4", "f5", "f6", "f7"]) bars[id] = gone(S0.bars[id][0]);
   bars.D = gone(S1.bars.D[0]);
   bars.G = gone([200, 160, 0, 6]);
-  return { card: HEAD.card, rx: 8, t: 0, plane: { th: 90, pv: 0, fv: 0, z: 0 }, bars };
+  bars.A = [[308, 43, 64, 7], "fact"];
+  bars.f1 = [[308, 60, 44, 7], "filler"];
+  bars.B = [[308, 77, 56, 7], "fact"];
+  return { card: AGENT, rx: 34, t: 9, plane: DESK, bars };
 })();
 
 const BUBBLES: { box: Box; who: "customer" | "agent"; dashed?: boolean }[] = [
@@ -97,9 +101,9 @@ const S3: State = (() => {
 const ROWS: { id: string; w: number; ok: boolean; role: Role; term?: string; color?: string }[] = [
   { id: "A", w: 86, ok: true, role: "fact" },
   { id: "B", w: 74, ok: true, role: "fact" },
-  { id: "C", w: 80, ok: false, role: "wrong", term: "database check", color: "var(--f-state)" },
-  { id: "D", w: 72, ok: false, role: "missing-recall", term: "rule recall", color: "var(--f-recall)" },
-  { id: "G", w: 68, ok: false, role: "missing-customer", term: "customer recall", color: "var(--f-customer)" },
+  { id: "C", w: 80, ok: false, role: "wrong", term: "wrong action", color: "var(--f-state)" },
+  { id: "D", w: 72, ok: false, role: "missing-recall", term: "missing a rule", color: "var(--f-recall)" },
+  { id: "G", w: 44, ok: false, role: "missing-customer", term: "missed customer info", color: "var(--f-customer)" },
 ];
 const rowY = (i: number) => 96 + i * 40;
 /** The clipboard: board, the paper on it, the clip. */
@@ -113,74 +117,52 @@ const S4: State = (() => {
 })();
 
 const STATES = [S0, S1, S2, S3, S4];
-const COUNTER = ["6 facts in the business context", "5 of 6 made it into the prompt", "5 of 6 · no docs at test time", "1 customer fact never asked", "2 of 5 checks pass · not resolved"];
+const COUNTER = ["Everything a ticket might need", "One rule gets lost in the build", "Works from what was built", "A customer detail goes unasked", "Not resolved"];
 
 // ---- static geometry ----
 const rectPts = (m: M, [x, y, w, h]: Box): [number, number][] => [apply(m, [x, y]), apply(m, [x + w, y]), apply(m, [x + w, y + h]), apply(m, [x, y + h])];
-/** A box seen from the front: its top and right faces, `depth` deep. */
-function boxOf([x, y, w, h]: Box, depth: number) {
-  const [bx, by] = backOf(DESK, depth);
-  return {
-    top: [[x, y], [x + w, y], [x + w + bx, y + by], [x + bx, y + by]] as [number, number][],
-    side: [[x + w, y], [x + w, y + h], [x + w + bx, y + h + by], [x + w + bx, y + by]] as [number, number][],
-  };
-}
-/** The head's box, grown back from the face by `depth`: top, right side, antenna base, four side bolts. */
-function headOf(m: M, plane: Plane, [x, y, w, h]: Box, depth: number) {
-  const B = backOf(plane, depth);
-  const p0 = apply(m, [x, y]);
-  const p1 = apply(m, [x + w, y]);
-  const p2 = apply(m, [x + w, y + h]);
-  const b = (p: [number, number], f = 1) => [p[0] + B[0] * f, p[1] + B[1] * f] as [number, number];
-  const onSide = (a: number, c: number) => [p1[0] + (p2[0] - p1[0]) * c + B[0] * a, p1[1] + (p2[1] - p1[1]) * c + B[1] * a] as [number, number];
-  return {
-    top: [p0, p1, b(p1), b(p0)],
-    side: [p1, p2, b(p2), b(p1)],
-    antenna: b(apply(m, [x + w / 2, y]), 0.5),
-    bolts: [onSide(0.25, 0.25), onSide(0.75, 0.25), onSide(0.25, 0.75), onSide(0.75, 0.75)],
-  };
-}
 const DM0 = matrixOf(DESK);
-const head = headOf(DM0, S2.plane, HEAD.card, HEAD.depth);
 /** Where a sheet point of state `s` lands on screen (for upright labels and marks). */
 const at = (s: number, u: number, v: number, lift = 0) => apply(matrixOf(STATES[s].plane, lift), [u, v]);
-// the viewBox fits every state (with its shadow) and the robot's head
+// the viewBox fits every state (with its shadow) and the pile of docs
 const VB = (() => {
-  const pts = [...head.top, ...head.side, [head.antenna[0], head.antenna[1] - 34] as [number, number], ...rectPts(DM0, HEAD.base), ...boxOf(HEAD.base, HEAD.depth).side];
+  const pts: [number, number][] = [];
   for (const s of STATES) pts.push(...rectPts(DM0, s.card).map(([x, y]) => [x + 14, y + 18] as [number, number]));
-  pts.push([DOC[0] + DOC[2] + DOC_STACK[0][0] + 4, DOC[1] + DOC_STACK[0][1] - 4], [CLIP[0], CLIP[1] - 22]);
+  for (const [dx, dy] of DOC_STACK) pts.push([DOC[0] + DOC[2] + dx + 4, DOC[1] + dy - 4]);
+  pts.push([CLIP[0], CLIP[1] - 22]);
   for (const s of STATES) pts.push(...rectPts(matrixOf(s.plane), s.card));
   const xs = pts.map((p) => p[0]);
   const ys = pts.map((p) => p[1]);
-  const [x0, y0] = [Math.min(...xs) - 10, Math.min(...ys) - 10];
-  return [x0, y0, Math.max(...xs) + 10 - x0, Math.max(...ys) + 14 - y0].map((n) => Math.round(n));
+  const [x0, y0] = [Math.min(...xs) - 36, Math.min(...ys) - 10]; // 36 each side: room for the labels that run past the sheet
+  return [x0, y0, Math.max(...xs) + 36 - x0, Math.max(...ys) + 14 - y0].map((n) => Math.round(n));
 })();
 
-type Tag = { group: FailureGroup; gloss: string };
+// A step's failure chips use the failure chart's own plain names (REASONS), so the two always read alike.
+type Tag = { group: FailureGroup; reason: ReasonKey };
 const STEPS: { name: string; body: string; tags: Tag[] }[] = [
-  { name: "Business context", body: "The company maintains its SOPs, policies, approvals, and business updates across multiple systems, including knowledge management platforms, internal wikis, UCaaS solutions, and other applications. The six facts this ticket needs are spread across them.", tags: [] },
+  { name: "Business context", body: "A company's knowledge lives in many places, from policy documents to past chats, and it keeps changing.", tags: [] },
   {
     name: "Builder",
-    body: "The agent builder, such as Codex, Claude Code or Gemini CLI, reads the docs and writes the support agent's prompt and code. In this example, one fact doesn't make it in.",
+    body: "An AI builder reads that material and sets up the support agent. Whatever it misses or gets wrong, the agent won't know.",
     tags: [
-      { group: "Missing knowledge (rule recall)", gloss: "a needed fact never reaches the agent" },
-      { group: "Build spec failure", gloss: "the prompt exceeds the size cap, or the agent fails to start" },
+      { group: "Missing knowledge (rule recall)", reason: "recall" },
+      { group: "Build spec failure", reason: "spec" },
     ],
   },
   {
     name: "Support agent",
-    body: "The agent runs on a fixed model inside the support system; it can't see the docs, only what the builder wrote.",
-    tags: [{ group: "Agent crash", gloss: "a model call fails mid-ticket" }],
+    body: "The support agent then handles the company's tickets. Depending on its design, it works from what the builder set up and may also search the company's knowledge.",
+    tags: [{ group: "Agent crash", reason: "crash" }],
   },
   {
     name: "Customer",
-    body: "A simulated customer writes in and sends up to five messages. Each customer acts out one of 14 behaviors, and some facts only the customer knows, so the agent has to ask for them.",
-    tags: [{ group: "Missing customer info (customer recall)", gloss: "the agent never asks for a fact only the customer has" }],
+    body: "Simulated customers write in, each behaving differently. To resolve a ticket, the agent has to ask for details only the customer knows.",
+    tags: [{ group: "Missing customer info (customer recall)", reason: "customer" }],
   },
   {
-    name: "Resolution check",
-    body: "Resolution only counts when the customer's issue is resolved in the appropriate system, with an outcome that aligns with company policies and knowledge. This one passes 2 of 5.",
-    tags: [{ group: "Wrong end state (database check)", gloss: "the agent had the fact but wrote the wrong value" }],
+    name: "QA evaluation",
+    body: "Each ticket is scored on whether the issue was resolved in the right system and in line with company policy.",
+    tags: [{ group: "Wrong end state (database check)", reason: "state" }],
   },
 ];
 
@@ -237,23 +219,6 @@ function useMorph(k: number, svg: React.RefObject<SVGSVGElement | null>, still: 
         el.setAttribute("rx", String(rx));
         el.setAttribute("transform", mstr(mm));
       }
-      const f = Math.min(1, Math.max(0, plane.th / 90));
-      const hd = headOf(m, plane, [x, y, w, h], HEAD.depth * f);
-      const g = root.querySelector<SVGGElement>("[data-head]")!;
-      g.style.opacity = String(f * f * f); // the head fades in late and leaves early, so it never overlaps the next shape
-      g.querySelector("[data-head-top]")!.setAttribute("points", poly(hd.top));
-      g.querySelector("[data-head-side]")!.setAttribute("points", poly(hd.side));
-      const [ax, ay] = hd.antenna;
-      g.querySelector("[data-head-stalk]")!.setAttribute("d", `M${ax} ${ay}V${ay - 26 * f}`);
-      g.querySelector("[data-head-ball]")!.setAttribute("transform", `translate(${ax} ${ay - 30 * f})`);
-      g.querySelectorAll("[data-head-bolt]").forEach((el, i) => el.setAttribute("transform", `translate(${hd.bolts[i][0]} ${hd.bolts[i][1]})`));
-      for (const key of ["base", "neck"] as const) {
-        const bx = boxOf(HEAD[key], HEAD.depth * f * (key === "neck" ? 0.6 : 1));
-        g.querySelector(`[data-${key}-top]`)!.setAttribute("points", poly(bx.top));
-        g.querySelector(`[data-${key}-side]`)!.setAttribute("points", poly(bx.side));
-      }
-      root.querySelector("[data-head-face]")!.setAttribute("transform", mstr(m));
-      (root.querySelector("[data-head-face]") as SVGGElement).style.opacity = String(f * f * f);
       for (const id of IDS) {
         const el = els[id];
         const [bx, by, bw, bh, lift] = v[id];
@@ -292,61 +257,73 @@ function Figure({ k, still }: { k: number; still: boolean }) {
   const on = (...ks: number[]) => ({ className: "j-deco", "data-states": ks.join(" ") });
   return (
     <div className="lp-jfig">
-      <div className="lp-jcount mono num" aria-live="polite">{COUNTER[k]}</div>
       <svg ref={svg} viewBox={VB.join(" ")} role="img" aria-label={`${STEPS[k].name}: ${COUNTER[k]}`}>
         <defs>
           <filter id="j-blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="8" /></filter>
           <filter id="j-blur-s" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="3" /></filter>
         </defs>
-        {/* the robot's base, neck and head: they grow back out of the sheet (opacity and depth follow the tween) */}
-        <g data-head style={{ opacity: 0 }}>
-          <rect x={HEAD.base[0] + 8} y={HEAD.base[1] + 8} width={HEAD.base[2]} height={HEAD.base[3]} rx="3" className="j-halo" filter="url(#j-blur-s)" />
-          {(["base", "neck"] as const).map((key) => (
-            <g key={key}>
-              <polygon {...{ [`data-${key}-side`]: true }} className="j-side-dark j-edge" />
-              <polygon {...{ [`data-${key}-top`]: true }} className="j-paper-top j-edge" />
-              <rect x={HEAD[key][0]} y={HEAD[key][1]} width={HEAD[key][2]} height={HEAD[key][3]} rx="2" className="j-side j-edge" />
-            </g>
-          ))}
-          <polygon data-head-side className="j-side-dark j-edge" />
-          <polygon data-head-top className="j-paper-top j-edge" />
-          <path data-head-stalk className="j-edge" />
-          <circle data-head-ball r="4.5" className="j-ink" />
-          {[0, 1, 2, 3].map((i) => <circle key={i} data-head-bolt r="1.3" className="j-dot" />)}
-        </g>
-        {/* docs stacked behind the page */}
+        {/* a chat window above the page: title bar, and a short exchange */}
         <g {...on(0)}>
-          {DOC_STACK.map(([dx, dy], i) => (
-            <g key={i} transform={`translate(${dx} ${dy})`}>
-              <rect x={DOC[0] + 2.2} y={DOC[1] - 1.7} width={DOC[2]} height={DOC[3]} rx="4" className="j-side-dark j-edge" />
-              <rect x={DOC[0]} y={DOC[1]} width={DOC[2]} height={DOC[3]} rx="4" className="j-paper j-edge" />
-              {[0, 1, 2, 3, 4, 5].map((r) => <rect key={r} x={DOC[0] + 22} y={DOC[1] + 22 + r * 15.5} width={[100, 176, 148, 186, 130, 166][r]} height="6" rx="2" className="j-faint" />)}
-            </g>
-          ))}
+          <g transform={`translate(${DOC_STACK[0][0]} ${DOC_STACK[0][1]})`}>
+            <rect x={DOC[0] + 2.2} y={DOC[1] - 1.7} width={DOC[2]} height={DOC[3]} rx="4" className="j-side-dark j-edge" />
+            <rect x={DOC[0]} y={DOC[1]} width={DOC[2]} height={DOC[3]} rx="4" className="j-paper j-edge" />
+            {[0, 1, 2].map((d) => <circle key={d} cx={DOC[0] + 14 + d * 10} cy={DOC[1] + 10} r="2.4" className="j-side-dark j-edge" />)}
+            <line x1={DOC[0]} y1={DOC[1] + 21} x2={DOC[0] + DOC[2]} y2={DOC[1] + 21} className="j-edge" />
+            {[
+              { x: DOC[0] + 16, y: DOC[1] + 27, w: 112, agent: false },
+              { x: DOC[0] + DOC[2] - 8 - 124, y: DOC[1] + 47, w: 124, agent: true },
+            ].map((b, i) => (
+              <g key={i}>
+                {!b.agent && <path d={`M${b.x + 12} ${b.y + 16}l-5 4.5l13 -4.5Z`} className="j-edge j-paper" />}
+                <rect x={b.x} y={b.y} width={b.w} height="17" rx="8.5" className={`j-edge ${b.agent ? "j-bubble-agent" : "j-paper"}`} />
+                <rect x={b.x + 10} y={b.y + 7.5} width={b.w - 32} height="3" rx="1.5" style={{ fill: "color-mix(in oklab, var(--ink) 30%, transparent)" }} />
+              </g>
+            ))}
+          </g>
         </g>
         {/* the sheet, with its thickness */}
         <rect data-bar="card-shadow" className="j-halo" filter="url(#j-blur)" />
         <rect data-bar="card-back" className="j-side-dark j-edge" />
         <rect data-bar="card" className="j-paper j-edge" />
-        {/* robot face: a visor and a support headset, carried with the sheet */}
-        <g data-head-face style={{ opacity: 0 }}>
-          <rect x="140" y="60" width="140" height="34" rx="17" className="j-visor j-edge" />
-          <rect x="164" y="74" width="92" height="6" rx="3" className="j-visor-line" />
-          <path d="M112 98 C112 -6, 308 -6, 308 98" className="j-band-o" />
-          <path d="M112 98 C112 -6, 308 -6, 308 98" className="j-band-i" />
-          <path d="M114 138 Q114 200 150 204" className="j-band-o" />
-          <path d="M114 138 Q114 200 150 204" className="j-band-i" />
-          <rect x="146" y="198" width="18" height="12" rx="6" className="j-ink" />
-          {[100, 296].map((x) => (
-            <g key={x}>
-              <rect x={x} y="88" width="24" height="52" rx="9" className="j-side-dark j-edge" />
-              <rect x={x + (x < 200 ? 14 : 0)} y="96" width="10" height="36" rx="4" className="j-paper j-edge" />
+        {/* support agent: a flat robot head with a little depth (edge, soft shadow, cups and bubble with thickness), a headset, and a speech bubble that carries what it says */}
+        <g {...on(2)}>
+          <OnSheet s={2}>
+            <g transform="translate(259 175) scale(1.2) translate(-213 -160)">
+              <rect x="112" y="224" width="116" height="14" rx="7" className="j-halo" filter="url(#j-blur-s)" />
+              <rect x="105" y="101" width="130" height="116" rx="19" className="j-groove" fill="none" />
+              <rect x="164" y="91" width="12" height="6" rx="2" className="j-side j-edge" />
+              <line x1="170" y1="91" x2="170" y2="76" className="j-stroke" />
+              <circle cx="170" cy="72" r="5" className="j-ink" />
+              <circle cx="168.4" cy="70.4" r="1.6" style={{ fill: "var(--bg)", opacity: 0.85 }} />
+              <path d="M94 146C94 69 246 69 246 146" className="j-stroke" fill="none" />
+              {[88, 240].map((x) => (
+                <g key={x}>
+                  <rect x={x + 4} y="135" width="12" height="38" rx="6" className="j-side-dark j-edge" />
+                  <rect x={x} y="138" width="12" height="38" rx="6" className="j-edge" style={{ fill: "var(--action)" }} />
+                </g>
+              ))}
+              <path d="M94 174C94 204 110 212 130 208" className="j-stroke" fill="none" />
+              <circle cx="133" cy="208" r="3.2" className="j-ink" />
+              {[146, 194].map((x) => (
+                <g key={x}>
+                  <circle cx={x} cy="150" r="8" className="j-ink" />
+                  <circle cx={x - 2.4} cy="147.6" r="2.2" style={{ fill: "var(--bg)", opacity: 0.85 }} />
+                </g>
+              ))}
+              <path d="M152 188Q170 200 188 188" className="j-stroke" fill="none" />
+              <rect x="242" y="37" width="88" height="64" rx="14" className="j-halo" filter="url(#j-blur-s)" />
+              <rect x="243" y="32" width="88" height="64" rx="14" className="j-side-dark j-edge" />
+              <path d="M256 97L246 114L276 97Z" className="j-paper j-edge" />
+              <rect x="240" y="34" width="88" height="64" rx="14" className="j-paper j-edge" />
             </g>
-          ))}
+          </OnSheet>
         </g>
         {/* doc page: folded corner */}
         <g {...on(0)}>
-          <OnSheet s={0}><path d={`M${DOC[0] + DOC[2] - 20} ${DOC[1]} L${DOC[0] + DOC[2]} ${DOC[1] + 20} L${DOC[0] + DOC[2] - 20} ${DOC[1] + 20} Z`} className="j-side j-edge" /></OnSheet>
+          <OnSheet s={0}>
+            <path d={`M${DOC[0] + DOC[2] - 20} ${DOC[1] - 2} H${DOC[0] + DOC[2] + 2} V${DOC[1] + 20} Z`} className="j-paper" />
+            <path d={`M${DOC[0] + DOC[2] - 20} ${DOC[1]} L${DOC[0] + DOC[2]} ${DOC[1] + 20} H${DOC[0] + DOC[2] - 20} Z`} className="j-side j-edge" strokeLinejoin="round" />
+          </OnSheet>
         </g>
         {/* prompt file: header, size cap, the fact that floated off */}
         <g {...on(1)}>
@@ -357,7 +334,7 @@ function Figure({ k, still }: { k: number; still: boolean }) {
           </OnSheet>
           <Label s={1} u={90} v={44} text="</>" />
           <Label s={1} u={320} v={268} text="size cap" color="var(--f-spec)" dx={4} dy={4} />
-          <Label s={1} u={326} v={166} lift={12} text="rule recall" color="var(--f-recall)" dy={13} />
+          <Label s={1} u={326} v={166} lift={12} text="missing a rule" color="var(--f-recall)" dy={13} />
         </g>
         {/* chat window: title bar, prompt panel, floating bubbles */}
         <g {...on(3)}>
@@ -368,11 +345,19 @@ function Figure({ k, still }: { k: number; still: boolean }) {
             {BUBBLES.map((b, i) => <rect key={i} x={b.box[0] + 3} y={b.box[1] + 3} width={b.box[2]} height={b.box[3]} rx="10" className="j-halo" filter="url(#j-blur-s)" />)}
           </OnSheet>
           <OnSheet s={3} lift={LIFT}>
+            {BUBBLES.map((b, i) => {
+              const agent = b.who === "agent", [bx, by, bw, bh] = b.box;
+              return (
+                <g key={`t${i}`}>
+                  <path d={agent ? `M${bx + bw - 12} ${by + bh - 2}l4 4.5l-11 -4.5Z` : `M${bx + 12} ${by + bh - 2}l-4 4.5l11 -4.5Z`} className={`j-edge ${agent ? "j-bubble-agent" : "j-paper"}`} strokeDasharray={b.dashed ? "4 4" : undefined} />
+                </g>
+              );
+            })}
             {BUBBLES.map((b, i) => (
               <rect key={i} x={b.box[0]} y={b.box[1]} width={b.box[2]} height={b.box[3]} rx="10" className={`j-edge ${b.who === "agent" ? "j-bubble-agent" : "j-paper"}`} strokeDasharray={b.dashed ? "4 4" : undefined} />
             ))}
           </OnSheet>
-          <Label s={3} u={156} v={180} lift={LIFT} text="customer recall" color="var(--f-customer)" dx={4} dy={13} />
+          <Label s={3} u={156} v={180} lift={LIFT} text="missed customer info" color="var(--f-customer)" dx={4} dy={13} />
         </g>
         {/* checklist */}
         <g {...on(4)}>
@@ -396,6 +381,7 @@ function Figure({ k, still }: { k: number; still: boolean }) {
         </g>
         {IDS.map((id) => <rect key={id} data-bar={id} rx="2" className="j-bar" />)}
       </svg>
+      <div key={k} className="lp-jcount j-count-in mono num" aria-live="polite">{COUNTER[k]}</div>
     </div>
   );
 }
@@ -438,14 +424,14 @@ export function Journey({ onFailure }: { onFailure: (g: FailureGroup) => void })
             {s.tags.length > 0 && (
               <ul className="mt-4 space-y-2">
                 {s.tags.map((t) => {
-                  const g = GROUPS.find((x) => x.group === t.group)!;
+                  const g = REASONS.find((x) => x.key === t.reason)!;
                   return (
                     <li key={t.group} className="text-[14px] leading-[1.45]">
                       <button type="button" className="lp-fail" style={{ ["--c" as string]: g.color }} onClick={() => onFailure(t.group)} title="See it in the failure chart">
                         <span className="size-2 rounded-full" style={{ background: g.color }} />
-                        {g.term}
+                        {g.name}
                       </button>
-                      <span className="muted ml-2">{t.gloss}</span>
+                      <span className="muted ml-2">{g.long}</span>
                     </li>
                   );
                 })}
