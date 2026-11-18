@@ -12,32 +12,32 @@ import { Nav } from "@/landing/nav";
 import { publicAsset } from "@/lib/assets";
 import { POSTS, postDate } from "@/blog/posts";
 import { LandingFigure, type FigureName } from "@/pages/home";
-import { TicketViewer, BehaviourViewer, MeasuresGrid } from "@/blog/viewers";
+import { TicketViewer, BehaviourViewer } from "@/blog/viewers";
 import "@/landing/landing.css";
 
 const FIGURES: Record<FigureName, { title: string; from: string; caption: string; href: string }> = {
   results: {
-    title: "Pass rate by stage",
+    title: "Pass rate by builder",
     from: "Redwood Inference",
-    caption: "Each line is one builder, every one run with high reasoning effort. Hover a point for that stage's split by ticket type.",
+    caption: "Each column is one builder, every one run with high reasoning effort.",
     href: "/#results",
   },
   failures: {
-    title: "Failed tickets by type",
+    title: "Why tickets failed",
     from: "Redwood Inference",
-    caption: "Left of the axis: tickets lost to the builder. Right: tickets lost to the agent. A ticket blamed on both counts half to each. Every builder ran with high reasoning effort. Hover a bar for the breakdown.",
+    caption: "Each bar splits a builder's failure reasons: warm colours are the builder's fault, blue ones the agent's. Every builder ran with high reasoning effort. Hover a segment for its share.",
     href: "/#failures",
   },
   architecture: {
     title: "Pass rate by architecture",
     from: "Skyway Air",
-    caption: "One builder (gpt-6.1-sol, high reasoning effort), six assigned architectures. Hover a row for its numbers.",
+    caption: "One builder (high reasoning effort), six assigned architectures; the dashed line is their average. Hover a row for its numbers.",
     href: "/#architecture",
   },
   packs: {
-    title: "Pass rate by knowledge perturbation",
+    title: "How changed docs move the score",
     from: "Knowledge perturbations",
-    caption: "Each mark is one builder, every one run with high reasoning effort; the bar is their mean. Hover a column for the spread.",
+    caption: "Each bar is one builder's gain or loss on a changed pack against its own complete-docs score; the big number is the typical change. Every builder ran with high reasoning effort.",
     href: "/#packs",
   },
 };
@@ -58,11 +58,6 @@ const VIEWERS: Record<string, { kicker: string; title: string; caption?: string;
     href: "/#environments",
     link: "See the environments",
     View: BehaviourViewer,
-  },
-  measures: {
-    kicker: "Every run, every ticket",
-    title: "What we measure",
-    View: MeasuresGrid,
   },
 };
 

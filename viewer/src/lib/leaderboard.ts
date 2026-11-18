@@ -18,7 +18,7 @@ export const FOCUS: { id: string; short: string; current: string; blurb: string;
     blurb: "The same tickets and instructions every time; only the docs change, packaged five ways (complete, fragmented, incomplete, conflicting, noisy). Shows how much the shape of the knowledge alone costs.",
   },
   {
-    id: "skyway-arch",
+    id: "skyway-air",
     short: "Skyway architectures",
     current: "2026-11-06",
     blurb: "Skyway Air with the architecture fixed per run: the same builder model builds six agents, one per way of storing and finding the docs (raw docs, an LLM wiki or a knowledge graph; index search, terminal tools, graph queries or no retrieval).",
@@ -45,7 +45,9 @@ export function passRate(j: JobSummary) {
 
 /** A finished architecture run named by its start time (2026-11-06__13-52-30, or its -facts copy): test runs given
  *  their own names (smoke-*) are not on the leaderboard or in the picker. */
-const isRun = (j: JobSummary) => !!j.architecture && j.finished && j.scores.length > 0 && /^\d{4}-\d{2}-\d{2}__/.test(j.id);
+// A run folder is named by its start time (2026-11-14__07-45-58) or, for republished runs, by date, model and
+// architecture (20261117--claude-opus-5-5--raw-index).
+const isRun = (j: JobSummary) => !!j.architecture && j.finished && j.scores.length > 0 && /^(\d{4}-\d{2}-\d{2}__|\d{8}--)/.test(j.id);
 
 /** An architectures environment's runs as one entry per builder model (and thinking setting): its newest run and its
  *  run of each architecture. */

@@ -6,7 +6,7 @@ export type Post = { slug: string; title: string; summary: string; date: string;
 export const POSTS: Post[] = [
   {
     slug: "introducing-resolve-bench",
-    title: "Resolve Bench: can agents keep up with a business that keeps changing?",
+    title: "C2A: can agents keep up with a business that keeps changing?",
     summary:
       "601 test cases, eight builder models and six agent architectures: what happens when coding agents build support agents, and then have to keep them up to date as the docs change.",
     date: "2026-11-09",
