@@ -8,9 +8,10 @@ import { publicAsset } from "@/lib/assets";
 import { ArrowRight } from "lucide-react";
 import { Nav } from "@/landing/nav";
 import { Journey } from "@/landing/journey";
-import { ArchPass, ArchTradeoff, ArchTypes, BuilderLegend, BuilderPareto, FailureBars, PacksChart, RankTable, RecallScatter, StageChart, type ArchRun, type TicketType, type FailureRow, type PackBuilder, type RecallPoint, type StageRow, type StagePoint } from "@/landing/charts";
+import { ArchTypes, type ArchRun, type TicketType, type RecallPoint, type StageRow, type StagePoint } from "@/landing/charts";
 import { CONDITIONS, CONFOUND, ENV, SKYWAY_ARCH, catalog, crashed, harnessName, loadMetas, pooled, shortModel, stagesOf, style, type Builder, type FailureGroup } from "@/landing/data";
 import type { JobSummary } from "@/lib/data";
+import { BenchmarkBars, ChangePanels, Columns, CostScatter, SlopeChart, Dumbbell, REASONS, ReasonBars, type ReasonKey, type ReasonRow } from "@/landing/simple-charts";
 import "@/landing/landing.css";
 
 
@@ -85,6 +86,29 @@ function Sec({ bare, id, className, head, children }: { bare?: boolean; id: stri
   );
 }
 
+/** Chart panels: one frame per section; each row puts a chart beside its explanation, alternating sides row by row. */
+type ZigRow = { title: string; body: ReactNode; points?: ReactNode[]; note?: ReactNode; chart: ReactNode; wide?: boolean };
+function Zig({ rows }: { rows: ZigRow[] }) {
+  return (
+    <div className="lp-zig">
+      {rows.map((r, i) => (
+        <div key={r.title} className={`lp-zig-row${i % 2 ? " lp-zig-row--flip" : ""}${r.wide ? " lp-zig-row--wide" : ""}`}>
+          <div className="lp-zig-text">
+            <h3>{r.title}</h3>
+            <p className="muted mt-2">{r.body}</p>
+            {r.points && r.points.length > 0 && <ul className="lp-zig-points">{r.points.map((p, k) => <li key={k}>{p}</li>)}</ul>}
+            {r.note && <p className="label muted mt-4">{r.note}</p>}
+          </div>
+          <div className="lp-zig-chart">{r.chart}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+const P = (v: number) => `${Math.round(100 * v)}%`;
+const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : 0; };
+const signed = (d: number) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(100 * d))}`;
+
 function SkywayEmpty({ what }: { what: string }) {
   return (
     <div className="card flex min-h-[300px] flex-col justify-center p-8 sm:p-12">
@@ -130,8 +154,7 @@ function Seg<T extends string>({ value, options, onChange }: { value: T; options
  *  Skyway: one line per model, pooled over the prescribed architectures; hover draws those architectures. */
 function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compact?: boolean; redwood: Builder[]; metas: Awaited<ReturnType<typeof loadMetas>>; skyway?: JobSummary[]; skywayMetas?: Awaited<ReturnType<typeof loadMetas>>; bare?: boolean }) {
   const [env, setEnvRaw] = useState<"redwood" | "skyway">("redwood");
-  const [picked, setPicked] = useState<string | null>(null);
-  const setEnv = (e: "redwood" | "skyway") => { setEnvRaw(e); setPicked(null); };
+  const setEnv = (e: "redwood" | "skyway") => setEnvRaw(e);
   const sky = env === "skyway" && skyway?.length && skywayMetas;
   const rows: StageRow[] = sky
     ? [...new Set(skyway.map((j) => shortModel(j.builder.model)))]
@@ -173,28 +196,42 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
             from={sky ? "Skyway Air" : "Redwood Inference"}
             title="Pass rate by model and harness"
             lead={sky
-              ? "Each line is one builder model and its harness, pooled over the architectures it was assigned. Hover the line to see those architectures."
-              : "Each line is one builder model and its harness, with the design that builder chose."}
+              ? "Each column is one builder model and its harness, pooled over the architectures it was assigned."
+              : "Each column is one builder model and its harness."}
             right={toggle}
           />
         }>
-        <div className="grid gap-x-12 gap-y-8 lg:grid-cols-12">
-          <div className="lg:col-span-8">
-            <StageChart rows={rows} selected={picked} onSelect={setPicked} />
-            <p className="label muted mt-2">
-              {picked
-                ? <>Showing {picked} only. <button type="button" className="underline cursor-pointer" onClick={() => setPicked(null)}>Show all models</button></>
-                : "Pick a model in the table to see its line alone."}
-            </p>
-          </div>
-          <div className="lg:col-span-4"><RankTable rows={rows} compact={compact} selected={picked} onSelect={setPicked} /></div>
-        </div>
-        <p className="label muted mt-6 max-w-[90ch]">
-          {sky
-            ? "The band runs from that model's lowest architecture to its highest. Hover the line to draw each architecture in a lighter shade."
-            : <>A cross marks a stage where the builder's agent never started, so all its tickets count as failed. * {CONFOUND} is also the model behind the support agent and the customer in every run.</>}
-        </p>
-        {!bare && !sky && costs.length > 1 && <div className="mt-14"><BuilderPareto points={costs} /></div>}
+        {!bare && <div className="lp-figure-note mb-6"><span aria-hidden="true">★</span> All runs at high reasoning effort</div>}
+        {bare ? (
+          <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />
+        ) : (() => {
+          const first = rows[0], last = rows[rows.length - 1];
+          const cheap = [...costs].sort((x, y) => x.cost - y.cost)[0], dear = [...costs].sort((x, y) => y.cost - x.cost)[0];
+          const zig: ZigRow[] = [{
+            title: "Which builder makes the best agent",
+            body: sky
+              ? "Share of all Skyway tickets each builder's agents passed, pooled over the architectures it was given."
+              : "Share of all Redwood tickets each builder's agent passed, over the six stages. Every agent runs on the same model; only the builder differs.",
+            points: rows.length > 1 ? [
+              <><b>{first.model}</b> leads with {P(first.rate)}.</>,
+              <><b>{last.model}</b> is last with {P(last.rate)}.</>,
+              <>A gap of {Math.round(100 * (first.rate - last.rate))} points between first and last.</>,
+            ] : [],
+            note: sky ? undefined : <>A stage where the agent never started counts all its tickets as failed. Every support agent and every simulated customer runs on {CONFOUND}; {CONFOUND} builds no agent here.</>,
+            chart: <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />,
+          }];
+          if (!sky && costs.length > 1) zig.push({
+            title: "What it cost to build",
+            body: "Each dot is one builder: tickets passed against what the builder spent on the whole run.",
+            points: [
+              <><b>{cheap.model}</b> spent the least, ${cheap.cost.toFixed(2)}, and passed {P(cheap.rate)}.</>,
+              <><b>{dear.model}</b> spent the most, ${dear.cost.toFixed(2)}, and passed {P(dear.rate)}.</>,
+              <>Spending more did not buy a better agent.</>,
+            ],
+            chart: <CostScatter dots={costs.map((c) => ({ label: c.model === CONFOUND ? `${c.model} *` : c.model, sub: c.harness, cost: c.cost, rate: c.rate, color: c.color }))} />,
+          });
+          return <Zig rows={zig} />;
+        })()}
     </Sec>
   );
 }
@@ -202,56 +239,80 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
 type Focus = { focus: FailureGroup | null; onFocus: (g: FailureGroup | null) => void };
 
 type Metas = Awaited<ReturnType<typeof loadMetas>>;
-// Failed tickets per run, from the failure_summary in its meta.json (publish-run writes it); null for a run published without it.
-function runFailures(meta: Metas[number]) {
-  const summary = meta.failure_summary;
-  if (!summary) return null;
-  return { failed: summary.failed, total: summary.total, groups: new Map(Object.entries(summary.groups).map(([k, v]) => [k.replace(/^Bot\|/, "Agent|"), v])) };
-}
 const recallPoints = (model: string, meta: Metas[number]): RecallPoint[] =>
   stagesOf(meta).flatMap((s, i) => (!crashed(s) && s.facts?.rule_recall != null ? [{ model, ...style(model), stage: i, recall: s.facts.rule_recall, pass: s.passed / s.total }] : []));
 
-/** Failed tickets by type. Redwood: one row per builder. Skyway: one row per builder too, either pooled over its runs with
- *  the prescribed architectures ("Overall") or for one architecture. */
-function Failures({ redwood, metas, skyway, skywayMetas, focus, onFocus, bare, compact }: { compact?: boolean; redwood: Builder[]; metas: Metas; skyway?: JobSummary[]; skywayMetas?: Metas; bare?: boolean } & Focus) {
+// The grader's failure groups (per-stage failure_taxonomy.by_group) under the chart's plain reasons.
+const GROUP_REASON: Record<string, ReasonKey> = {
+  "Builder / Missing knowledge (rule recall)": "recall",
+  "Builder / Build spec failure": "spec",
+  "Agent / Wrong end state (database check)": "state",
+  "Agent / Missing customer info (customer recall)": "customer",
+  "Agent / Agent crash": "crash",
+};
+const FOCUS_REASON: Record<FailureGroup, ReasonKey> = {
+  "Missing knowledge (rule recall)": "recall",
+  "Build spec failure": "spec",
+  "Wrong end state (database check)": "state",
+  "Missing customer info (customer recall)": "customer",
+  "Agent crash": "crash",
+};
+const noReasons = (): Record<ReasonKey, number> => ({ recall: 0, spec: 0, state: 0, customer: 0, crash: 0 });
+/** Failure reasons over a run's stages, plus its failed and total tickets. A stage whose agent never started counts all
+ *  its tickets as built wrong. */
+function runReasons(meta: Metas[number], into = noReasons()) {
+  let failed = 0, total = 0;
+  for (const st of stagesOf(meta)) {
+    total += st.total;
+    failed += st.total - st.passed;
+    if (crashed(st)) { into.spec += st.total; continue; }
+    for (const [g, v] of Object.entries(st.failure_taxonomy?.by_group ?? {})) if (GROUP_REASON[g]) into[GROUP_REASON[g]] += v;
+  }
+  return { parts: into, failed, total };
+}
+
+/** Why tickets failed. Redwood: one row per builder. Skyway: one row per builder too, either pooled over its runs with
+ *  the prescribed architectures ("Overall") or for one architecture. An "All builders" row on top. */
+function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact }: { compact?: boolean; redwood: Builder[]; metas: Metas; skyway?: JobSummary[]; skywayMetas?: Metas; bare?: boolean } & Focus) {
   const [env, setEnv] = useState<"redwood" | "skyway">("redwood");
   const [arch, setArch] = useState("overall");
   const sky = env === "skyway" && !!skyway?.length && !!skywayMetas;
-  const rows: FailureRow[] = [];
+  const rows: (ReasonRow & { rate: number })[] = [];
   const points: RecallPoint[] = [];
+  const sub = (failed: number, total: number) => `${fmt(Math.round(failed))} of ${fmt(total)} tickets failed`;
   if (sky) {
     const picked = skyway!.flatMap((j, i) => (arch === "overall" || j.architecture === arch ? [{ j, meta: skywayMetas![i] }] : []));
     for (const model of [...new Set(picked.map((r) => shortModel(r.j.builder.model)))]) {
       const mine = picked.filter((r) => shortModel(r.j.builder.model) === model);
-      const fs = mine.map((r) => runFailures(r.meta));
-      if (fs.some((f) => !f)) continue;
-      const groups = new Map<string, number>();
-      for (const f of fs) f!.groups.forEach((v, k) => groups.set(k, (groups.get(k) ?? 0) + v));
-      const passed = mine.reduce((a, r) => a + sum(r.j, "passed"), 0), total = mine.reduce((a, r) => a + sum(r.j, "total"), 0);
-      rows.push({
-        model,
-        harness: `${harnessName(mine[0].j.builder.agent)} · ${arch === "overall" ? `${mine.length} architectures` : arch}`,
-        failed: fs.reduce((a, f) => a + f!.failed, 0),
-        total: fs.reduce((a, f) => a + f!.total, 0),
-        rate: passed / total,
-        groups,
-        crashedStages: mine.reduce((a, r) => a + stagesOf(r.meta).filter(crashed).length, 0),
-      });
+      const parts = noReasons();
+      let failed = 0, total = 0;
+      for (const r of mine) { const x = runReasons(r.meta, parts); failed += x.failed; total += x.total; }
+      rows.push({ label: model, sub: sub(failed, total), parts, rate: total ? (total - failed) / total : 0 });
       for (const r of mine) points.push(...recallPoints(model, r.meta));
     }
   } else {
     redwood.forEach((b, i) => {
       points.push(...recallPoints(b.model, metas[i]));
-      const f = runFailures(metas[i]);
-      if (f) rows.push({ model: b.model, harness: b.harness, ...f, rate: pooled(b.job), crashedStages: stagesOf(metas[i]).filter(crashed).length });
+      const x = runReasons(metas[i]);
+      rows.push({ label: b.model === CONFOUND ? `${b.model} *` : b.model, sub: sub(x.failed, x.total), parts: x.parts, rate: pooled(b.job) });
     });
   }
   rows.sort((a, b) => b.rate - a.rate);
+  const all = noReasons();
+  for (const r of rows) for (const k of Object.keys(all) as ReasonKey[]) all[k] += r.parts[k];
+  const allSum = Object.values(all).reduce((a, b) => a + b, 0) || 1;
+  const top = REASONS.reduce((a, r) => (all[r.key] > all[a.key] ? r : a), REASONS[0]);
+  // Rule recall against pass rate, one row per model: the mean over its stages (points has one per stage that ran).
+  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const gaps = [...new Set(points.map((p) => p.model))].map((model) => {
+    const mine = points.filter((p) => p.model === model);
+    return { label: model === CONFOUND ? `${model} *` : model, a: mean(mine.map((p) => p.recall)), b: mean(mine.map((p) => p.pass)), color: style(model).color };
+  }).sort((x, y) => y.b - x.b);
   return (
     <Sec bare={bare} id="failures" className="lp-sec lp-alt" head={
           <SectionHead
             from={sky ? `Skyway Air${arch === "overall" ? "" : ` · ${SKYWAY_ARCH[arch]}`}` : "Redwood Inference"}
-            title="Failed tickets by type"
+            title="Why tickets failed"
             right={skyway?.length ? <Seg value={env} onChange={setEnv} options={[["redwood", "Redwood Inference"], ["skyway", "Skyway Air"]]} /> : undefined}
           />
         }>
@@ -262,19 +323,41 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, onFocus, bare, c
             <Seg value={arch} onChange={setArch} options={[["overall", "Overall"], ...Object.keys(SKYWAY_ARCH).filter((a) => skyway.some((j) => j.architecture === a)).map((a) => [a, a] as [string, string])]} />
           </div>
         ) : null}
-        <div className="grid gap-x-12 gap-y-10 lg:grid-cols-12">
-          <div className="lg:col-span-8"><FailureBars rows={rows} focus={focus} onFocus={onFocus} /></div>
-          <div className="lg:col-span-4">
-            <h3>Rule recall vs pass rate</h3>
-            <p className="muted mt-2 text-[15px]">An agent built with all the rules can still fail to apply them to a ticket.</p>
-            <div className="mt-4"><RecallScatter points={points} height={compact ? 200 : 300} /></div>
-          </div>
-        </div>
+        {rows.length > 0 && Object.values(all).every((v) => v === 0) && (
+          <p className="muted mb-5">These runs were graded before the current failure names, so they have no breakdown to show.</p>
+        )}
+        {bare ? (
+          <ReasonBars rows={[{ label: sky ? "All runs" : "All builders", parts: all, bold: true }, ...rows]} focus={focus ? FOCUS_REASON[focus] : null} />
+        ) : (() => {
+          const builderShare = REASONS.filter((r) => r.side === "Builder").reduce((x, r) => x + all[r.key], 0) / allSum;
+          const byGap = [...gaps].sort((x, y) => (y.a - y.b) - (x.a - x.b));
+          const zig: ZigRow[] = [{
+            title: "Why tickets failed",
+            body: "Every failed ticket is traced to a cause, and every cause to the builder or the agent.",
+            points: Object.values(all).some((v) => v > 0) ? [
+              <>The most common reason: <b>{top.name.toLowerCase()}</b>, {Math.round((100 * all[top.key]) / allSum)}% of all reasons.</>,
+              <>{P(builderShare)} of reasons trace to the builder, {P(1 - builderShare)} to the agent.</>,
+            ] : [],
+            note: "A failed ticket can have more than one reason, so bars show each reason's share of all reasons found. A stage where the agent never started counts all its tickets as built wrong.",
+            chart: <ReasonBars rows={[{ label: sky ? "All runs" : "All builders", parts: all, bold: true }, ...rows]} focus={focus ? FOCUS_REASON[focus] : null} />,
+          }];
+          if (gaps.length > 0) zig.push({
+            title: "Knowing the rules is not enough",
+            body: "For each builder: how many of the rules its tickets needed were in the agent it built, next to how many tickets the agent passed.",
+            points: [
+              <>Agents had {P(gaps.reduce((x, g) => x + g.a, 0) / gaps.length)} of the rules on average, but passed {P(gaps.reduce((x, g) => x + g.b, 0) / gaps.length)} of tickets.</>,
+              <><b>{byGap[0].label}</b> has the widest gap, {Math.round(100 * (byGap[0].a - byGap[0].b))} points.</>,
+            ],
+            note: "Averages over the stages where the agent ran.",
+            chart: <Dumbbell rows={gaps} names={["Rules the agent had", "Tickets it passed"]} />,
+          });
+          return <Zig rows={zig} />;
+        })()}
     </Sec>
   );
 }
 
-function Architecture({ runs, metas, bare }: { runs: JobSummary[]; metas: Awaited<ReturnType<typeof loadMetas>>; bare?: boolean }) {
+function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; metas: Awaited<ReturnType<typeof loadMetas>>; bare?: boolean; compact?: boolean }) {
   const arch: ArchRun[] = runs.map((j, i) => {
     const st = stagesOf(metas[i]);
     const ok = st.filter((s) => !crashed(s));
@@ -314,13 +397,70 @@ function Architecture({ runs, metas, bare }: { runs: JobSummary[]; metas: Awaite
         }>
         {order.length ? (
           <>
-            <ArchPass runs={arch} order={order} />
-            <BuilderLegend items={builders} />
-            <p className="label muted mt-2 max-w-[90ch]">Lines show 95% intervals over {arch[0]?.total} tickets.</p>
-            <div className="mt-14 grid gap-x-12 gap-y-12 lg:grid-cols-12">
-              <div className="lg:col-span-7"><ArchTradeoff runs={arch} order={order} /></div>
-              <div className="lg:col-span-5"><ArchTypes runs={arch} order={order} /></div>
-            </div>
+            {(() => {
+              const bars = order.map((a) => {
+                const rs = arch.filter((r) => r.arch === a);
+                const passed = rs.reduce((x, r) => x + r.passed, 0), total = rs.reduce((x, r) => x + r.total, 0);
+                return {
+                  label: a, sub: rs[0].name, value: passed / (total || 1),
+                  tip: <div className="muted mt-0.5">{fmt(passed)} of {fmt(total)} tickets · built by {[...new Set(rs.map((r) => r.model))].join(", ")}</div>,
+                };
+              });
+              const avgBar = bars.reduce((x, r) => x + r.value, 0) / (bars.length || 1);
+              const above = bars.filter((r) => r.value > avgBar).length;
+              // first and last stage per design, and each design's pass rate per ticket type
+              const slope = order.map((a) => {
+                const rs = arch.filter((r) => r.arch === a);
+                const first = rs.reduce((x, r) => x + (r.stages[0] ?? 0), 0) / rs.length;
+                const last = rs.reduce((x, r) => x + (r.stages[r.stages.length - 1] ?? 0), 0) / rs.length;
+                return { label: a, sub: rs[0].name, a: first, b: last };
+              });
+              const lastStage = Math.max(...arch.map((r) => r.stages.length)) - 1;
+              const steadiest = [...slope].sort((p, q) => q.b - q.a - (p.b - p.a))[0];
+              const worst = [...slope].sort((p, q) => p.b - p.a - (q.b - q.a))[0];
+              const fell = slope.filter((s) => s.b - s.a < -0.05).length;
+              const typeRate = (a: string, k: TicketType) => { const c = arch.filter((r) => r.arch === a).flatMap((r) => (r.types[k] ? [r.types[k]!] : [])); const n = c.reduce((x, [, m]) => x + m, 0); return n ? c.reduce((x, [p]) => x + p, 0) / n : null; };
+              const bestChanged = [...order].sort((p, q) => (typeRate(q, "adaptability") ?? 0) - (typeRate(p, "adaptability") ?? 0))[0];
+              const bestSame = [...order].sort((p, q) => (typeRate(q, "regression") ?? 0) - (typeRate(p, "regression") ?? 0))[0];
+              const nameOf = (a: string) => arch.find((r) => r.arch === a)?.name ?? a;
+              const p = (v: number | null) => (v == null ? "–" : P(v));
+              const barsChart = <BenchmarkBars rows={bars} />;
+              if (bare) return barsChart;
+              return (
+                <Zig rows={[
+                  {
+                    title: "Which design passes most",
+                    body: <>Share of all {arch[0]?.total} Skyway tickets passed by each design, all built by {builders.map((b) => b.model).join(", ")}. The dashed line is the average of the six.</>,
+                    points: [
+                      <><b>{bars[0].sub}</b> passes most, {P(bars[0].value)}.</>,
+                      <><b>{bars[bars.length - 1].sub}</b> passes least, {P(bars[bars.length - 1].value)}.</>,
+                      <>{above} of {bars.length} designs beat the average of {P(avgBar)}.</>,
+                    ],
+                    chart: barsChart,
+                  },
+                  {
+                    title: "Which designs hold up as the docs change",
+                    body: <>Each line joins a design's pass rate at the first stage to the last, after {lastStage} rounds of doc changes. Blue held up or rose; red fell.</>,
+                    points: [
+                      <><b>{nameOf(steadiest.label)}</b> {steadiest.b - steadiest.a > 0.005 ? "rose the most" : "held up best"}: {p(steadiest.a)} → {p(steadiest.b)}.</>,
+                      <><b>{nameOf(worst.label)}</b> fell the most: {p(worst.a)} → {p(worst.b)}.</>,
+                      <>{fell} of {slope.length} designs ended lower than they started.</>,
+                    ],
+                    chart: <SlopeChart left="Stage 0" right={`Stage ${lastStage}`} rows={slope} />,
+                  },
+                  {
+                    title: "Which tickets each design gets right",
+                    body: "Tickets split by what they test: a rule that is new at that stage, a rule from before that didn't change, or one that changed.",
+                    points: [
+                      <><b>{nameOf(bestChanged)}</b> is best at rules that changed ({p(typeRate(bestChanged, "adaptability"))}).</>,
+                      <><b>{nameOf(bestSame)}</b> is best at keeping rules that didn't change ({p(typeRate(bestSame, "regression"))}).</>,
+                      <>No design leads in every column.</>,
+                    ],
+                    chart: <ArchTypes runs={arch} order={order} />,
+                  },
+                ]} />
+              );
+            })()}
           </>
         ) : (
           <SkywayEmpty what="this chart" />
@@ -329,36 +469,41 @@ function Architecture({ runs, metas, bare }: { runs: JobSummary[]; metas: Awaite
   );
 }
 
+/** What each change to the docs did: one panel per pack, a bar per builder for the points it gained or lost against its own
+ *  R-complete score (so a weak complete-docs build does not skew the rest), and the mean of those changes on top. */
 function Packs({ packs, bare }: { packs: Builder[]; bare?: boolean }) {
-  const builders: PackBuilder[] = packs.map((b) => ({
-    model: b.model,
-    ...style(b.model),
+  const PANEL: [string, string][] = [["Rules split up", "R-fragmented"], ["Facts removed", "R-incomplete"], ["Contradictions added", "R-conflicting"], ["Noise added", "R-noisy"]];
+  const rows = packs.map((b) => ({
+    label: b.model === CONFOUND ? `${b.model} *` : b.model,
     pass: CONDITIONS.map((_, i) => {
       const s = b.job.scores[i];
       return !s || crashed({ passed: s.passed ?? 0 }) ? null : (s.passed ?? 0) / (s.total || 1);
     }),
   }));
-  const never = builders.flatMap((b) => b.pass.flatMap((v, i) => (v == null ? [`${b.model} (${CONDITIONS[i]})`] : [])));
+  const panels = PANEL.map(([title, term], k) => {
+    const deltas = rows.map((r) => ({ label: r.label, base: r.pass[0], v: r.pass[k + 1], d: r.pass[0] == null || r.pass[k + 1] == null ? null : r.pass[k + 1]! - r.pass[0]! }));
+    return { title, term, rows: deltas };
+  });
   return (
     <Sec bare={bare} id="packs" className="lp-sec lp-alt" head={
           <SectionHead
             from="Knowledge perturbations"
-            title="Pass rate by knowledge perturbation"
+            title="How changed docs move the score"
           />
         }>
-        <PacksChart builders={builders} />
-        <BuilderLegend items={builders} />
-        <ul className="mt-5 grid gap-x-8 gap-y-1.5 text-[14px] sm:grid-cols-2 lg:grid-cols-4">
-          <li><span className="font-medium">R-fragmented</span><span className="muted">: rules split across docs</span></li>
-          <li><span className="font-medium">R-incomplete</span><span className="muted">: some needed facts removed</span></li>
-          <li><span className="font-medium">R-conflicting</span><span className="muted">: contradicting versions added</span></li>
-          <li><span className="font-medium">R-noisy</span><span className="muted">: irrelevant and stale pages added</span></li>
-        </ul>
-        <p className="label muted mt-4 max-w-[90ch]">
-          Whiskers show one standard deviation across builders, whose R-complete scores vary a lot. Colour only shows whether a pack
-          scored above or below R-complete.
-          {never.length > 0 && <> The agent never started for {never.join(", ")}, so those runs are left out of the bars.</>}
-        </p>
+        {bare ? <ChangePanels panels={panels} /> : (() => {
+          const mid = panels.map((p) => { const ds = p.rows.flatMap((r) => (r.d == null ? [] : [r.d])); return { title: p.title, m: median(ds), n: ds.length, lower: ds.filter((d) => d < -0.005).length, higher: ds.filter((d) => d > 0.005).length }; });
+          return (
+            <Zig rows={[{
+              title: "How changed docs move the score",
+              body: "Each bar is one builder: points it gained (right) or lost (left) on a changed pack, against its own score with the complete docs. The big number on each panel is the typical change: half the builders did better than it, half did worse.",
+              points: mid.map((x) => <><b>{x.title}</b>: {x.lower} of {x.n} builders scored lower, {x.higher} higher. Typical change {signed(x.m)} points.</>),
+              note: "Same tickets in every pack; only the docs change.",
+              chart: <ChangePanels panels={panels} />,
+              wide: true,
+            }]} />
+          );
+        })()}
     </Sec>
   );
 }
@@ -467,7 +612,7 @@ function Environments({ envs }: { envs: Env[] }) {
   );
 }
 
-function Closing({ last }: { last: string | null }) {
+function Closing({ last, skywayTask }: { last: string | null; skywayTask: string }) {
   return (
     <footer className="lp-sec lp-foot flex flex-col" style={{ background: "var(--ink)", color: "var(--bg)" }}>
       <div className="lp-wrap flex flex-1 flex-col">
@@ -483,7 +628,7 @@ function Closing({ last }: { last: string | null }) {
             <div>
               <div className="label" style={{ opacity: 0.6 }}>Environments</div>
               <ul className="mt-2 space-y-1.5">
-                <li><Link className="link" to={`/t/${ENV.skywayArch}`}>Skyway Air</Link></li>
+                <li><Link className="link" to={`/t/${skywayTask}`}>Skyway Air</Link></li>
                 <li><Link className="link" to={`/t/${ENV.redwood}`}>Redwood Inference</Link></li>
                 <li><Link className="link" to={`/t/${ENV.packs}`}>Knowledge perturbations</Link></li>
               </ul>
@@ -499,7 +644,7 @@ function Closing({ last }: { last: string | null }) {
             </div>
           </div>
         </div>
-        <div className="lp-wordmark lp-wordmark--ghost" aria-hidden>Resolve Bench</div>
+        <div className="lp-wordmark lp-wordmark--ghost lp-wordmark--long" aria-hidden>Context to Agent Benchmark</div>
       </div>
     </footer>
   );
@@ -562,7 +707,7 @@ export default function Home() {
       word: "Fixed architecture",
       line: "An airline. Each run uses one of six set agent architectures.",
       rows: [["Stages", "6"], ["Docs", "9,999"], ["Test cases", c.skywayArch[0] ? fmt(tickets(c.skywayArch[0])) : "–"]],
-      ...(c.skywayArch.length ? { href: `/t/${ENV.skywayArch}`, foot: "See the runs" } : { foot: "First runs coming" }),
+      ...(c.skywayArch.length ? { href: `/t/${c.skywayArchTask}`, foot: "See the runs" } : { foot: "First runs coming" }),
     },
     {
       name: "Redwood Inference",
@@ -575,7 +720,7 @@ export default function Home() {
     {
       name: "Knowledge perturbations",
       word: "Changed docs",
-      line: "Redwood's first-stage tickets, with the docs rewritten five ways.",
+      line: "A separate set of Redwood Inference tickets, with the docs rewritten five ways.",
       rows: [["Stages", "1 per pack, 5 packs"], ["Docs", "22 to 60 per pack"], ["Test cases", String(c.packs[0]?.job.scores[0]?.total ?? 67)]],
       href: `/t/${ENV.packs}`,
       foot: "See the runs",
@@ -594,13 +739,14 @@ export default function Home() {
   return (
     <div className="lp min-h-screen">
       <Nav slotRef={navSlot} dividerRef={navDivider} />
-      <Link ref={flyTitle} to="/#top" className="lp-title lp-fly" aria-hidden tabIndex={-1}>Resolve Bench</Link>
+      <Link ref={flyTitle} to="/#top" className="lp-title lp-fly" aria-hidden tabIndex={-1}>C2A</Link>
       <main>
         <section id="top" className="lp-hero">
           <div className="lp-wrap">
             <div className="grid gap-x-12 gap-y-12 lg:grid-cols-12 lg:items-center">
               <div className="lg:col-span-7">
-                <h1 ref={heroName} className="lp-title" style={{ opacity: 0 }}>Resolve Bench</h1>
+                <h1 ref={heroName} className="lp-title" style={{ opacity: 0 }}>C2A</h1>
+                <div className="mt-3" style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(22px, 1vw + 16px, 30px)", lineHeight: 1.2 }}>Context to Agent Benchmark</div>
                 <p className="lead muted mt-5 max-w-[40ch]" style={{ fontSize: "clamp(20px, 0.8vw + 16px, 26px)", lineHeight: 1.35 }}>
                   Can an AI agent learn and adapt to changing business context to resolve customer issues?
                 </p>
@@ -621,7 +767,7 @@ export default function Home() {
           <Charts redwood={c.redwood} packs={c.packs} skywayArch={c.skywayArch} focus={failFocus} onFocus={setFailFocus} />
         </Suspense>
       </main>
-      <Closing last={c.last} />
+      <Closing last={c.last} skywayTask={c.skywayArchTask} />
     </div>
   );
 }

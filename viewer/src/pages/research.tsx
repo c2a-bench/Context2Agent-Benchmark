@@ -513,6 +513,12 @@ export default function OverviewPage() {
               <MiniRate label="Tickets on changed rules only (staleness)" passed={r.pool("staleness").passed} total={r.pool("staleness").total} />
               <MiniRate label="Tickets on unchanged rules (regression)" passed={r.pool("regression").passed} total={r.pool("regression").total} />
             </div>
+          ) : r.kCond.length > 1 ? (
+            // Knowledge packs: the docs change from pack to pack, but every pack has the same tickets.
+            <p className="font-sans text-sm text-muted-foreground">
+              Every pack uses the same tickets, so there are no old or new tickets to compare. See{" "}
+              <Link href={`/runs/${job}/research/rq5`} className="link-text">Doc packaging</Link> for how each pack scored.
+            </p>
           ) : (
             <p className="font-sans text-sm text-muted-foreground">This run does not change the docs between stages.</p>
           )}
