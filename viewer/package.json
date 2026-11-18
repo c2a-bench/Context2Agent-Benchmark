@@ -21,7 +21,8 @@
     "smoke:pages": "tsx scripts/smoke-pages.ts",
     "check:tools": "tsc --project tsconfig.tools.json --noEmit",
     "test:data": "tsx --test scripts/data/*.test.ts",
-    "test:pages": "tsx --test scripts/pages/*.test.ts"
+    "test:pages": "tsx --test scripts/pages/*.test.ts",
+    "pin:production": "tsx scripts/pin-production.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",

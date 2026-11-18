@@ -130,4 +130,18 @@ Tests work without a real dataset or secrets. Pages deployment is disabled until
 `viewer/datasets/production.json` identifies verified commits for both public repositories. Large data is never
 committed to GitHub or bundled into the frontend. Do not embed a Hugging Face token in the app.
 
+### Publish new results
+
+The site is built with fixed commits of both datasets (`viewer/datasets/production.json`), so a bad upload never
+reaches it. After new runs (or a new benchmark version) are on Hugging Face's `main`:
+
+```bash
+cd viewer && npm run pin:production
+```
+
+It looks up both datasets' latest commits, checks without a token that every run points to that exact benchmark commit
+(and with `--full`, every file's SHA-256), and writes `production.json`. Commit and push it: the Pages workflow
+rebuilds and deploys the site. Runs must be linked to the benchmark commit they are scored against before they are
+published; the command refuses otherwise.
+
 - [Viewer, publishing tools, and deployment setup](viewer/README.md)
