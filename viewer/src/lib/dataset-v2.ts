@@ -25,6 +25,28 @@ export type BuilderRecord = { format: "normalized-events-v1"; redacted: true; ev
 export type LeaderboardRow = JobSummary & { domain: string; benchmark_revision: string | null; benchmark_inventory_sha256: string };
 export const canonicalDomain = (domain: string) => ["skyway-arch", "skyway-arch-large", "skyway-arch-regraded"].includes(domain) ? "skyway-air" : domain;
 
+/** The bench lists each ticket's pass checks ({check, field, value, list, json}) and keeps a rule's facts on the rule
+ *  (rules[].facts); the pages read the grader's form: pass as {check: {field: value}} and a separate rule_facts list.
+ *  Older benches already have that form and pass through unchanged. */
+type PassCheck = { check: string; field: string | null; value: string[]; list: boolean; json: boolean };
+type RuleWithFacts = BenchmarkCase["rules"][number] & { facts?: { id: string; text?: string }[] };
+export function caseView(c: BenchmarkCase): BenchmarkCase {
+  const raw = c as unknown as { pass: unknown; rules: RuleWithFacts[]; rule_facts?: { id: string; text: string }[] };
+  let pass = raw.pass as Record<string, unknown>;
+  if (Array.isArray(raw.pass)) {
+    pass = {};
+    for (const p of raw.pass as PassCheck[]) {
+      const vals = p.json ? p.value.map((v) => JSON.parse(v) as unknown) : [...p.value];
+      const val = p.list ? vals : vals[0];
+      if (p.field == null) pass[p.check] = val;
+      else (pass[p.check] = (pass[p.check] as Record<string, unknown> | undefined) ?? {}, (pass[p.check] as Record<string, unknown>)[p.field] = val);
+    }
+  }
+  const rule_facts = raw.rule_facts ?? raw.rules.flatMap((r) => (r.facts ?? []).map((f) => ({ id: f.id, text: f.text ?? r.text })));
+  const rules = raw.rules.map(({ facts: _facts, ...r }) => r);
+  return { ...c, pass, rules, rule_facts } as BenchmarkCase;
+}
+
 /** Reconstruct the old UI projection without duplicating benchmark definitions in each run. */
 export function caseTicketBase(c: BenchmarkCase): Partial<Ticket> {
   const tags = c.tags as Record<string, unknown>;
@@ -62,7 +84,7 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
     return value;
   });
   const stage = (domain: string, job: string, n: number) => memo(`stage:${domain}/${job}/${n}`, () => read<StageRecord>("runs", `${domain}/${job}/stages/${n}/stage.json`));
-  const definitions = (domain: string, n: number) => memo(`cases:${domain}/${n}`, () => read<BenchmarkCase[]>("benchmark", `${domain}/stages/${n}/cases.json`));
+  const definitions = (domain: string, n: number) => memo(`cases:${domain}/${n}`, async () => (await read<BenchmarkCase[]>("benchmark", `${domain}/stages/${n}/cases.json`)).map(caseView));
   const results = (domain: string, job: string, n: number) => memo(`results:${domain}/${job}/${n}`, () => read<ResultRecord[]>("runs", `${domain}/${job}/stages/${n}/results.json`));
   const changes = (domain: string, n: number) => memo(`changes:${domain}/${n}`, () => read<StageChanges>("benchmark", `${domain}/stages/${n}/changes.json`));
   const index = () => memo("index", async (): Promise<PublishedIndex> => ({ updatedAt: release.runs.revision, prefix: "", tasks: await Promise.all(release.domains.map(async (domain) => {

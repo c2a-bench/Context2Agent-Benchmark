@@ -28,13 +28,29 @@ PASS_KEYS = ("expect", "contains", "not_contains", "unchanged", "required_calls"
 TAG_KEYS = ("group", "behavior", "info_type", "twin", "change_type", "prompt_cap_tokens")
 
 
+def pass_dict(p):
+    """A ticket's pass checks as the grader has them. The bench lists them ({check, field, value, list, json});
+    older benches kept the grader's own form."""
+    if isinstance(p, dict):
+        return p
+    out = {}
+    for c in p or []:
+        vals = [json.loads(v) for v in c["value"]] if c.get("json") else list(c["value"])
+        val = vals if c.get("list") else vals[0]
+        if c.get("field") is None:
+            out[c["check"]] = val
+        else:
+            out.setdefault(c["check"], {})[c["field"]] = val
+    return out
+
+
 def derive_case(t):
     """The grader's ticket fields that follow from a published ticket (the rest is in its `grading` field)."""
     d = {"id": t["id"], "title": t.get("title", ""), "test": t.get("test", ""), "matters": t.get("matters", ""),
          "rules": [r["id"] for r in t.get("rules", [])],
          "input": {"ticket_id": t["ticket"], "customer_id": t["customer"]["id"], "message": t.get("opening", "")},
          "customer": t.get("brief", "")}
-    d.update({k: v for k, v in (t.get("pass") or {}).items() if k in PASS_KEYS})
+    d.update({k: v for k, v in pass_dict(t.get("pass")).items() if k in PASS_KEYS})
     d.update({k: v for k, v in (t.get("tags") or {}).items() if k in TAG_KEYS and v is not None})
     return d
 
