@@ -41,7 +41,7 @@ const poly = (pts: [number, number][]) => pts.map((p) => p.map((x) => x.toFixed(
 // ---- the five states ----
 /** The doc page, and the chat window stacked behind it, nudged up and right (the knowledge is documents and chats). */
 const DOC: Box = [72, 34, 248, 256];
-const DOC_STACK: [number, number][] = [[20, -72]];
+const DOC_STACK: [number, number][] = [[20, -84]];
 const S0: State = (() => {
   const order = ["f0", "A", "f1", "f2", "B", "f3", "C", "f4", "D", "f5", "E", "f6", "F", "f7"];
   const w: Record<string, number> = { f0: 100, A: 196, f1: 170, f2: 214, B: 150, f3: 200, C: 208, f4: 140, D: 180, f5: 216, E: 160, f6: 190, F: 204, f7: 120 };
@@ -270,11 +270,11 @@ function Figure({ k, still }: { k: number; still: boolean }) {
             {[0, 1, 2].map((d) => <circle key={d} cx={DOC[0] + 14 + d * 10} cy={DOC[1] + 10} r="2.4" className="j-side-dark j-edge" />)}
             <line x1={DOC[0]} y1={DOC[1] + 21} x2={DOC[0] + DOC[2]} y2={DOC[1] + 21} className="j-edge" />
             {[
-              { x: DOC[0] + 16, y: DOC[1] + 27, w: 112, agent: false },
-              { x: DOC[0] + DOC[2] - 8 - 124, y: DOC[1] + 47, w: 124, agent: true },
+              { x: DOC[0] + 16, y: DOC[1] + 26, w: 112, agent: false },
+              { x: DOC[0] + DOC[2] - 4 - 124, y: DOC[1] + 52, w: 124, agent: true },
             ].map((b, i) => (
               <g key={i}>
-                {!b.agent && <path d={`M${b.x + 12} ${b.y + 16}l-5 4.5l13 -4.5Z`} className="j-edge j-paper" />}
+                <path d={b.agent ? `M${b.x + b.w - 12} ${b.y + 16}l5 5l-13 -5Z` : `M${b.x + 12} ${b.y + 16}l-5 5l13 -5Z`} className={`j-edge ${b.agent ? "j-bubble-agent" : "j-paper"}`} />
                 <rect x={b.x} y={b.y} width={b.w} height="17" rx="8.5" className={`j-edge ${b.agent ? "j-bubble-agent" : "j-paper"}`} />
                 <rect x={b.x + 10} y={b.y + 7.5} width={b.w - 32} height="3" rx="1.5" style={{ fill: "color-mix(in oklab, var(--ink) 30%, transparent)" }} />
               </g>

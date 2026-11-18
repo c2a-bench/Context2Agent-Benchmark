@@ -39,12 +39,11 @@ export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpa
           <Link to="/blog" className="link" style={{ textDecorationColor: "transparent" }}>Blog</Link>
         </nav>
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
-          {/* below lg the section links are hidden, so Blog moves here to stay reachable */}
-          <Link to="/blog" className="link px-2 text-[15px] font-medium lg:hidden" style={{ textDecorationColor: "transparent" }}>Blog</Link>
+          {/* below lg the section links are hidden, so Blog moves here to stay reachable (on the home page the hero's Read the blog button does that job) */}
+          {!home && <Link to="/blog" className="link px-2 text-[15px] font-medium lg:hidden" style={{ textDecorationColor: "transparent" }}>Blog</Link>}
           {/* Landing pages redefine --muted as a text grey, so the toggle's own hover:bg-muted would turn dark and hide its
               icon: here the hover is a light tint of the ink instead. */}
           <ThemeToggle className="hover:bg-[color-mix(in_srgb,var(--ink)_8%,transparent)] hover:text-[var(--ink)]" />
-          <Link to={to("#results")} className="btn btn--primary max-sm:hidden">See the results</Link>
         </div>
       </div>
     </header>

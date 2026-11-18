@@ -643,7 +643,7 @@ function Closing({ last, skywayTask }: { last: string | null; skywayTask: string
             customer requests across voice and chat, with full visibility on one CX platform.
           </p>
         </div>
-        <div className="mt-auto pt-16">
+        <div className="mt-14 sm:mt-16">
           <div className="grid gap-8 border-t pt-8 text-[15px] sm:grid-cols-2" style={{ borderColor: "color-mix(in srgb, var(--bg) 20%, transparent)" }}>
             <div>
               <div className="label" style={{ opacity: 0.6 }}>Environments</div>
@@ -653,18 +653,21 @@ function Closing({ last, skywayTask }: { last: string | null; skywayTask: string
                 <li><Link className="link" to={`/t/${ENV.packs}`}>Knowledge perturbations</Link></li>
               </ul>
             </div>
-            <div className="text-[14px]" style={{ opacity: 0.75 }}>
-              <div>Data updated {day(last)}.</div>
-              <div className="mt-2 flex items-center gap-2">
-                <span>Built with</span>
-                <a href="https://newmeasure.ai" target="_blank" rel="noreferrer" className="flex items-center">
-                  <img src={publicAsset("new-measure.png")} alt="New Measure" className="block h-[0.8rem] w-auto -translate-y-[2px] invert dark:invert-0" />
-                </a>
-              </div>
+            <div>
+              <div className="label" style={{ opacity: 0.6 }}>Data</div>
+              <ul className="mt-2 space-y-1.5 text-[14px]" style={{ opacity: 0.75 }}>
+                {last && <li>Updated {day(last)}</li>}
+                <li className="flex items-center gap-2">
+                  <span>Built with</span>
+                  <a href="https://newmeasure.ai" target="_blank" rel="noreferrer" className="flex items-center">
+                    <img src={publicAsset("new-measure.png")} alt="New Measure" className="block h-[0.8rem] w-auto -translate-y-[2px] invert dark:invert-0" />
+                  </a>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
-        <div className="lp-wordmark lp-wordmark--ghost lp-wordmark--long" aria-hidden>Context to Agent Benchmark</div>
+        <div className="lp-wordmark lp-wordmark--ghost lp-wordmark--long" aria-hidden>Context2Agent Benchmark</div>
       </div>
     </footer>
   );
@@ -769,6 +772,10 @@ export default function Home() {
                 <p className="lead muted mt-5 max-w-[40ch]" style={{ fontSize: "clamp(20px, 0.8vw + 16px, 26px)", lineHeight: 1.35 }}>
                   Can an AI agent learn and adapt to changing business context to resolve customer issues?
                 </p>
+                <div className="mt-9 flex flex-wrap items-center gap-3">
+                  <Link to="/#results" className="btn btn--primary">See the results</Link>
+                  <Link to="/blog" className="btn btn--secondary">Read the blog</Link>
+                </div>
               </div>
               <div className="lg:col-span-5"><HeroEnvs picks={picks} cases={facts[0].value} /></div>
             </div>
