@@ -39,9 +39,9 @@ const mstr = (m: M) => `matrix(${m.map((x) => +x.toFixed(3)).join(" ")})`;
 const poly = (pts: [number, number][]) => pts.map((p) => p.map((x) => x.toFixed(1)).join(",")).join(" ");
 
 // ---- the five states ----
-/** The doc page, and the two docs stacked behind it (the rest of the knowledge base). */
+/** The doc page, and the chat window stacked behind it, nudged up and right (the knowledge is documents and chats). */
 const DOC: Box = [72, 34, 248, 256];
-const DOC_STACK: [number, number][] = [[38, -18], [14, -50]];
+const DOC_STACK: [number, number][] = [[20, -66]];
 const S0: State = (() => {
   const order = ["f0", "A", "f1", "f2", "B", "f3", "C", "f4", "D", "f5", "E", "f6", "F", "f7"];
   const w: Record<string, number> = { f0: 100, A: 196, f1: 170, f2: 214, B: 150, f3: 200, C: 208, f4: 140, D: 180, f5: 216, E: 160, f6: 190, F: 204, f7: 120 };
@@ -74,7 +74,7 @@ const S2: State = (() => {
   bars.A = [[262, 43, 77, 7], "fact"];
   bars.f1 = [[262, 60, 53, 7], "filler"];
   bars.B = [[262, 77, 67, 7], "fact"];
-  return { card: AGENT, rx: 34, t: 6, plane: DESK, bars };
+  return { card: AGENT, rx: 34, t: 9, plane: DESK, bars };
 })();
 
 const BUBBLES: { box: Box; who: "customer" | "agent"; dashed?: boolean }[] = [
@@ -133,7 +133,7 @@ const VB = (() => {
   for (const s of STATES) pts.push(...rectPts(matrixOf(s.plane), s.card));
   const xs = pts.map((p) => p[0]);
   const ys = pts.map((p) => p[1]);
-  const [x0, y0] = [Math.min(...xs) - 10, Math.min(...ys) - 10];
+  const [x0, y0] = [Math.min(...xs) - 36, Math.min(...ys) - 10]; // 36 each side: room for the labels that run past the sheet
   return [x0, y0, Math.max(...xs) + 36 - x0, Math.max(...ys) + 14 - y0].map((n) => Math.round(n));
 })();
 
@@ -257,59 +257,73 @@ function Figure({ k, still }: { k: number; still: boolean }) {
   const on = (...ks: number[]) => ({ className: "j-deco", "data-states": ks.join(" ") });
   return (
     <div className="lp-jfig">
-      <div key={k} className="lp-jcount j-count-in mono num" aria-live="polite">{COUNTER[k]}</div>
       <svg ref={svg} viewBox={VB.join(" ")} role="img" aria-label={`${STEPS[k].name}: ${COUNTER[k]}`}>
         <defs>
           <filter id="j-blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="8" /></filter>
           <filter id="j-blur-s" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="3" /></filter>
         </defs>
-        {/* docs stacked behind the page */}
+        {/* a chat window above the page: title bar, and a short exchange */}
         <g {...on(0)}>
-          {DOC_STACK.map(([dx, dy], i) => (
-            <g key={i} transform={`translate(${dx} ${dy})`}>
-              <rect x={DOC[0] + 2.2} y={DOC[1] - 1.7} width={DOC[2]} height={DOC[3]} rx="4" className="j-side-dark j-edge" />
-              <rect x={DOC[0]} y={DOC[1]} width={DOC[2]} height={DOC[3]} rx="4" className="j-paper j-edge" />
-              {i === 0 && [0, 1, 2, 3, 4, 5].map((r) => <rect key={r} x={DOC[0] + 22} y={DOC[1] + 22 + r * 15.5} width={[100, 176, 148, 186, 130, 166][r]} height="6" rx="2" className="j-faint" />)}
-              {i === 1 && (
-                <>
-                  {[0, 1, 2].map((d) => <circle key={d} cx={DOC[0] + 14 + d * 9} cy={DOC[1] + 8} r="2.2" className="j-side-dark j-edge" />)}
-                  <line x1={DOC[0]} y1={DOC[1] + 16} x2={DOC[0] + DOC[2]} y2={DOC[1] + 16} className="j-edge" />
-                  <rect x={DOC[0] + 12} y={DOC[1] + 22} width="104" height="12" rx="6" className="j-paper j-edge" />
-                  <rect x={DOC[0] + 20} y={DOC[1] + 26.5} width="62" height="3" rx="1.5" style={{ fill: "color-mix(in oklab, var(--ink) 30%, transparent)" }} />
-                  <rect x={DOC[0] + DOC[2] - 128} y={DOC[1] + 37} width="116" height="12" rx="6" className="j-bubble-agent j-edge" />
-                  <rect x={DOC[0] + DOC[2] - 120} y={DOC[1] + 41.5} width="78" height="3" rx="1.5" style={{ fill: "color-mix(in oklab, var(--ink) 30%, transparent)" }} />
-                </>
-              )}
-            </g>
-          ))}
+          <g transform={`translate(${DOC_STACK[0][0]} ${DOC_STACK[0][1]})`}>
+            <rect x={DOC[0] + 2.2} y={DOC[1] - 1.7} width={DOC[2]} height={DOC[3]} rx="4" className="j-side-dark j-edge" />
+            <rect x={DOC[0]} y={DOC[1]} width={DOC[2]} height={DOC[3]} rx="4" className="j-paper j-edge" />
+            {[0, 1, 2].map((d) => <circle key={d} cx={DOC[0] + 14 + d * 10} cy={DOC[1] + 10} r="2.4" className="j-side-dark j-edge" />)}
+            <line x1={DOC[0]} y1={DOC[1] + 21} x2={DOC[0] + DOC[2]} y2={DOC[1] + 21} className="j-edge" />
+            {[
+              { x: DOC[0] + 16, y: DOC[1] + 27, w: 112, agent: false },
+              { x: DOC[0] + DOC[2] - 16 - 124, y: DOC[1] + 45, w: 124, agent: true },
+            ].map((b, i) => (
+              <g key={i}>
+                {!b.agent && <path d={`M${b.x + 12} ${b.y + 16}l-5 4.5l13 -4.5Z`} className="j-edge j-paper" />}
+                <rect x={b.x} y={b.y} width={b.w} height="17" rx="8.5" className={`j-edge ${b.agent ? "j-bubble-agent" : "j-paper"}`} />
+                <rect x={b.x + 10} y={b.y + 7.5} width={b.w - 32} height="3" rx="1.5" style={{ fill: "color-mix(in oklab, var(--ink) 30%, transparent)" }} />
+              </g>
+            ))}
+          </g>
         </g>
         {/* the sheet, with its thickness */}
         <rect data-bar="card-shadow" className="j-halo" filter="url(#j-blur)" />
         <rect data-bar="card-back" className="j-side-dark j-edge" />
         <rect data-bar="card" className="j-paper j-edge" />
-        {/* support agent: antenna, headset and face on the head; the speech bubble sits behind the bars that fly into it */}
+        {/* support agent: a flat robot head with a little depth (edge, soft shadow, cups and bubble with thickness), a headset, and a speech bubble that carries what it says */}
         <g {...on(2)}>
           <OnSheet s={2}>
             <g transform="translate(213 175) scale(1.2) translate(-213 -160)">
-            <line x1="170" y1="96" x2="170" y2="76" className="j-stroke" />
-            <circle cx="170" cy="72" r="5" className="j-ink" />
-            <path d="M94 146C94 69 246 69 246 146" className="j-stroke" fill="none" />
-            <rect x="88" y="138" width="12" height="38" rx="6" className="j-edge" style={{ fill: "var(--action)" }} />
-            <rect x="240" y="138" width="12" height="38" rx="6" className="j-edge" style={{ fill: "var(--action)" }} />
-            <path d="M94 174C94 204 110 212 130 208" className="j-stroke" fill="none" />
-            <circle cx="133" cy="208" r="3.2" className="j-ink" />
-            <circle cx="146" cy="150" r="7" className="j-ink" />
-            <circle cx="194" cy="150" r="7" className="j-ink" />
-            <path d="M152 186Q170 198 188 186" className="j-stroke" fill="none" />
-            <rect x="242" y="38" width="98" height="64" rx="14" className="j-halo" filter="url(#j-blur-s)" />
-            <path d="M256 97L246 114L276 97Z" className="j-paper j-edge" />
-            <rect x="240" y="34" width="98" height="64" rx="14" className="j-paper j-edge" />
+              <rect x="112" y="224" width="116" height="14" rx="7" className="j-halo" filter="url(#j-blur-s)" />
+              <rect x="105" y="101" width="130" height="116" rx="19" className="j-groove" fill="none" />
+              <rect x="164" y="91" width="12" height="6" rx="2" className="j-side j-edge" />
+              <line x1="170" y1="91" x2="170" y2="76" className="j-stroke" />
+              <circle cx="170" cy="72" r="5" className="j-ink" />
+              <circle cx="168.4" cy="70.4" r="1.6" style={{ fill: "var(--bg)", opacity: 0.85 }} />
+              <path d="M94 146C94 69 246 69 246 146" className="j-stroke" fill="none" />
+              {[88, 240].map((x) => (
+                <g key={x}>
+                  <rect x={x + 4} y="135" width="12" height="38" rx="6" className="j-side-dark j-edge" />
+                  <rect x={x} y="138" width="12" height="38" rx="6" className="j-edge" style={{ fill: "var(--action)" }} />
+                </g>
+              ))}
+              <path d="M94 174C94 204 110 212 130 208" className="j-stroke" fill="none" />
+              <circle cx="133" cy="208" r="3.2" className="j-ink" />
+              {[146, 194].map((x) => (
+                <g key={x}>
+                  <circle cx={x} cy="150" r="8" className="j-ink" />
+                  <circle cx={x - 2.4} cy="147.6" r="2.2" style={{ fill: "var(--bg)", opacity: 0.85 }} />
+                </g>
+              ))}
+              <path d="M152 188Q170 200 188 188" className="j-stroke" fill="none" />
+              <rect x="242" y="37" width="98" height="64" rx="14" className="j-halo" filter="url(#j-blur-s)" />
+              <rect x="243" y="32" width="98" height="64" rx="14" className="j-side-dark j-edge" />
+              <path d="M256 97L246 114L276 97Z" className="j-paper j-edge" />
+              <rect x="240" y="34" width="98" height="64" rx="14" className="j-paper j-edge" />
             </g>
           </OnSheet>
         </g>
         {/* doc page: folded corner */}
         <g {...on(0)}>
-          <OnSheet s={0}><path d={`M${DOC[0] + DOC[2] - 20} ${DOC[1]} L${DOC[0] + DOC[2]} ${DOC[1] + 20} L${DOC[0] + DOC[2] - 20} ${DOC[1] + 20} Z`} className="j-side j-edge" /></OnSheet>
+          <OnSheet s={0}>
+            <path d={`M${DOC[0] + DOC[2] - 20} ${DOC[1] - 2} H${DOC[0] + DOC[2] + 2} V${DOC[1] + 20} Z`} className="j-paper" />
+            <path d={`M${DOC[0] + DOC[2] - 20} ${DOC[1]} L${DOC[0] + DOC[2]} ${DOC[1] + 20} H${DOC[0] + DOC[2] - 20} Z`} className="j-side j-edge" strokeLinejoin="round" />
+          </OnSheet>
         </g>
         {/* prompt file: header, size cap, the fact that floated off */}
         <g {...on(1)}>
@@ -367,6 +381,7 @@ function Figure({ k, still }: { k: number; still: boolean }) {
         </g>
         {IDS.map((id) => <rect key={id} data-bar={id} rx="2" className="j-bar" />)}
       </svg>
+      <div key={k} className="lp-jcount j-count-in mono num" aria-live="polite">{COUNTER[k]}</div>
     </div>
   );
 }
