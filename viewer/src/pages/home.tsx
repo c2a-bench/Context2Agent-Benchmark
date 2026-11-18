@@ -66,6 +66,9 @@ function useDockedTitle(hero: React.RefObject<HTMLElement | null>, slot: React.R
   }, [hero, slot, title, divider]);
 }
 
+/** The benchmark's full name with the C, 2 and A that spell C2A in bold. The hero h1 and its travelling copy both use it so they wrap alike. */
+const FullName = () => <><b>C</b>ontext<b>2</b><b>A</b>gent Benchmark</>;
+
 function SectionHead({ id, title, lead, from, right }: { id?: string; title: string; lead?: ReactNode; from: string; right?: ReactNode }) {
   return (
     <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4 sm:mb-10">
@@ -745,13 +748,13 @@ export default function Home() {
   return (
     <div className="lp min-h-screen">
       <Nav slotRef={navSlot} dividerRef={navDivider} />
-      <Link ref={flyTitle} to="/#top" className="lp-title lp-fly" aria-hidden tabIndex={-1}><span style={{ display: "block", whiteSpace: "normal" }}>Context to Agent Benchmark</span><span style={{ position: "absolute", left: 0, top: 0 }}>C2A</span></Link>
+      <Link ref={flyTitle} to="/#top" className="lp-title lp-fly" aria-hidden tabIndex={-1}><span style={{ display: "block", whiteSpace: "normal" }}><FullName /></span><span style={{ position: "absolute", left: 0, top: 0 }}>C2A</span></Link>
       <main>
         <section id="top" className="lp-hero">
           <div className="lp-wrap">
             <div className="grid gap-x-12 gap-y-12 lg:grid-cols-12 lg:items-center">
               <div className="lg:col-span-7">
-                <h1 ref={heroName} className="lp-title" style={{ opacity: 0, whiteSpace: "normal" }}>Context to Agent Benchmark</h1>
+                <h1 ref={heroName} className="lp-title" style={{ opacity: 0, whiteSpace: "normal" }}><FullName /></h1>
                 <p className="lead muted mt-5 max-w-[40ch]" style={{ fontSize: "clamp(20px, 0.8vw + 16px, 26px)", lineHeight: 1.35 }}>
                   Can an AI agent learn and adapt to changing business context to resolve customer issues?
                 </p>
