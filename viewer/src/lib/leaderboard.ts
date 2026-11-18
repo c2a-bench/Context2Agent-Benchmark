@@ -4,6 +4,10 @@ import type { JobSummary } from "@/lib/data";
 // runs started before that date are on an older ticket version and are marked so.
 // architectures: the environment fixes one architecture per run (skyway-arch), so a model's runs of different
 // architectures are one entry; the viewer asks which architecture to show.
+/** A run started before `current` (an older version of the tickets). The published datasets carry no start dates and
+ *  hold only current runs, so a run without a date is current. */
+export const olderThan = (j: { started?: string | null }, current?: string) => !!current && !!j.started && j.started < current;
+
 export const FOCUS: { id: string; short: string; current: string; blurb: string; architectures?: boolean }[] = [
   {
     id: "redwood-inference",
@@ -68,7 +72,7 @@ export function architectureGroups(jobs: JobSummary[], current?: string): { lead
  *  (jobs come newest first, a -facts copy before its run). Sorted by architecture name. With `current` (the date the
  *  environment's tickets last changed), only runs on the same tickets as `of`, so pooled scores compare like with like. */
 export function architectureRuns(jobs: JobSummary[], of: JobSummary, current?: string): JobSummary[] {
-  const onCurrent = (j: JobSummary) => (j.started ?? "") >= (current ?? "");
+  const onCurrent = (j: JobSummary) => !olderThan(j, current);
   const seen = new Set<string>();
   const out: JobSummary[] = [];
   for (const j of jobs) {
@@ -100,7 +104,7 @@ export function leaderboardRuns(jobs: JobSummary[], current: string): JobSummary
     }),
     ...done.filter((j) => {
       const key = `${model(j.builder.model)}|${j.architecture ?? ""}|${j.thinking ?? ""}`;
-      if (!j.thinking || (j.started ?? "") < current || seen.has(key)) return false;
+      if (!j.thinking || olderThan(j, current) || seen.has(key)) return false;
       seen.add(key);
       return true;
     }),
@@ -114,7 +118,7 @@ export function offLeaderboard(task: string, j: JobSummary, jobs: JobSummary[]):
   const shown = new Set(leaderboardRuns(jobs, env.current).map((x) => x.key));
   if (shown.has(j.key)) return null;
   if (!j.finished || !j.scores.length) return "Not on the leaderboard: the run did not finish";
-  if ((j.started ?? "") < env.current) return "Not on the leaderboard: an older version of the tickets";
+  if (olderThan(j, env.current)) return "Not on the leaderboard: an older version of the tickets";
   const facts = jobs.find((x) => x.id === `${j.id}-facts`);
   if (facts && shown.has(facts.key)) return "Not on the leaderboard: it shows this run's -facts copy (graded by facts)";
   return j.architecture

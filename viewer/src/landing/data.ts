@@ -5,6 +5,7 @@
  * ponytail: 8 meta.json fetches (~140 KB each) on page load; move the few fields into index.json at publish time
  * when the builder count grows.
  */
+import { olderThan } from "@/lib/leaderboard";
 import { getMeta, listJobs, listTasks, type JobSummary } from "@/lib/data";
 
 export const ENV = { redwood: "redwood-inference", packs: "support-agent-knowledge", skyway: "skyway-air", skywayArch: "skyway-air" } as const;
@@ -66,7 +67,7 @@ export function latestByBuilder(jobs: JobSummary[]): Builder[] {
   const out: Builder[] = [];
   for (const j of jobs) {
     const model = shortModel(j.builder.model);
-    if (!j.finished || !j.scores.length || (j.started ?? "") < CURRENT || seen.has(model)) continue;
+    if (!j.finished || !j.scores.length || olderThan(j, CURRENT) || seen.has(model)) continue;
     seen.add(model);
     out.push({ model, harness: harnessName(j.builder.agent), job: j });
   }
