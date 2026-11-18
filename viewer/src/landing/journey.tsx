@@ -43,7 +43,7 @@ const poly = (pts: [number, number][]) => pts.map((p) => p.map((x) => x.toFixed(
 const DOC: Box = [72, 34, 248, 256];
 const DOC_STACK: [number, number][] = [[34, -26], [17, -13]];
 /** Chat bubbles stuck on the stack's right edge: x, y, width, speaker on the left. */
-const STACK_BUBBLES: [number, number, number, boolean][] = [[322, 74, 52, true], [330, 108, 56, false]];
+const STACK_BUBBLES: [number, number, number, boolean][] = [[364, 84, 38, true], [364, 112, 38, false]];
 const S0: State = (() => {
   const order = ["f0", "A", "f1", "f2", "B", "f3", "C", "f4", "D", "f5", "E", "f6", "F", "f7"];
   const w: Record<string, number> = { f0: 100, A: 196, f1: 170, f2: 214, B: 150, f3: 200, C: 208, f4: 140, D: 180, f5: 216, E: 160, f6: 190, F: 204, f7: 120 };
@@ -108,7 +108,7 @@ const rowY = (i: number) => 96 + i * 40;
 /** The clipboard: board, the paper on it, the clip. */
 const CLIP: Box = [86, 26, 248, 288];
 /** The score dial on the paper: centre, and the red zone's sweep (2 of 5 of the half turn). */
-const DIAL: [number, number] = [288, 66];
+const DIAL: [number, number] = [292, 76];
 const DIAL_RED = (72 * Math.PI) / 180;
 const S4: State = (() => {
   const bars: Record<string, Bar> = {};
@@ -152,14 +152,14 @@ const head = headOf(DM0, S2.plane, HEAD.card, HEAD.depth);
 const at = (s: number, u: number, v: number, lift = 0) => apply(matrixOf(STATES[s].plane, lift), [u, v]);
 // the viewBox fits every state (with its shadow) and the robot's head
 const VB = (() => {
-  const pts = [[388, 74], [388, 132], ...head.top, ...head.side, [head.antenna[0], head.antenna[1] - 34] as [number, number], ...rectPts(DM0, HEAD.base), ...boxOf(HEAD.base, HEAD.depth).side];
+  const pts = [...head.top, ...head.side, [head.antenna[0], head.antenna[1] - 34] as [number, number], ...rectPts(DM0, HEAD.base), ...boxOf(HEAD.base, HEAD.depth).side];
   for (const s of STATES) pts.push(...rectPts(DM0, s.card).map(([x, y]) => [x + 14, y + 18] as [number, number]));
   pts.push([DOC[0] + DOC[2] + DOC_STACK[0][0] + 4, DOC[1] + DOC_STACK[0][1] - 4], [CLIP[0], CLIP[1] - 22]);
   for (const s of STATES) pts.push(...rectPts(matrixOf(s.plane), s.card));
   const xs = pts.map((p) => p[0]);
   const ys = pts.map((p) => p[1]);
   const [x0, y0] = [Math.min(...xs) - 10, Math.min(...ys) - 10];
-  return [x0, y0, Math.max(...xs) + 36 - x0, Math.max(...ys) + 14 - y0].map((n) => Math.round(n));
+  return [x0, y0, Math.max(Math.max(...xs) + 36, 410) - x0, Math.max(...ys) + 14 - y0].map((n) => Math.round(n));
 })();
 
 // A step's failure chips use the failure chart's own plain names (REASONS), so the two always read alike.
@@ -229,12 +229,7 @@ function useMorph(k: number, svg: React.RefObject<SVGSVGElement | null>, still: 
       }
       if (t >= 0.5) root.setAttribute("data-k", String(k));
       const v: Record<string, number[]> = {};
-      // the sheet leads and the bars follow it one after another, so the change reads as a cascade
-      for (const id in target) {
-        const j = IDS.indexOf(id as (typeof IDS)[number]);
-        const tt = j < 0 ? t : smooth((t - j * 0.018) / 0.72);
-        v[id] = target[id].map((b, i) => lerp(from[id][i], b, tt));
-      }
+      for (const id in target) v[id] = target[id].map((b, i) => lerp(from[id][i], b, t));
       root.querySelector("[data-needle]")?.setAttribute("transform", `rotate(${-90 + 72 * (k === 4 ? smooth((t - 0.55) / 0.45) : 1)} ${DIAL[0]} ${DIAL[1]})`);
       now.current = v;
       const [x, y, w, h, rx, thick] = v.card;
@@ -281,7 +276,7 @@ function useMorph(k: number, svg: React.RefObject<SVGSVGElement | null>, still: 
     let raf = 0;
     const t0 = performance.now();
     const step = (t: number) => {
-      const p = Math.min(1, (t - t0) / 900);
+      const p = Math.min(1, (t - t0) / 700);
       write(ease(p));
       if (p < 1) raf = requestAnimationFrame(step);
     };
@@ -396,8 +391,7 @@ function Figure({ k, still }: { k: number; still: boolean }) {
               const agent = b.who === "agent", [bx, by, bw, bh] = b.box;
               return (
                 <g key={`t${i}`}>
-                  <path d={agent ? `M${bx + bw - 12} ${by + bh - 2}l5 8l-13 -8Z` : `M${bx + 12} ${by + bh - 2}l-5 8l13 -8Z`} className={`j-edge ${agent ? "j-bubble-agent" : "j-paper"}`} strokeDasharray={b.dashed ? "4 4" : undefined} />
-                  <circle cx={agent ? bx + bw + 12 : bx - 12} cy={by + bh / 2} r="5" className="j-edge" style={{ fill: agent ? "var(--action)" : "color-mix(in oklab, var(--ink) 30%, transparent)" }} />
+                  <path d={agent ? `M${bx + bw - 12} ${by + bh - 2}l4 4.5l-11 -4.5Z` : `M${bx + 12} ${by + bh - 2}l-4 4.5l11 -4.5Z`} className={`j-edge ${agent ? "j-bubble-agent" : "j-paper"}`} strokeDasharray={b.dashed ? "4 4" : undefined} />
                 </g>
               );
             })}
@@ -416,11 +410,11 @@ function Figure({ k, still }: { k: number; still: boolean }) {
             <rect x={CLIP[0] + CLIP[2] / 2 - 16} y={CLIP[1] - 18} width="32" height="18" rx="9" className="j-paper j-edge" />
             <circle cx={CLIP[0] + CLIP[2] / 2} cy={CLIP[1] - 9} r="4" className="j-side-dark j-edge" />
             {/* the score dial: a needle that settles in the red */}
-            <circle cx={DIAL[0]} cy={DIAL[1]} r="19" className="j-side-dark j-edge" />
-            <circle cx={DIAL[0]} cy={DIAL[1]} r="16" className="j-paper j-edge" />
-            <path d={`M${DIAL[0] - 12.5} ${DIAL[1]}A12.5 12.5 0 0 1 ${DIAL[0] - 12.5 * Math.cos(DIAL_RED)} ${DIAL[1] - 12.5 * Math.sin(DIAL_RED)}`} className="j-dial-red" />
-            {[0, 45, 90, 135, 180].map((a) => { const r = (a * Math.PI) / 180, c = Math.cos(r), n = Math.sin(r); return <line key={a} x1={DIAL[0] - 14.5 * c} y1={DIAL[1] - 14.5 * n} x2={DIAL[0] - 11 * c} y2={DIAL[1] - 11 * n} className="j-edge" />; })}
-            <g data-needle transform={`rotate(-90 ${DIAL[0]} ${DIAL[1]})`}><line x1={DIAL[0]} y1={DIAL[1] + 3} x2={DIAL[0]} y2={DIAL[1] - 12} className="j-needle" /></g>
+            <circle cx={DIAL[0]} cy={DIAL[1]} r="16" className="j-side-dark j-edge" />
+            <circle cx={DIAL[0]} cy={DIAL[1]} r="13.5" className="j-paper j-edge" />
+            <path d={`M${DIAL[0] - 10.5} ${DIAL[1]}A10.5 10.5 0 0 1 ${DIAL[0] - 10.5 * Math.cos(DIAL_RED)} ${DIAL[1] - 10.5 * Math.sin(DIAL_RED)}`} className="j-dial-red" />
+            {[0, 45, 90, 135, 180].map((a) => { const r = (a * Math.PI) / 180, c = Math.cos(r), n = Math.sin(r); return <line key={a} x1={DIAL[0] - 12.4 * c} y1={DIAL[1] - 12.4 * n} x2={DIAL[0] - 9.4 * c} y2={DIAL[1] - 9.4 * n} className="j-edge" />; })}
+            <g data-needle transform={`rotate(-90 ${DIAL[0]} ${DIAL[1]})`}><line x1={DIAL[0]} y1={DIAL[1] + 2.5} x2={DIAL[0]} y2={DIAL[1] - 10} className="j-needle" /></g>
             <circle cx={DIAL[0]} cy={DIAL[1]} r="2.2" className="j-ink" />
             {ROWS.map((r, i) => <rect key={r.id} x="114" y={rowY(i) - 3.5} width="14" height="14" rx="3" className="j-paper j-edge" />)}
           </OnSheet>
