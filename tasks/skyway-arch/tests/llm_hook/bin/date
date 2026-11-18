@@ -1,0 +1,12 @@
+#!/bin/sh
+# The shell's `date` with the world's clock (see world_clock.py): the grader puts this folder first on the bot's PATH
+# with BOT_CLOCK_OFFSET set. `date` about a given time (-d/--date, -r/--reference, -f/--file, -s/--set) runs as is.
+for d in /usr/bin/date /bin/date; do [ -x "$d" ] && real="$d" && break; done
+[ -n "${real:-}" ] || { echo "date: not found" >&2; exit 127; }
+case " $* " in
+  *" -d"*|*" --date"*|*" -r"*|*" --reference"*|*" -f"*|*" --file"*|*" -s"*|*" --set"*) exec "$real" "$@" ;;
+esac
+offset=${BOT_CLOCK_OFFSET%%.*}
+case "$offset" in ''|*[!0-9-]*) exec "$real" "$@" ;; esac
+now=$("$real" +%s.%N)  # one reading: whole seconds shifted, the fraction kept (for %N)
+exec "$real" -d "@$(( ${now%.*} + offset )).${now#*.}" "$@"

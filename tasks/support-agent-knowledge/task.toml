@@ -1,0 +1,160 @@
+schema_version = "1.4"
+
+# Sibling ablation of organizational knowledge conditions.
+# Fixed I (stage-0 build instruction) and fixed S (stage-0 tickets).
+# Each step wipes /app/bot, installs one R pack into /app/docs, then builds.
+# Harbor headline reward is the mean of the five Qk scores.
+# Primary research metric ΔQk = Q(Rcomplete) - Qk is computed post-run:
+#   python3 scripts/knowledge_delta_report.py tasks/support-agent-knowledge/jobs/<run>
+multi_step_reward_strategy = "mean"
+
+[task]
+name = "newmeasure/support-agent-knowledge"
+version = "0.1.0"
+description = "Fixed instruction and tickets; vary only organizational knowledge packaging (complete, fragmented, incomplete, conflicting, noisy) and measure construction degradation ΔQk."
+keywords = ["support-agent", "agent-building", "organizational-knowledge", "harbor"]
+
+[metadata]
+difficulty = "hard"
+category = "agent-building"
+tags = ["customer-support", "knowledge-conditions", "delta-q", "deterministic"]
+
+[agent]
+timeout_sec = 1800.0
+
+[verifier]
+timeout_sec = 7200.0
+
+[verifier.env]
+BOT_MODEL = "${BOT_MODEL:-openai/gpt-5.6-sol}"
+EMBED_MODEL = "${EMBED_MODEL:-openai/text-embedding-3-small}"
+CUSTOMER_MODEL = "${CUSTOMER_MODEL:-}"
+OPENAI_API_KEY = "${OPENAI_API_KEY:-}"
+ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}"
+GEMINI_API_KEY = "${GEMINI_API_KEY:-}"
+OPENROUTER_API_KEY = "${OPENROUTER_API_KEY:-}"
+REPLAY = "${REPLAY:-1}"
+VERIFIER_WORKERS = "${VERIFIER_WORKERS:-25}"
+TICKET_SANDBOX = "${TICKET_SANDBOX:-local}"
+DAYTONA_API_KEY = "${DAYTONA_API_KEY:-}"
+TICKET_SANDBOX_CPU = "${TICKET_SANDBOX_CPU:-4}"
+TICKET_SANDBOX_MEMORY_GIB = "${TICKET_SANDBOX_MEMORY_GIB:-4}"
+TICKET_SANDBOX_SNAPSHOT = "${TICKET_SANDBOX_SNAPSHOT:-}"
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 900.0
+os = "linux"
+cpus = 2
+memory_mb = 8192
+storage_mb = 10240
+
+# An index or notes have to be built while the docs are readable, so the builder's
+# container gets the bot's models and the provider keys too.
+[environment.env]
+BOT_MODEL = "${BOT_MODEL:-openai/gpt-5.6-sol}"
+EMBED_MODEL = "${EMBED_MODEL:-openai/text-embedding-3-small}"
+OPENAI_API_KEY = "${OPENAI_API_KEY:-}"
+ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}"
+GEMINI_API_KEY = "${GEMINI_API_KEY:-}"
+OPENROUTER_API_KEY = "${OPENROUTER_API_KEY:-}"
+
+[[steps]]
+name = "Rcomplete"
+artifacts = ["/app/bot"]
+
+[steps.agent]
+timeout_sec = 1800.0
+
+[steps.verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+
+[steps.verifier.env]
+STAGE = "Rcomplete"
+KNOWLEDGE_CONDITION = "Rcomplete"
+
+[steps.verifier.environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+
+[[steps]]
+name = "Rfragmented"
+artifacts = ["/app/bot"]
+
+[steps.agent]
+timeout_sec = 1800.0
+
+[steps.verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+
+[steps.verifier.env]
+STAGE = "Rfragmented"
+KNOWLEDGE_CONDITION = "Rfragmented"
+
+[steps.verifier.environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+
+[[steps]]
+name = "Rincomplete"
+artifacts = ["/app/bot"]
+
+[steps.agent]
+timeout_sec = 1800.0
+
+[steps.verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+
+[steps.verifier.env]
+STAGE = "Rincomplete"
+KNOWLEDGE_CONDITION = "Rincomplete"
+
+[steps.verifier.environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+
+[[steps]]
+name = "Rconflicting"
+artifacts = ["/app/bot"]
+
+[steps.agent]
+timeout_sec = 1800.0
+
+[steps.verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+
+[steps.verifier.env]
+STAGE = "Rconflicting"
+KNOWLEDGE_CONDITION = "Rconflicting"
+
+[steps.verifier.environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+
+[[steps]]
+name = "Rnoisy"
+artifacts = ["/app/bot"]
+
+[steps.agent]
+timeout_sec = 1800.0
+
+[steps.verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+
+[steps.verifier.env]
+STAGE = "Rnoisy"
+KNOWLEDGE_CONDITION = "Rnoisy"
+
+[steps.verifier.environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
