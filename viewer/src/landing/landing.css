@@ -165,17 +165,12 @@ svg[data-k="4"] [data-bar="card"] { fill: color-mix(in oklab, var(--ink) 9%, var
 .j-dot, .j-ink { fill: color-mix(in oklab, var(--ink) 70%, var(--bg)); }
 .j-halo { fill: color-mix(in oklab, var(--ink) 30%, var(--bg)); opacity: .35; }
 .dark .j-halo { fill: #000; opacity: .8; }
-.j-visor { fill: color-mix(in oklab, var(--ink) 78%, var(--bg)); }
-.j-visor-line { fill: color-mix(in oklab, var(--bg) 85%, var(--ink)); opacity: .9; }
 .j-faint { fill: color-mix(in oklab, var(--ink) 9%, var(--bg)); }
-.j-band-o { fill: none; stroke: color-mix(in oklab, var(--ink) 58%, var(--bg)); stroke-width: 7; stroke-linecap: round; }
-.j-band-i { fill: none; stroke: color-mix(in oklab, var(--ink) 15%, var(--bg)); stroke-width: 5.4; stroke-linecap: round; }
 .j-bubble-agent { fill: color-mix(in oklab, var(--ink) 7%, var(--bg)); }
 .j-mark { fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .j-text { font-size: 10px; fill: var(--muted); }
 .j-deco { opacity: 0; }
-.j-dial-red { fill: none; stroke: var(--f-recall); stroke-width: 3; stroke-linecap: round; opacity: .85; }
-.j-needle { stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.j-stroke { stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; }
 .j-count-in { animation: j-count-in 520ms cubic-bezier(.2, .7, .2, 1) both; }
 @keyframes j-count-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .j-count-in { animation: none; } }
