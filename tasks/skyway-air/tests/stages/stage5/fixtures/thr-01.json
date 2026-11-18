@@ -1,0 +1,33 @@
+[
+  {
+    "case": "thr-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-11001": {
+          "category": "disruption"
+        }
+      },
+      "credits": {
+        "SK9410": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "thr-01",
+    "name": "old-4-hours",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-11001": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,49 @@
+[
+  {
+    "case": "multi-07",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-11009": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK2661": {
+          "amount": 238,
+          "method": "original_payment"
+        },
+        "SK2662": {
+          "amount": 197,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK2663": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-07",
+    "name": "old-limits",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK2661": {
+          "amount": 238,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-11009": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

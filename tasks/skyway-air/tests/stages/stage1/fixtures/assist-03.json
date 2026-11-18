@@ -1,0 +1,44 @@
+[
+  {
+    "case": "assist-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7009": {
+          "category": "service",
+          "labels": [
+            "assistance-failure"
+          ]
+        }
+      },
+      "credits": {
+        "SK8141": {
+          "assistance": 200
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "assist-03",
+    "name": "one-passenger",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK8141": {
+          "assistance": 100
+        }
+      },
+      "tickets": {
+        "SKY-7009": {
+          "labels": [
+            "assistance-failure"
+          ],
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  }
+]

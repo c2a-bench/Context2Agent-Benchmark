@@ -1,0 +1,89 @@
+[
+  {
+    "case": "multi-08",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-11010": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK2671": {
+          "amount": 238,
+          "method": "original_payment"
+        },
+        "SK2674": {
+          "amount": 182,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK2671": {
+          "compensation": 350
+        },
+        "SK2672": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-08",
+    "name": "refunded-whole-family",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK2671": {
+          "amount": 714,
+          "method": "original_payment"
+        },
+        "SK2674": {
+          "amount": 182,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK2672": {
+          "compensation": 175
+        }
+      },
+      "tickets": {
+        "SKY-11010": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-08",
+    "name": "old-4-hour-limit",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK2671": {
+          "amount": 238,
+          "method": "original_payment"
+        },
+        "SK2674": {
+          "amount": 182,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK2671": {
+          "compensation": 350
+        }
+      },
+      "tickets": {
+        "SKY-11010": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "case": "conn-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8011": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK9142": {
+          "to_flight": "SW704",
+          "change_fee": 75,
+          "fare_difference": 20
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "conn-03",
+    "name": "free-for-weather",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9142": {
+          "to_flight": "SW704",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "tickets": {
+        "SKY-8011": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

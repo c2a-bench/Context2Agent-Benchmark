@@ -1,0 +1,49 @@
+[
+  {
+    "case": "trans-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8008": {
+          "category": "disruption"
+        }
+      },
+      "reimbursements": {
+        "SK9131": {
+          "hotel": 180,
+          "transport": 40
+        }
+      },
+      "credits": {
+        "SK9131": {
+          "compensation": 350
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "trans-03",
+    "name": "no-cab",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK9131": {
+          "hotel": 180
+        }
+      },
+      "credits": {
+        "SK9131": {
+          "compensation": 350
+        }
+      },
+      "tickets": {
+        "SKY-8008": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

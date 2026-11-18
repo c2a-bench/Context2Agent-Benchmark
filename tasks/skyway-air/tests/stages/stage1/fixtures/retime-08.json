@@ -1,0 +1,37 @@
+[
+  {
+    "case": "retime-08",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7018": {
+          "category": "refund",
+          "labels": [
+            "agency-refund"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "retime-08",
+    "name": "refunded-agency",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK8155": {
+          "amount": 199,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-7018": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,77 @@
+[
+  {
+    "case": "goodwill-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6065": {
+          "category": "service"
+        }
+      },
+      "approvals": {
+        "SKY-6065": {
+          "kind": "goodwill",
+          "amount": 120,
+          "booking_id": "SK3170"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "goodwill-02",
+    "name": "credited-without-approval",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK3170": {
+          "goodwill": 100
+        }
+      },
+      "tickets": {
+        "SKY-6065": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "goodwill-02",
+    "name": "one-failure-amount",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK3170": {
+          "goodwill": 50
+        }
+      },
+      "tickets": {
+        "SKY-6065": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "goodwill-02",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6065": {
+          "category": "service"
+        }
+      },
+      "approvals": {
+        "SKY-6065": {
+          "kind": "goodwill",
+          "amount": 100
+        }
+      }
+    },
+    "requests": []
+  }
+]

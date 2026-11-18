@@ -1,0 +1,56 @@
+[
+  {
+    "case": "credit-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6063": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK5190": {
+          "cancellation": 546.0
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "credit-01",
+    "name": "fare-only-bonus",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK5190": {
+          "cancellation": 523.6
+        }
+      },
+      "tickets": {
+        "SKY-6063": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "credit-01",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6063": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK5190": {
+          "cancellation": 600.6
+        }
+      }
+    },
+    "requests": []
+  }
+]

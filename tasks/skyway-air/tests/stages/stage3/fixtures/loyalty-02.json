@@ -1,0 +1,42 @@
+[
+  {
+    "case": "loyalty-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9002": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK9202": {
+          "to_flight": "SW936",
+          "change_fee": 0,
+          "fare_difference": 10
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "loyalty-02",
+    "name": "silver-fee-on-flex",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9202": {
+          "to_flight": "SW936",
+          "change_fee": 40,
+          "fare_difference": 10
+        }
+      },
+      "tickets": {
+        "SKY-9002": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,36 @@
+[
+  {
+    "case": "damage-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6019": {
+          "category": "baggage",
+          "labels": [
+            "wear-and-tear"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "damage-01",
+    "name": "paid-wheel",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK3375": {
+          "bag_repair": 60
+        }
+      },
+      "tickets": {
+        "SKY-6019": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  }
+]

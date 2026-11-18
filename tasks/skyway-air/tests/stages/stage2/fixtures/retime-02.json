@@ -1,0 +1,39 @@
+[
+  {
+    "case": "retime-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7014": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK8151": {
+          "voluntary_cancellation": 75
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "retime-02",
+    "name": "schedule-refund",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK8151": {
+          "amount": 150,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-7014": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

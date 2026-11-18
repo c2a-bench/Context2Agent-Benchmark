@@ -1,0 +1,37 @@
+[
+  {
+    "case": "um-09",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-10012": {
+          "category": "refund",
+          "labels": [
+            "not-authorized"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "um-09",
+    "name": "refunded-non-contact",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9309": {
+          "amount": 150,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-10012": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,43 @@
+[
+  {
+    "case": "gone-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9011": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SKY-9011",
+          "reason": "not_covered"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "gone-02",
+    "name": "guessed",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK9226": {
+          "compensation": 175
+        }
+      },
+      "tickets": {
+        "SKY-9011": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

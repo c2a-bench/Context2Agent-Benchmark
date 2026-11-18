@@ -1,0 +1,109 @@
+[
+  {
+    "case": "rcpt-01b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-11005": {
+          "category": "refund",
+          "comments": [
+            {
+              "body": "Your confirmation number is cf_fixture1.",
+              "public": true
+            }
+          ]
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/refunds",
+        "body": {
+          "amount": 172,
+          "method": "original_payment"
+        },
+        "status": 200,
+        "response": {
+          "amount": 172,
+          "method": "original_payment",
+          "confirmation_id": "cf_fixture1"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SKY-11005/comments",
+        "status": 200,
+        "body": {
+          "body": "Your confirmation number is cf_fixture1.",
+          "public": true
+        }
+      }
+    ],
+    "already": 1
+  },
+  {
+    "case": "rcpt-01b",
+    "name": "id-not-quoted",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-11005": {
+          "category": "refund",
+          "comments": [
+            {
+              "body": "Your payment went through.",
+              "public": true
+            }
+          ]
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/refunds",
+        "body": {
+          "amount": 172,
+          "method": "original_payment"
+        },
+        "status": 200,
+        "response": {
+          "amount": 172,
+          "method": "original_payment",
+          "confirmation_id": "cf_fixture1"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SKY-11005/comments",
+        "status": 200,
+        "body": {
+          "body": "Your payment went through.",
+          "public": true
+        }
+      }
+    ],
+    "already": 1
+  },
+  {
+    "case": "rcpt-01b",
+    "name": "refunded-again",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9401": {
+          "amount": 344,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-11005": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

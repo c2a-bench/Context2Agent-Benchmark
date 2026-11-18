@@ -1,0 +1,52 @@
+[
+  {
+    "case": "rename-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7004": {
+          "category": "disruption",
+          "labels": [
+            "awaiting-receipts"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "rename-03",
+    "name": "old-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-7004": {
+          "labels": [
+            "receipts-needed"
+          ],
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "rename-03",
+    "name": "compensated",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK8120": {
+          "compensation": 150
+        }
+      },
+      "tickets": {
+        "SKY-7004": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,36 @@
+[
+  {
+    "case": "mgr-06",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7024": {
+          "category": "disruption"
+        }
+      },
+      "credits": {
+        "SK8164": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "mgr-06",
+    "name": "refused-manager",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-7024": {
+          "labels": [
+            "not-authorized"
+          ],
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

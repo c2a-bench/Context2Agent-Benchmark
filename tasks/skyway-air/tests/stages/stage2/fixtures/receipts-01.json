@@ -1,0 +1,62 @@
+[
+  {
+    "case": "receipts-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6062": {
+          "category": "disruption",
+          "labels": [
+            "awaiting-receipts"
+          ]
+        }
+      },
+      "credits": {
+        "SK3395": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "receipts-01",
+    "name": "paid-without-receipt",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK3395": {
+          "meals": 15
+        }
+      },
+      "tickets": {
+        "SKY-6062": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "receipts-01",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6062": {
+          "category": "disruption",
+          "labels": [
+            "awaiting-receipts"
+          ]
+        }
+      },
+      "credits": {
+        "SK3395": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  }
+]

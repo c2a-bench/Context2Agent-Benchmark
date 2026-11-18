@@ -1,0 +1,78 @@
+[
+  {
+    "case": "multi-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7031": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK2641": {
+          "cancellation": 238.0
+        },
+        "SK2642": {
+          "cancellation": 205.0
+        },
+        "SK2643": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-05",
+    "name": "old-10-percent-bonus",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK2641": {
+          "cancellation": 261.8
+        },
+        "SK2642": {
+          "cancellation": 225.5
+        },
+        "SK2643": {
+          "compensation": 150
+        }
+      },
+      "tickets": {
+        "SKY-7031": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-05",
+    "name": "refunded-instead",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK2641": {
+          "amount": 238.0,
+          "method": "original_payment"
+        },
+        "SK2642": {
+          "amount": 205.0,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK2643": {
+          "compensation": 150
+        }
+      },
+      "tickets": {
+        "SKY-7031": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

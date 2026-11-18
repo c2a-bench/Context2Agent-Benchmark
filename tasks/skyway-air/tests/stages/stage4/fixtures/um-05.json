@@ -1,0 +1,39 @@
+[
+  {
+    "case": "um-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-10008": {
+          "category": "service"
+        }
+      },
+      "credits": {
+        "SK9305": {
+          "goodwill": 60
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "um-05",
+    "name": "refunded-used-fee",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9305": {
+          "amount": 150,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-10008": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  }
+]

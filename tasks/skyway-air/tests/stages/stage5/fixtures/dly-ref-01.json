@@ -1,0 +1,34 @@
+[
+  {
+    "case": "dly-ref-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-11003": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK9420": {
+          "amount": 164,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "dly-ref-01",
+    "name": "old-3-hours",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-11003": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

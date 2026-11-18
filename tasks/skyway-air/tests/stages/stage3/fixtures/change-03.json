@@ -1,0 +1,38 @@
+[
+  {
+    "case": "change-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6027": {
+          "category": "change",
+          "labels": [
+            "change-denied"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "change-03",
+    "name": "changed-basic",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK7901": {
+          "to_flight": "SW518",
+          "change_fee": 75,
+          "fare_difference": 10
+        }
+      },
+      "tickets": {
+        "SKY-6027": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

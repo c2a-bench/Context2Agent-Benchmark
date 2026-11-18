@@ -1,0 +1,44 @@
+[
+  {
+    "case": "gone-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9010": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SKY-9010",
+          "reason": "not_covered"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "gone-01",
+    "name": "guessed",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9225": {
+          "amount": 238,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-9010": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

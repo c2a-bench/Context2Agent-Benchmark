@@ -1,0 +1,36 @@
+[
+  {
+    "case": "claim-30-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9003": {
+          "category": "baggage"
+        }
+      },
+      "reimbursements": {
+        "SK9210": {
+          "bag_expenses": 120
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "claim-30-01",
+    "name": "old-21-days",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-9003": {
+          "labels": [
+            "claim-late"
+          ],
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "case": "credit-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7005": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK8130": {
+          "cancellation": 546
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "credit-02",
+    "name": "old-bonus",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK8130": {
+          "cancellation": 600.6
+        }
+      },
+      "tickets": {
+        "SKY-7005": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

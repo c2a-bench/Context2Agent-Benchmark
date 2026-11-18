@@ -1,0 +1,62 @@
+[
+  {
+    "case": "change-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6023": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK7702": {
+          "to_flight": "SW882",
+          "change_fee": 40,
+          "fare_difference": 40
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "change-01",
+    "name": "charged-fee",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK7702": {
+          "to_flight": "SW882",
+          "change_fee": 75,
+          "fare_difference": 40
+        }
+      },
+      "tickets": {
+        "SKY-6023": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "change-01",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6023": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK7702": {
+          "to_flight": "SW882",
+          "change_fee": 0,
+          "fare_difference": 40
+        }
+      }
+    },
+    "requests": []
+  }
+]

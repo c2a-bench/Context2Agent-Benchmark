@@ -1,0 +1,42 @@
+[
+  {
+    "case": "assist-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7011": {
+          "category": "service",
+          "labels": [
+            "assistance-failure"
+          ]
+        }
+      },
+      "credits": {
+        "SK8143": {
+          "assistance": 100
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "assist-05",
+    "name": "asked-approval",
+    "should": "fail",
+    "data": {
+      "approvals": {
+        "SKY-7011": {
+          "kind": "goodwill",
+          "amount": 250
+        }
+      },
+      "tickets": {
+        "SKY-7011": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  }
+]

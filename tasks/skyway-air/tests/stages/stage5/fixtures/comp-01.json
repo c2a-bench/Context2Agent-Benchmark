@@ -1,0 +1,38 @@
+[
+  {
+    "case": "comp-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8003": {
+          "category": "disruption"
+        }
+      },
+      "credits": {
+        "SK9110": {
+          "compensation": 700
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "comp-01",
+    "name": "phase-2-200",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK9110": {
+          "compensation": 800
+        }
+      },
+      "tickets": {
+        "SKY-8003": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

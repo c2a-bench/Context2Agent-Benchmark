@@ -1,0 +1,62 @@
+[
+  {
+    "case": "night-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6016": {
+          "category": "disruption",
+          "labels": [
+            "awaiting-receipts"
+          ]
+        }
+      },
+      "credits": {
+        "SK3412": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "night-02",
+    "name": "paid-without-receipt",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK3412": {
+          "hotel": 150
+        }
+      },
+      "tickets": {
+        "SKY-6016": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "night-02",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6016": {
+          "category": "disruption",
+          "labels": [
+            "receipts-needed"
+          ]
+        }
+      },
+      "credits": {
+        "SK3412": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  }
+]

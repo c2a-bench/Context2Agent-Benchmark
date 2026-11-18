@@ -1,0 +1,41 @@
+[
+  {
+    "case": "fu-02b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8016": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/tickets/SKY-8015/comments",
+        "body": {},
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "fu-02b",
+    "name": "asked-again",
+    "should": "fail",
+    "data": {
+      "approvals": {
+        "SKY-8016": {
+          "kind": "hotel",
+          "amount": 240
+        }
+      },
+      "tickets": {
+        "SKY-8016": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

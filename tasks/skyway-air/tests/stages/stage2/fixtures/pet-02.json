@@ -1,0 +1,44 @@
+[
+  {
+    "case": "pet-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8004": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK9120": {
+          "voluntary_cancellation": 97
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "pet-02",
+    "name": "pet-refunded",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK9120": {
+          "voluntary_cancellation": 97
+        }
+      },
+      "refunds": {
+        "SK9120": {
+          "amount": 95,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-8004": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

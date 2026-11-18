@@ -1,0 +1,70 @@
+[
+  {
+    "case": "night-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6015": {
+          "category": "disruption"
+        }
+      },
+      "approvals": {
+        "SKY-6015": {
+          "kind": "hotel",
+          "amount": 250,
+          "booking_id": "SK3412"
+        }
+      },
+      "credits": {
+        "SK3412": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "night-01",
+    "name": "approval-for-full-receipt",
+    "should": "fail",
+    "data": {
+      "approvals": {
+        "SKY-6015": {
+          "kind": "hotel",
+          "amount": 290
+        }
+      },
+      "tickets": {
+        "SKY-6015": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "night-01",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6015": {
+          "category": "disruption"
+        }
+      },
+      "approvals": {
+        "SKY-6015": {
+          "kind": "hotel",
+          "amount": 250
+        }
+      },
+      "credits": {
+        "SK3412": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  }
+]

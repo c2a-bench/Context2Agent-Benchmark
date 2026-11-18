@@ -1,0 +1,33 @@
+[
+  {
+    "case": "retry-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9006": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK9221": {
+          "cancellation": 238
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "retry-02",
+    "name": "never-retried",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-9006": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

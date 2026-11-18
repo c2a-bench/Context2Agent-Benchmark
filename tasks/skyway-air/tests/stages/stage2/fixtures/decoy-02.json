@@ -1,0 +1,77 @@
+[
+  {
+    "case": "decoy-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8018": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK9161": {
+          "to_flight": "SW486",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9161": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-02",
+    "name": "other-airport",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9161": {
+          "to_flight": "SW488",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9161": {
+          "compensation": 175
+        }
+      },
+      "tickets": {
+        "SKY-8018": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-02",
+    "name": "cancelled-flight",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9161": {
+          "to_flight": "SW485",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9161": {
+          "compensation": 175
+        }
+      },
+      "tickets": {
+        "SKY-8018": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

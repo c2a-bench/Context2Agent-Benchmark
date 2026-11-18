@@ -1,0 +1,44 @@
+[
+  {
+    "case": "hotel-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8001": {
+          "category": "disruption"
+        }
+      },
+      "reimbursements": {
+        "SK9101": {
+          "hotel": 210
+        }
+      },
+      "credits": {
+        "SK9101": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "hotel-03",
+    "name": "old-200-limit",
+    "should": "fail",
+    "data": {
+      "approvals": {
+        "SKY-8001": {
+          "kind": "hotel",
+          "amount": 210
+        }
+      },
+      "tickets": {
+        "SKY-8001": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

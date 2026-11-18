@@ -1,0 +1,53 @@
+[
+  {
+    "case": "pet-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6049": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "pet-01",
+    "name": "refunded-fare",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK7120": {
+          "amount": 194,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6049": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "pet-01",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6049": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK7120": {
+          "amount": 95,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,40 @@
+[
+  {
+    "case": "change-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6024": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK7702": {
+          "to_flight": "SW884",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "change-02",
+    "name": "refunded-difference",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK7702": {
+          "fare_difference": 30
+        }
+      },
+      "tickets": {
+        "SKY-6024": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

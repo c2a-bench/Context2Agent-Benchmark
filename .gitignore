@@ -4,3 +4,26 @@
 !.env.example
 **/__pycache__/
 *.pyc
+
+# Benchmark data written by scripts/fetch_bench.py (it lives in observeai/c2a-bench, not here)
+tasks/*/instruction.md
+tasks/*/architectures/
+tasks/*/environment/app/api_docs/
+tasks/*/environment/app/examples/
+tasks/*/environment/app/docs/*
+!tasks/*/environment/app/docs/UPSTREAM_LICENSE
+tasks/*/steps/*/instruction.md
+tasks/*/steps/*/workdir/*_update/
+tasks/*/steps/*/workdir/pack/
+tasks/*/tests/cases.json
+tasks/*/tests/rules.json
+tasks/*/tests/facts.json
+tasks/*/tests/fact_tags.json
+tasks/*/tests/seed/
+tasks/*/tests/packs/
+tasks/*/tests/stages/*/cases.json
+tasks/*/tests/stages/*/rules.json
+tasks/*/tests/stages/*/facts.json
+tasks/*/tests/stages/*/seed/
+tasks/*/jobs/
+__pycache__/

@@ -1,0 +1,42 @@
+[
+  {
+    "case": "retime-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7015": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK8152": {
+          "to_flight": "SW892",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "retime-03",
+    "name": "normal-change",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK8152": {
+          "to_flight": "SW892",
+          "change_fee": 75,
+          "fare_difference": 30
+        }
+      },
+      "tickets": {
+        "SKY-7015": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

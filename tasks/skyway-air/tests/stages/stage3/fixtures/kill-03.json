@@ -1,0 +1,38 @@
+[
+  {
+    "case": "kill-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9009": {
+          "category": "disruption"
+        }
+      },
+      "credits": {
+        "SK9224": {
+          "compensation": 350
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "kill-03",
+    "name": "credited-twice",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK9224": {
+          "compensation": 700
+        }
+      },
+      "tickets": {
+        "SKY-9009": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

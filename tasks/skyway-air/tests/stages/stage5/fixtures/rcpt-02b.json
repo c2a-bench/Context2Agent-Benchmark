@@ -1,0 +1,104 @@
+[
+  {
+    "case": "rcpt-02b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-11007": {
+          "category": "refund",
+          "comments": [
+            {
+              "body": "Your confirmation number is cf_fixture1.",
+              "public": true
+            }
+          ]
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/credits",
+        "body": {
+          "cancellation": 172
+        },
+        "status": 200,
+        "response": {
+          "cancellation": 172,
+          "confirmation_id": "cf_fixture1"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SKY-11007/comments",
+        "status": 200,
+        "body": {
+          "body": "Your confirmation number is cf_fixture1.",
+          "public": true
+        }
+      }
+    ],
+    "already": 1
+  },
+  {
+    "case": "rcpt-02b",
+    "name": "id-not-quoted",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-11007": {
+          "category": "refund",
+          "comments": [
+            {
+              "body": "Your payment went through.",
+              "public": true
+            }
+          ]
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/credits",
+        "body": {
+          "cancellation": 172
+        },
+        "status": 200,
+        "response": {
+          "cancellation": 172,
+          "confirmation_id": "cf_fixture1"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SKY-11007/comments",
+        "status": 200,
+        "body": {
+          "body": "Your payment went through.",
+          "public": true
+        }
+      }
+    ],
+    "already": 1
+  },
+  {
+    "case": "rcpt-02b",
+    "name": "credited-again",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK9402": {
+          "cancellation": 344
+        }
+      },
+      "tickets": {
+        "SKY-11007": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

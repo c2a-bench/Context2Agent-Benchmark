@@ -1,0 +1,39 @@
+[
+  {
+    "case": "fam-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9014": {
+          "category": "service"
+        }
+      },
+      "refunds": {
+        "SK9232": {
+          "amount": 30,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "fam-03",
+    "name": "goodwill-instead",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK9232": {
+          "goodwill": 50
+        }
+      },
+      "tickets": {
+        "SKY-9014": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  }
+]

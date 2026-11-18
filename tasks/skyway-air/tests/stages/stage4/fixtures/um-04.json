@@ -1,0 +1,44 @@
+[
+  {
+    "case": "um-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-10005": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK9302": {
+          "voluntary_cancellation": 97
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "um-04",
+    "name": "refunded-optional",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK9302": {
+          "voluntary_cancellation": 97
+        }
+      },
+      "refunds": {
+        "SK9302": {
+          "amount": 150,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-10005": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

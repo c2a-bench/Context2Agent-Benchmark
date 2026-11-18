@@ -1,0 +1,38 @@
+[
+  {
+    "case": "dly-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-10003": {
+          "category": "disruption"
+        }
+      },
+      "reimbursements": {
+        "SK9331": {
+          "meals": 20
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "dly-05",
+    "name": "old-15",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK9331": {
+          "meals": 15
+        }
+      },
+      "tickets": {
+        "SKY-10003": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

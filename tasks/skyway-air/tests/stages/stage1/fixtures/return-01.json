@@ -1,0 +1,40 @@
+[
+  {
+    "case": "return-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6048": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK5180": {
+          "amount": 234,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "return-01",
+    "name": "refunded-round-trip",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK5180": {
+          "amount": 468,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6048": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

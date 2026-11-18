@@ -1,0 +1,44 @@
+[
+  {
+    "case": "um-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-10006": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK9303": {
+          "voluntary_cancellation": 97
+        }
+      },
+      "refunds": {
+        "SK9303": {
+          "amount": 150,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "um-02",
+    "name": "fee-kept",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK9303": {
+          "voluntary_cancellation": 97
+        }
+      },
+      "tickets": {
+        "SKY-10006": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

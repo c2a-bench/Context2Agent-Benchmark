@@ -1,0 +1,62 @@
+[
+  {
+    "case": "multi-06",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8021": {
+          "category": "disruption"
+        }
+      },
+      "credits": {
+        "SK2655": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-06",
+    "name": "old-amount",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK2655": {
+          "compensation": 150
+        }
+      },
+      "tickets": {
+        "SKY-8021": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-06",
+    "name": "compensated-weather-and-atc",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK2651": {
+          "compensation": 175
+        },
+        "SK2652": {
+          "compensation": 175
+        },
+        "SK2655": {
+          "compensation": 175
+        }
+      },
+      "tickets": {
+        "SKY-8021": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

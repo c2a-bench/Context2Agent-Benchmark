@@ -1,0 +1,40 @@
+[
+  {
+    "case": "kill-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9007": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK9222": {
+          "amount": 238,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "kill-01",
+    "name": "refunded-twice",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9222": {
+          "amount": 476,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-9007": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

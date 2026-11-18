@@ -1,0 +1,69 @@
+[
+  {
+    "case": "split-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6047": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK5170": {
+          "amount": 260,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK5170": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "split-01",
+    "name": "refunded-both",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK5170": {
+          "amount": 520,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6047": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "split-01",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6047": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK5170": {
+          "amount": 260,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK5170": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  }
+]

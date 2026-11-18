@@ -1,0 +1,79 @@
+[
+  {
+    "case": "meal-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-10001": {
+          "category": "disruption"
+        }
+      },
+      "reimbursements": {
+        "SK9320": {
+          "meals": 40
+        }
+      },
+      "credits": {
+        "SK9320": {
+          "compensation": 350
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "meal-01",
+    "name": "old-15",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK9320": {
+          "meals": 30
+        }
+      },
+      "tickets": {
+        "SKY-10001": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "meal-01",
+    "name": "paid-receipt",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK9320": {
+          "meals": 50
+        }
+      },
+      "tickets": {
+        "SKY-10001": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "meal-01",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-10001": {
+          "category": "disruption"
+        }
+      },
+      "reimbursements": {
+        "SK9320": {
+          "meals": 40
+        }
+      }
+    },
+    "requests": []
+  }
+]

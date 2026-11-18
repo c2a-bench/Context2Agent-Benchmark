@@ -532,6 +532,8 @@ def keyword_self_check():
     """Problems with the rule keywords on KEYWORD_CASES (verify.py check)."""
     problems = []
     for rid, statement, spec, want in KEYWORD_CASES:
+        if spec is None and not RULE_KEYWORDS:  # no rule_keywords.json: the keyword check is not used
+            continue
         if rule_keywords_found(rid, normalize(statement), spec=spec) != want:
             problems.append(f"keywords {rid}: {'missed' if want else 'wrongly matched'} {statement[:70]!r}")
     return problems

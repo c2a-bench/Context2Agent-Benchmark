@@ -1,0 +1,42 @@
+[
+  {
+    "case": "gate-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6032": {
+          "category": "service"
+        }
+      },
+      "credits": {
+        "SK3150": {
+          "goodwill": 60
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "gate-02",
+    "name": "handed-off",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6032": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "reason": "conduct"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

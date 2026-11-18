@@ -1,0 +1,40 @@
+[
+  {
+    "case": "pet-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8005": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK9121": {
+          "amount": 333,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "pet-03",
+    "name": "no-pet-fee",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9121": {
+          "amount": 238,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-8005": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

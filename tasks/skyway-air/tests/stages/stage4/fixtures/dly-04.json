@@ -1,0 +1,34 @@
+[
+  {
+    "case": "dly-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-10002": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "dly-04",
+    "name": "refunded",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9330": {
+          "amount": 164,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-10002": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

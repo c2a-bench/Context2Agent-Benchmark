@@ -1,0 +1,37 @@
+[
+  {
+    "case": "mgr-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7021": {
+          "category": "refund",
+          "labels": [
+            "not-authorized"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "mgr-02",
+    "name": "refunded-personal",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK8161": {
+          "amount": 238,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-7021": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

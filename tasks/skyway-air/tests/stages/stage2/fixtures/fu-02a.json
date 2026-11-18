@@ -1,0 +1,27 @@
+[
+  {
+    "case": "fu-02a",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8015": {
+          "category": "disruption"
+        }
+      },
+      "approvals": {
+        "SKY-8015": {
+          "kind": "hotel",
+          "amount": 240,
+          "booking_id": "SK9151"
+        }
+      },
+      "credits": {
+        "SK9151": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  }
+]

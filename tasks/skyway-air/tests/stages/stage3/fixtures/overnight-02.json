@@ -1,0 +1,64 @@
+[
+  {
+    "case": "overnight-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6012": {
+          "category": "disruption"
+        }
+      },
+      "reimbursements": {
+        "SK5530": {
+          "meals": 105,
+          "hotel": 160
+        }
+      },
+      "credits": {
+        "SK5530": {
+          "compensation": 525
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "overnight-02",
+    "name": "asked-approval-needlessly",
+    "should": "fail",
+    "data": {
+      "approvals": {
+        "SKY-6012": {
+          "kind": "hotel",
+          "amount": 160
+        }
+      },
+      "tickets": {
+        "SKY-6012": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "overnight-02",
+    "name": "meals-at-receipts",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK5530": {
+          "hotel": 160,
+          "meals": 120
+        }
+      },
+      "tickets": {
+        "SKY-6012": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

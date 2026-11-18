@@ -1,0 +1,21 @@
+[
+  {
+    "case": "rcpt-01a",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-11004": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK9401": {
+          "amount": 172,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  }
+]

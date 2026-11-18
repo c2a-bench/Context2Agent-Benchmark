@@ -1,0 +1,43 @@
+[
+  {
+    "case": "ill-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7025": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SKY-7025",
+          "reason": "not_covered"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "ill-01",
+    "name": "gave-credit",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK8180": {
+          "illness": 119
+        }
+      },
+      "tickets": {
+        "SKY-7025": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

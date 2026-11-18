@@ -1,0 +1,51 @@
+[
+  {
+    "case": "hotel-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7002": {
+          "category": "disruption"
+        }
+      },
+      "approvals": {
+        "SKY-7002": {
+          "kind": "hotel",
+          "amount": 230,
+          "booking_id": "SK8101"
+        }
+      },
+      "reimbursements": {
+        "SK8101": {
+          "meals": 70
+        }
+      },
+      "credits": {
+        "SK8101": {
+          "compensation": 300
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "hotel-02",
+    "name": "paid-without-approval",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK8101": {
+          "hotel": 230,
+          "meals": 70
+        }
+      },
+      "tickets": {
+        "SKY-7002": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

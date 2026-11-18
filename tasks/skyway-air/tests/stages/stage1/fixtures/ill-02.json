@@ -1,0 +1,43 @@
+[
+  {
+    "case": "ill-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7026": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK8181": {
+          "amount": 239,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "ill-02",
+    "name": "handed-off",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-7026": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "reason": "not_covered"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

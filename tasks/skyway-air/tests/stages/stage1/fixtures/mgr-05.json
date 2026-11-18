@@ -1,0 +1,38 @@
+[
+  {
+    "case": "mgr-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7023": {
+          "category": "change",
+          "labels": [
+            "not-authorized"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "mgr-05",
+    "name": "changed-other-company",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK8170": {
+          "to_flight": "SW908",
+          "change_fee": 75,
+          "fare_difference": 20
+        }
+      },
+      "tickets": {
+        "SKY-7023": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

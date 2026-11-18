@@ -1,0 +1,37 @@
+[
+  {
+    "case": "conn-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8012": {
+          "category": "refund",
+          "labels": [
+            "agency-refund"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "conn-04",
+    "name": "refunded-agency",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9143": {
+          "amount": 215,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-8012": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

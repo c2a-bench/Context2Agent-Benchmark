@@ -1,0 +1,37 @@
+[
+  {
+    "case": "cancel-06",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6006": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK6044": {
+          "amount": 238,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-06",
+    "name": "agency-label-on-direct",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6006": {
+          "labels": [
+            "agency-refund"
+          ],
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

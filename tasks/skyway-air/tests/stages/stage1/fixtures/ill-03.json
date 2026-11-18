@@ -1,0 +1,43 @@
+[
+  {
+    "case": "ill-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7027": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SKY-7027",
+          "reason": "not_covered"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "ill-03",
+    "name": "normal-credit",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK8182": {
+          "voluntary_cancellation": 85
+        }
+      },
+      "tickets": {
+        "SKY-7027": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

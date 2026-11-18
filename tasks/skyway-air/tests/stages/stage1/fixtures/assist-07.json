@@ -1,0 +1,36 @@
+[
+  {
+    "case": "assist-07",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7012": {
+          "category": "service",
+          "labels": [
+            "not-authorized"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "assist-07",
+    "name": "credited-non-contact",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK8144": {
+          "assistance": 100
+        }
+      },
+      "tickets": {
+        "SKY-7012": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  }
+]

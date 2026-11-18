@@ -1,0 +1,34 @@
+[
+  {
+    "case": "um-10",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-10013": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK9310": {
+          "amount": 150,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "um-10",
+    "name": "treated-as-optional",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-10013": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

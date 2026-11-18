@@ -1,0 +1,38 @@
+[
+  {
+    "case": "bag-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6018": {
+          "category": "baggage"
+        }
+      },
+      "reimbursements": {
+        "SK3398": {
+          "bag_expenses": 90
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "bag-02",
+    "name": "paid-limit",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK3398": {
+          "bag_expenses": 150
+        }
+      },
+      "tickets": {
+        "SKY-6018": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  }
+]

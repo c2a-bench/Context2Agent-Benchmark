@@ -1,0 +1,34 @@
+[
+  {
+    "case": "fam-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9013": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "fam-02",
+    "name": "refunded-teen",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9231": {
+          "amount": 25,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-9013": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,40 @@
+[
+  {
+    "case": "conn-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8010": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK9141": {
+          "amount": 215,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "conn-02",
+    "name": "refunded-everything",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9141": {
+          "amount": 430,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-8010": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

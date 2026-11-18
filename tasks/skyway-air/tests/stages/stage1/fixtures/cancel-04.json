@@ -1,0 +1,39 @@
+[
+  {
+    "case": "cancel-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6004": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK5102": {
+          "amount": 378,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-04",
+    "name": "credit-by-default",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK5102": {
+          "cancellation": 415.8
+        }
+      },
+      "tickets": {
+        "SKY-6004": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

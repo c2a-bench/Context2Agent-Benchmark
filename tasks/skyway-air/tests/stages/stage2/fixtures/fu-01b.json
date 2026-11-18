@@ -1,0 +1,40 @@
+[
+  {
+    "case": "fu-01b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8014": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/tickets/SKY-8013/comments",
+        "body": {},
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "fu-01b",
+    "name": "paid-again",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK9150": {
+          "bag_expenses": 300
+        }
+      },
+      "tickets": {
+        "SKY-8014": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  }
+]

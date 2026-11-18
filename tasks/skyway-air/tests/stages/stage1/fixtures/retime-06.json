@@ -1,0 +1,34 @@
+[
+  {
+    "case": "retime-06",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7017": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK8154": {
+          "amount": 99,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "retime-06",
+    "name": "draft-3-hours",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-7017": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

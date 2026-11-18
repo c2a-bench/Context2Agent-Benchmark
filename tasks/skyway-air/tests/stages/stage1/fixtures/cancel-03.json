@@ -1,0 +1,57 @@
+[
+  {
+    "case": "cancel-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6003": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK5102": {
+          "cancellation": 378.0
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-03",
+    "name": "refund-instead",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK5102": {
+          "amount": 378,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6003": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-03",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6003": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK5102": {
+          "cancellation": 415.8
+        }
+      }
+    },
+    "requests": []
+  }
+]

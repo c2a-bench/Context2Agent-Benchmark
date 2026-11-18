@@ -1,0 +1,42 @@
+[
+  {
+    "case": "retime-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7016": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK8153": {
+          "to_flight": "SW896",
+          "change_fee": 75,
+          "fare_difference": 20
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "retime-04",
+    "name": "free-move",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK8153": {
+          "to_flight": "SW896",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "tickets": {
+        "SKY-7016": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

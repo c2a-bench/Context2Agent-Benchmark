@@ -563,6 +563,8 @@ def keyword_self_check():
         if stage:
             rules = json.loads((here / "stages" / f"stage{stage}" / "rules.json").read_text())
             spec = next((r.get("keywords") for r in rules if r["id"] == rid), None)
+        if spec is None and not RULE_KEYWORDS:  # no rule_keywords.json: the keyword check is not used
+            continue
         if rule_keywords_found(rid, normalize(statement), spec=spec) != want:
             problems.append(f"keywords {rid} (stage {stage}): {'missed' if want else 'wrongly matched'} {statement[:70]!r}")
     return problems

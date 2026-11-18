@@ -1,0 +1,102 @@
+[
+  {
+    "case": "decoy-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8017": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK9160": {
+          "to_flight": "SW486",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9160": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-01",
+    "name": "left-this-morning",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9160": {
+          "to_flight": "SW484",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9160": {
+          "compensation": 175
+        }
+      },
+      "tickets": {
+        "SKY-8017": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-01",
+    "name": "cancelled-flight",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9160": {
+          "to_flight": "SW485",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9160": {
+          "compensation": 175
+        }
+      },
+      "tickets": {
+        "SKY-8017": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-01",
+    "name": "later-flight",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9160": {
+          "to_flight": "SW487",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9160": {
+          "compensation": 175
+        }
+      },
+      "tickets": {
+        "SKY-8017": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,43 @@
+[
+  {
+    "case": "trans-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8006": {
+          "category": "disruption"
+        }
+      },
+      "reimbursements": {
+        "SK9130": {
+          "transport": 35
+        }
+      },
+      "credits": {
+        "SK9130": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "trans-01",
+    "name": "no-transport",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK9130": {
+          "compensation": 175
+        }
+      },
+      "tickets": {
+        "SKY-8006": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

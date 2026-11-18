@@ -1,0 +1,38 @@
+[
+  {
+    "case": "bag-07",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7003": {
+          "category": "baggage"
+        }
+      },
+      "reimbursements": {
+        "SK8110": {
+          "bag_expenses": 270
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "bag-07",
+    "name": "old-75-rate",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK8110": {
+          "bag_expenses": 225
+        }
+      },
+      "tickets": {
+        "SKY-7003": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  }
+]

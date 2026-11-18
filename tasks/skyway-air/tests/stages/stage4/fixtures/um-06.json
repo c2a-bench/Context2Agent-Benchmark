@@ -1,0 +1,40 @@
+[
+  {
+    "case": "um-06",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-10009": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK9306": {
+          "amount": 322,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "um-06",
+    "name": "fare-only",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9306": {
+          "amount": 172,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-10009": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

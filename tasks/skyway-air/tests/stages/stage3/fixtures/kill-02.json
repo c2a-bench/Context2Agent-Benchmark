@@ -1,0 +1,38 @@
+[
+  {
+    "case": "kill-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9008": {
+          "category": "baggage"
+        }
+      },
+      "reimbursements": {
+        "SK9223": {
+          "bag_expenses": 180
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "kill-02",
+    "name": "paid-twice",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK9223": {
+          "bag_expenses": 360
+        }
+      },
+      "tickets": {
+        "SKY-9008": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  }
+]

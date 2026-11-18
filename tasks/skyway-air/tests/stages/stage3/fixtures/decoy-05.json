@@ -1,0 +1,102 @@
+[
+  {
+    "case": "decoy-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9017": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK9164": {
+          "to_flight": "SW494",
+          "change_fee": 40,
+          "fare_difference": 19
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-05",
+    "name": "other-airport",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9164": {
+          "to_flight": "SW496",
+          "change_fee": 40,
+          "fare_difference": 19
+        }
+      },
+      "tickets": {
+        "SKY-9017": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-05",
+    "name": "left-this-morning",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9164": {
+          "to_flight": "SW493",
+          "change_fee": 40,
+          "fare_difference": 19
+        }
+      },
+      "tickets": {
+        "SKY-9017": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-05",
+    "name": "later-flight",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9164": {
+          "to_flight": "SW495",
+          "change_fee": 40,
+          "fare_difference": 19
+        }
+      },
+      "tickets": {
+        "SKY-9017": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-05",
+    "name": "next-day",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9164": {
+          "to_flight": "SW497",
+          "change_fee": 40,
+          "fare_difference": 19
+        }
+      },
+      "tickets": {
+        "SKY-9017": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

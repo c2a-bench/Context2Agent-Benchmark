@@ -1,0 +1,42 @@
+[
+  {
+    "case": "loyalty-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-9001": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK9201": {
+          "to_flight": "SW932",
+          "change_fee": 40,
+          "fare_difference": 30
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "loyalty-01",
+    "name": "old-silver-free",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9201": {
+          "to_flight": "SW932",
+          "change_fee": 0,
+          "fare_difference": 30
+        }
+      },
+      "tickets": {
+        "SKY-9001": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

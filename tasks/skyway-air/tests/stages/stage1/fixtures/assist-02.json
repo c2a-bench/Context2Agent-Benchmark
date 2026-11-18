@@ -1,0 +1,41 @@
+[
+  {
+    "case": "assist-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7008": {
+          "category": "service"
+        }
+      },
+      "credits": {
+        "SK8140": {
+          "goodwill": 50
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "assist-02",
+    "name": "assistance-credit",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK8140": {
+          "assistance": 100
+        }
+      },
+      "tickets": {
+        "SKY-7008": {
+          "labels": [
+            "assistance-failure"
+          ],
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  }
+]

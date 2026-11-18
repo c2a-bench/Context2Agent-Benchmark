@@ -1,0 +1,45 @@
+[
+  {
+    "case": "hotel-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8002": {
+          "category": "disruption"
+        }
+      },
+      "approvals": {
+        "SKY-8002": {
+          "kind": "hotel",
+          "amount": 240,
+          "booking_id": "SK9101"
+        }
+      },
+      "credits": {
+        "SK9101": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "hotel-04",
+    "name": "paid-now",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK9101": {
+          "hotel": 240
+        }
+      },
+      "tickets": {
+        "SKY-8002": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

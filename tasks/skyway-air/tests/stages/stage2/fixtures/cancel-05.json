@@ -1,0 +1,37 @@
+[
+  {
+    "case": "cancel-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6005": {
+          "category": "refund",
+          "labels": [
+            "agency-refund"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-05",
+    "name": "refunded-agency-booking",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK6010": {
+          "amount": 201,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6005": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

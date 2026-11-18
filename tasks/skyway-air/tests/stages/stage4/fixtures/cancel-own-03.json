@@ -1,0 +1,21 @@
+[
+  {
+    "case": "cancel-own-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6050": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK7130": {
+          "amount": 289,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "case": "bag-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6057": {
+          "category": "baggage"
+        }
+      },
+      "reimbursements": {
+        "SK3304": {
+          "bag_expenses": 360
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "bag-03",
+    "name": "paid-receipts",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK3304": {
+          "bag_expenses": 420
+        }
+      },
+      "tickets": {
+        "SKY-6057": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "bag-03",
+    "name": "old-75-rate",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK3304": {
+          "bag_expenses": 300
+        }
+      },
+      "tickets": {
+        "SKY-6057": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "bag-03",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6057": {
+          "category": "baggage"
+        }
+      },
+      "reimbursements": {
+        "SK3304": {
+          "bag_expenses": 300
+        }
+      }
+    },
+    "requests": []
+  }
+]

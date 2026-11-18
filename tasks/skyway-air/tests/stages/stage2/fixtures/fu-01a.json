@@ -1,0 +1,20 @@
+[
+  {
+    "case": "fu-01a",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8013": {
+          "category": "baggage"
+        }
+      },
+      "reimbursements": {
+        "SK9150": {
+          "bag_expenses": 150
+        }
+      }
+    },
+    "requests": []
+  }
+]

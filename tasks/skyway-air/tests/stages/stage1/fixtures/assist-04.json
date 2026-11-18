@@ -1,0 +1,33 @@
+[
+  {
+    "case": "assist-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7010": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "assist-04",
+    "name": "paid-unbooked",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK8142": {
+          "assistance": 100
+        }
+      },
+      "tickets": {
+        "SKY-7010": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  }
+]

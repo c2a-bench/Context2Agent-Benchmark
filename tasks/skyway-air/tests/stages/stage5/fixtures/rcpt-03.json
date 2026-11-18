@@ -1,0 +1,40 @@
+[
+  {
+    "case": "rcpt-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-11008": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK9405": {
+          "amount": 172,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "rcpt-03",
+    "name": "refunded-first-again",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK9404": {
+          "amount": 344,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-11008": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

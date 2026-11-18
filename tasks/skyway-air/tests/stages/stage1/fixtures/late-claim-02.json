@@ -1,0 +1,72 @@
+[
+  {
+    "case": "late-claim-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6022": {
+          "category": "baggage"
+        }
+      },
+      "reimbursements": {
+        "SK3301": {
+          "bag_expenses": 90
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "late-claim-02",
+    "name": "late-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6022": {
+          "labels": [
+            "claim-late"
+          ],
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "late-claim-02",
+    "name": "old-75-rate",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK3301": {
+          "bag_expenses": 75
+        }
+      },
+      "tickets": {
+        "SKY-6022": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "late-claim-02",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6022": {
+          "category": "baggage"
+        }
+      },
+      "reimbursements": {
+        "SK3301": {
+          "bag_expenses": 75
+        }
+      }
+    },
+    "requests": []
+  }
+]

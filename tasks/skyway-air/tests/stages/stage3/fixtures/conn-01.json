@@ -1,0 +1,47 @@
+[
+  {
+    "case": "conn-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-8009": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK9140": {
+          "to_flight": "SW704",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9140": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "conn-01",
+    "name": "normal-change",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9140": {
+          "to_flight": "SW704",
+          "change_fee": 75,
+          "fare_difference": 20
+        }
+      },
+      "tickets": {
+        "SKY-8009": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

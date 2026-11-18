@@ -1,0 +1,93 @@
+[
+  {
+    "case": "multi-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6067": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK2601": {
+          "amount": 238,
+          "method": "original_payment"
+        },
+        "SK2602": {
+          "amount": 156,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK2603": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-01",
+    "name": "refunded-atc-trip",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK2601": {
+          "amount": 238,
+          "method": "original_payment"
+        },
+        "SK2602": {
+          "amount": 156,
+          "method": "original_payment"
+        },
+        "SK2604": {
+          "amount": 182,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK2603": {
+          "compensation": 150
+        }
+      },
+      "tickets": {
+        "SKY-6067": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-01",
+    "name": "compensation-for-weather",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK2601": {
+          "amount": 238,
+          "method": "original_payment"
+        },
+        "SK2602": {
+          "amount": 156,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK2603": {
+          "compensation": 150
+        },
+        "SK2602": {
+          "compensation": 150
+        }
+      },
+      "tickets": {
+        "SKY-6067": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,102 @@
+[
+  {
+    "case": "decoy-07",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-11011": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK9166": {
+          "to_flight": "SW474",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9166": {
+          "compensation": 350
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-07",
+    "name": "left-before-landing",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9166": {
+          "to_flight": "SW473",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9166": {
+          "compensation": 350
+        }
+      },
+      "tickets": {
+        "SKY-11011": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-07",
+    "name": "other-airport",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9166": {
+          "to_flight": "SW476",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9166": {
+          "compensation": 350
+        }
+      },
+      "tickets": {
+        "SKY-11011": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "decoy-07",
+    "name": "later-flight",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK9166": {
+          "to_flight": "SW475",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK9166": {
+          "compensation": 350
+        }
+      },
+      "tickets": {
+        "SKY-11011": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

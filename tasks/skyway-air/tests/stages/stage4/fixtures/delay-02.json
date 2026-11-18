@@ -1,0 +1,66 @@
+[
+  {
+    "case": "delay-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6014": {
+          "category": "disruption"
+        }
+      },
+      "reimbursements": {
+        "SK3390": {
+          "meals": 20
+        }
+      },
+      "credits": {
+        "SK3390": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "delay-02",
+    "name": "paid-both-passengers",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK3390": {
+          "compensation": 300
+        }
+      },
+      "tickets": {
+        "SKY-6014": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "delay-02",
+    "name": "previous-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6014": {
+          "category": "disruption"
+        }
+      },
+      "reimbursements": {
+        "SK3390": {
+          "meals": 15
+        }
+      },
+      "credits": {
+        "SK3390": {
+          "compensation": 175
+        }
+      }
+    },
+    "requests": []
+  }
+]

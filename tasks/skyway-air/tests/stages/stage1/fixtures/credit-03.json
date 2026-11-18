@@ -1,0 +1,39 @@
+[
+  {
+    "case": "credit-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-7006": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK8130": {
+          "amount": 546,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "credit-03",
+    "name": "credit-by-default",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK8130": {
+          "cancellation": 546
+        }
+      },
+      "tickets": {
+        "SKY-7006": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]
