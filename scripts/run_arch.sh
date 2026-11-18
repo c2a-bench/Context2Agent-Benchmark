@@ -27,6 +27,7 @@ export JUDGE_MODE="${JUDGE_MODE:-folder}"
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 TASK="${ARCH_TASK:-skyway-air}"
 DIR="$REPO/tasks/$TASK/architectures"
+[ -d "$DIR" ] || { echo "no $DIR: run scripts/fetch_bench.py first (see README)" >&2; exit 1; }
 # A read loop, not mapfile: macOS ships bash 3.2, which has no mapfile.
 ARCHS=()
 while IFS= read -r a; do ARCHS+=("$a"); done < <(cd "$DIR" && ls ./*.md 2>/dev/null | sed 's|^\./||; s|\.md$||')

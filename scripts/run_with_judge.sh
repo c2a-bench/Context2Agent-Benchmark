@@ -107,6 +107,7 @@ fi
 
 task="${1:?usage: run_with_judge.sh <task> [harbor run options]}"; shift
 [ -d "tasks/$task" ] || { echo "no task tasks/$task" >&2; exit 1; }
+[ -f "tasks/$task/tests/cases.json" ] || { echo "tasks/$task has no benchmark data yet: run scripts/fetch_bench.py first (see README)" >&2; exit 1; }
 jobs="$REPO/tasks/$task/jobs"
 mkdir -p "$jobs"
 
