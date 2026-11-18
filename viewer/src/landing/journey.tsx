@@ -42,6 +42,8 @@ const poly = (pts: [number, number][]) => pts.map((p) => p.map((x) => x.toFixed(
 /** The doc page, and the two docs stacked behind it (the rest of the knowledge base). */
 const DOC: Box = [72, 34, 248, 256];
 const DOC_STACK: [number, number][] = [[34, -26], [17, -13]];
+/** Chat bubbles stuck on the stack's right edge: x, y, width, speaker on the left. */
+const STACK_BUBBLES: [number, number, number, boolean][] = [[322, 74, 52, true], [330, 108, 56, false]];
 const S0: State = (() => {
   const order = ["f0", "A", "f1", "f2", "B", "f3", "C", "f4", "D", "f5", "E", "f6", "F", "f7"];
   const w: Record<string, number> = { f0: 100, A: 196, f1: 170, f2: 214, B: 150, f3: 200, C: 208, f4: 140, D: 180, f5: 216, E: 160, f6: 190, F: 204, f7: 120 };
@@ -100,11 +102,14 @@ const ROWS: { id: string; w: number; ok: boolean; role: Role; term?: string; col
   { id: "B", w: 74, ok: true, role: "fact" },
   { id: "C", w: 80, ok: false, role: "wrong", term: "wrong action", color: "var(--f-state)" },
   { id: "D", w: 72, ok: false, role: "missing-recall", term: "missing a rule", color: "var(--f-recall)" },
-  { id: "G", w: 68, ok: false, role: "missing-customer", term: "missed customer info", color: "var(--f-customer)" },
+  { id: "G", w: 44, ok: false, role: "missing-customer", term: "missed customer info", color: "var(--f-customer)" },
 ];
 const rowY = (i: number) => 96 + i * 40;
 /** The clipboard: board, the paper on it, the clip. */
 const CLIP: Box = [86, 26, 248, 288];
+/** The score dial on the paper: centre, and the red zone's sweep (2 of 5 of the half turn). */
+const DIAL: [number, number] = [288, 66];
+const DIAL_RED = (72 * Math.PI) / 180;
 const S4: State = (() => {
   const bars: Record<string, Bar> = {};
   for (const id of IDS) bars[id] = gone(S3.bars[id][0]);
@@ -114,7 +119,7 @@ const S4: State = (() => {
 })();
 
 const STATES = [S0, S1, S2, S3, S4];
-const COUNTER = ["6 facts in the business context", "5 of 6 made it into the prompt", "5 of 6 · no docs at test time", "1 customer fact never asked", "2 of 5 checks pass · not resolved"];
+const COUNTER = ["Everything a ticket might need", "One rule gets lost in the build", "Works from what was built", "A customer detail goes unasked", "Not resolved"];
 
 // ---- static geometry ----
 const rectPts = (m: M, [x, y, w, h]: Box): [number, number][] => [apply(m, [x, y]), apply(m, [x + w, y]), apply(m, [x + w, y + h]), apply(m, [x, y + h])];
@@ -147,7 +152,7 @@ const head = headOf(DM0, S2.plane, HEAD.card, HEAD.depth);
 const at = (s: number, u: number, v: number, lift = 0) => apply(matrixOf(STATES[s].plane, lift), [u, v]);
 // the viewBox fits every state (with its shadow) and the robot's head
 const VB = (() => {
-  const pts = [...head.top, ...head.side, [head.antenna[0], head.antenna[1] - 34] as [number, number], ...rectPts(DM0, HEAD.base), ...boxOf(HEAD.base, HEAD.depth).side];
+  const pts = [[388, 74], [388, 132], ...head.top, ...head.side, [head.antenna[0], head.antenna[1] - 34] as [number, number], ...rectPts(DM0, HEAD.base), ...boxOf(HEAD.base, HEAD.depth).side];
   for (const s of STATES) pts.push(...rectPts(DM0, s.card).map(([x, y]) => [x + 14, y + 18] as [number, number]));
   pts.push([DOC[0] + DOC[2] + DOC_STACK[0][0] + 4, DOC[1] + DOC_STACK[0][1] - 4], [CLIP[0], CLIP[1] - 22]);
   for (const s of STATES) pts.push(...rectPts(matrixOf(s.plane), s.card));
@@ -160,10 +165,10 @@ const VB = (() => {
 // A step's failure chips use the failure chart's own plain names (REASONS), so the two always read alike.
 type Tag = { group: FailureGroup; reason: ReasonKey };
 const STEPS: { name: string; body: string; tags: Tag[] }[] = [
-  { name: "Business context", body: "A company's policies and procedures live in many documents and systems, and they keep changing.", tags: [] },
+  { name: "Business context", body: "A company's knowledge lives in many places, from policy documents to past chats, and it keeps changing.", tags: [] },
   {
     name: "Builder",
-    body: "The agent has to take that context in. One approach we test: an AI builder reads the documents and sets up the support agent. In this example, one fact doesn't make it in.",
+    body: "An AI builder reads that material and sets up the support agent. Whatever it misses or gets wrong, the agent won't know.",
     tags: [
       { group: "Missing knowledge (rule recall)", reason: "recall" },
       { group: "Build spec failure", reason: "spec" },
@@ -171,7 +176,7 @@ const STEPS: { name: string; body: string; tags: Tag[] }[] = [
   },
   {
     name: "Support agent",
-    body: "The support agent then handles the company's tickets. Depending on its design, it works from what the builder set up and may also search the documents.",
+    body: "The support agent then handles the company's tickets. Depending on its design, it works from what the builder set up and may also search the company's knowledge.",
     tags: [{ group: "Agent crash", reason: "crash" }],
   },
   {
@@ -181,7 +186,7 @@ const STEPS: { name: string; body: string; tags: Tag[] }[] = [
   },
   {
     name: "QA evaluation",
-    body: "Like a contact center QA form, each ticket is scored on whether the issue was resolved in the right system and in line with company policy. This one passes 2 of 5.",
+    body: "Each ticket is scored on whether the issue was resolved in the right system and in line with company policy.",
     tags: [{ group: "Wrong end state (database check)", reason: "state" }],
   },
 ];
@@ -224,7 +229,13 @@ function useMorph(k: number, svg: React.RefObject<SVGSVGElement | null>, still: 
       }
       if (t >= 0.5) root.setAttribute("data-k", String(k));
       const v: Record<string, number[]> = {};
-      for (const id in target) v[id] = target[id].map((b, i) => lerp(from[id][i], b, t));
+      // the sheet leads and the bars follow it one after another, so the change reads as a cascade
+      for (const id in target) {
+        const j = IDS.indexOf(id as (typeof IDS)[number]);
+        const tt = j < 0 ? t : smooth((t - j * 0.018) / 0.72);
+        v[id] = target[id].map((b, i) => lerp(from[id][i], b, tt));
+      }
+      root.querySelector("[data-needle]")?.setAttribute("transform", `rotate(${-90 + 72 * (k === 4 ? smooth((t - 0.55) / 0.45) : 1)} ${DIAL[0]} ${DIAL[1]})`);
       now.current = v;
       const [x, y, w, h, rx, thick] = v.card;
       const plane = { th: v.card[6], pv: v.card[7], fv: v.card[8], z: v.card[9] };
@@ -270,7 +281,7 @@ function useMorph(k: number, svg: React.RefObject<SVGSVGElement | null>, still: 
     let raf = 0;
     const t0 = performance.now();
     const step = (t: number) => {
-      const p = Math.min(1, (t - t0) / 700);
+      const p = Math.min(1, (t - t0) / 900);
       write(ease(p));
       if (p < 1) raf = requestAnimationFrame(step);
     };
@@ -294,7 +305,7 @@ function Figure({ k, still }: { k: number; still: boolean }) {
   const on = (...ks: number[]) => ({ className: "j-deco", "data-states": ks.join(" ") });
   return (
     <div className="lp-jfig">
-      <div className="lp-jcount mono num" aria-live="polite">{COUNTER[k]}</div>
+      <div key={k} className="lp-jcount j-count-in mono num" aria-live="polite">{COUNTER[k]}</div>
       <svg ref={svg} viewBox={VB.join(" ")} role="img" aria-label={`${STEPS[k].name}: ${COUNTER[k]}`}>
         <defs>
           <filter id="j-blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="8" /></filter>
@@ -323,6 +334,17 @@ function Figure({ k, still }: { k: number; still: boolean }) {
               <rect x={DOC[0] + 2.2} y={DOC[1] - 1.7} width={DOC[2]} height={DOC[3]} rx="4" className="j-side-dark j-edge" />
               <rect x={DOC[0]} y={DOC[1]} width={DOC[2]} height={DOC[3]} rx="4" className="j-paper j-edge" />
               {[0, 1, 2, 3, 4, 5].map((r) => <rect key={r} x={DOC[0] + 22} y={DOC[1] + 22 + r * 15.5} width={[100, 176, 148, 186, 130, 166][r]} height="6" rx="2" className="j-faint" />)}
+              {i === 1 && [0, 1, 2].map((d) => <circle key={d} cx={DOC[0] + 14 + d * 9} cy={DOC[1] + 7} r="2.2" className="j-side-dark j-edge" />)}
+            </g>
+          ))}
+          {/* chats: two small bubbles stuck on the stack's edge, so the pile reads as documents and conversations */}
+          {STACK_BUBBLES.map(([x, y, w, left], i) => (
+            <g key={i}>
+              <rect x={x + 2} y={y + 3} width={w} height="18" rx="7" className="j-halo" filter="url(#j-blur-s)" />
+              <path d={left ? `M${x + 7} ${y + 16}l-4 8l11 -8Z` : `M${x + w - 7} ${y + 16}l4 8l-11 -8Z`} className={`j-edge ${left ? "j-paper" : "j-bubble-agent"}`} />
+              <rect x={x} y={y} width={w} height="18" rx="7" className={`j-edge ${left ? "j-paper" : "j-bubble-agent"}`} />
+              <rect x={x + 7} y={y + 6} width={w - 14} height="3" rx="1.5" style={{ fill: "color-mix(in oklab, var(--ink) 30%, transparent)" }} />
+              <rect x={x + 7} y={y + 11} width={(w - 14) * 0.6} height="3" rx="1.5" style={{ fill: "color-mix(in oklab, var(--ink) 30%, transparent)" }} />
             </g>
           ))}
         </g>
@@ -370,6 +392,15 @@ function Figure({ k, still }: { k: number; still: boolean }) {
             {BUBBLES.map((b, i) => <rect key={i} x={b.box[0] + 3} y={b.box[1] + 3} width={b.box[2]} height={b.box[3]} rx="10" className="j-halo" filter="url(#j-blur-s)" />)}
           </OnSheet>
           <OnSheet s={3} lift={LIFT}>
+            {BUBBLES.map((b, i) => {
+              const agent = b.who === "agent", [bx, by, bw, bh] = b.box;
+              return (
+                <g key={`t${i}`}>
+                  <path d={agent ? `M${bx + bw - 12} ${by + bh - 2}l5 8l-13 -8Z` : `M${bx + 12} ${by + bh - 2}l-5 8l13 -8Z`} className={`j-edge ${agent ? "j-bubble-agent" : "j-paper"}`} strokeDasharray={b.dashed ? "4 4" : undefined} />
+                  <circle cx={agent ? bx + bw + 12 : bx - 12} cy={by + bh / 2} r="5" className="j-edge" style={{ fill: agent ? "var(--action)" : "color-mix(in oklab, var(--ink) 30%, transparent)" }} />
+                </g>
+              );
+            })}
             {BUBBLES.map((b, i) => (
               <rect key={i} x={b.box[0]} y={b.box[1]} width={b.box[2]} height={b.box[3]} rx="10" className={`j-edge ${b.who === "agent" ? "j-bubble-agent" : "j-paper"}`} strokeDasharray={b.dashed ? "4 4" : undefined} />
             ))}
@@ -384,6 +415,13 @@ function Figure({ k, still }: { k: number; still: boolean }) {
             <rect x={CLIP[0] + CLIP[2] / 2 - 38} y={CLIP[1] - 8} width="76" height="30" rx="7" className="j-side-dark j-edge" />
             <rect x={CLIP[0] + CLIP[2] / 2 - 16} y={CLIP[1] - 18} width="32" height="18" rx="9" className="j-paper j-edge" />
             <circle cx={CLIP[0] + CLIP[2] / 2} cy={CLIP[1] - 9} r="4" className="j-side-dark j-edge" />
+            {/* the score dial: a needle that settles in the red */}
+            <circle cx={DIAL[0]} cy={DIAL[1]} r="19" className="j-side-dark j-edge" />
+            <circle cx={DIAL[0]} cy={DIAL[1]} r="16" className="j-paper j-edge" />
+            <path d={`M${DIAL[0] - 12.5} ${DIAL[1]}A12.5 12.5 0 0 1 ${DIAL[0] - 12.5 * Math.cos(DIAL_RED)} ${DIAL[1] - 12.5 * Math.sin(DIAL_RED)}`} className="j-dial-red" />
+            {[0, 45, 90, 135, 180].map((a) => { const r = (a * Math.PI) / 180, c = Math.cos(r), n = Math.sin(r); return <line key={a} x1={DIAL[0] - 14.5 * c} y1={DIAL[1] - 14.5 * n} x2={DIAL[0] - 11 * c} y2={DIAL[1] - 11 * n} className="j-edge" />; })}
+            <g data-needle transform={`rotate(-90 ${DIAL[0]} ${DIAL[1]})`}><line x1={DIAL[0]} y1={DIAL[1] + 3} x2={DIAL[0]} y2={DIAL[1] - 12} className="j-needle" /></g>
+            <circle cx={DIAL[0]} cy={DIAL[1]} r="2.2" className="j-ink" />
             {ROWS.map((r, i) => <rect key={r.id} x="114" y={rowY(i) - 3.5} width="14" height="14" rx="3" className="j-paper j-edge" />)}
           </OnSheet>
           {ROWS.map((r, i) => {

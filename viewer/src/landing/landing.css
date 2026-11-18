@@ -174,6 +174,11 @@ svg[data-k="4"] [data-bar="card"] { fill: color-mix(in oklab, var(--ink) 9%, var
 .j-mark { fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .j-text { font-size: 10px; fill: var(--muted); }
 .j-deco { opacity: 0; }
+.j-dial-red { fill: none; stroke: var(--f-recall); stroke-width: 3; stroke-linecap: round; opacity: .85; }
+.j-needle { stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.j-count-in { animation: j-count-in 520ms cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes j-count-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .j-count-in { animation: none; } }
 .j-bar { stroke-width: 1.2; }
 .j-bar[data-role="fact"] { fill: color-mix(in oklab, var(--ink) 82%, transparent); }
 .j-bar[data-role="filler"] { fill: color-mix(in oklab, var(--ink) 16%, transparent); }
