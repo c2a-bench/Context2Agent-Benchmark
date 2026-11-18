@@ -79,7 +79,8 @@ export function TicketViewer() {
   useEffect(() => {
     if (reduce || !box.current || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { setPlaying(true); io.disconnect(); }
+      // The first report can say "intersecting" for any overlap, below the threshold: wait for half on screen.
+      if (e.isIntersecting && e.intersectionRatio >= 0.5) { setPlaying(true); io.disconnect(); }
     }, { threshold: 0.5 });
     io.observe(box.current);
     return () => io.disconnect();
@@ -102,6 +103,7 @@ export function TicketViewer() {
   const b = beat;
   return (
     <div className="bv bd" ref={box}>
+      <div className="bd-scroll">
       <svg viewBox="0 0 730 304" className="bd-svg" role="img" aria-label={NARRATE(d, i)[b]}>
         <defs>
           <marker id="bd-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" className="bd-arrowhead" /></marker>
@@ -122,6 +124,7 @@ export function TicketViewer() {
         <Node at={N.desk} title="SUPPORT DESK" lines={b >= 5 ? d.desk : ["", "", ""]} on={b === 5 || b === 6} tone={b >= 5 && !d.pass ? "bad" : undefined} />
         <Node at={N.check} title="CHECK" lines={b >= 7 ? [d.pass ? "✓ Resolved" : "✗ Failed"] : [b === 6 ? "Comparing…" : ""]} on={b >= 6} tone={b >= 7 ? (d.pass ? "good" : "bad") : undefined} />
       </svg>
+      </div>
       <p className="bd-say" aria-live="polite">{NARRATE(d, i)[b]}</p>
       <div className="bp-controls">
         <button type="button" className="bp-play" onClick={toggle} aria-label={end ? "Replay" : playing ? "Pause" : "Play"}>
@@ -133,7 +136,7 @@ export function TicketViewer() {
             return (
               <button key={k} type="button" aria-pressed={k === i} onClick={() => { setI(k); setBeat(0); setPlaying(true); }}
                 className={`bp-seg${shown ? (st.pass ? " is-pass" : " is-fail") : ""}`} title={`Stage ${k}`}>
-                {shown ? (st.pass ? "✓" : "✗") : ""} Stage {k}
+                {shown ? (st.pass ? "✓" : "✗") : ""} <span className="bp-seg-word">Stage </span>{k}
               </button>
             );
           })}
@@ -252,31 +255,4 @@ export function BehaviourViewer() {
   );
 }
 
-/** What every run records beyond pass or fail: one row per question. */
-const MEASURES: [string, string][] = [
-  ["Did the ticket pass?", "The desk's end state: every field, label and required action, no forbidden writes, protected records untouched."],
-  ["Why did it fail, and whose fault?", "Builder, agent or us; then the group and the exact type. The judge quotes the evidence."],
-  ["What knowledge did the builder keep?", "Which of the tested rules made it into the agent's files, and which wrong ones did."],
-  ["What did the agent get from the customer?", "Which facts only the customer knew it asked for and got, for each customer behavior."],
-  ["Does it hold up when the docs change?", "Tickets on new, changed and unchanged rules, stage by stage."],
-  ["Where does the answer come from?", "The support API, the customer, or both, and the pass rate for each."],
-  ["What did the builder build?", "Its design as it describes it, checked against what the agent really does, and how long the agent takes to reply."],
-  ["What did it cost?", "What the builder spent at every stage."],
-  ["Can I see everything?", "Every conversation, the agent's code, and the builder's own logs."],
-];
 
-export function MeasuresGrid() {
-  return (
-    <ol className="bm">
-      {MEASURES.map(([q, what], i) => (
-        <li key={q}>
-          <span className="bm-n">{String(i + 1).padStart(2, "0")}</span>
-          <div>
-            <div className="bm-q">{q}</div>
-            <p className="bm-what">{what}</p>
-          </div>
-        </li>
-      ))}
-    </ol>
-  );
-}

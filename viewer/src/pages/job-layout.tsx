@@ -54,7 +54,7 @@ export default function JobLayout() {
   return (
     <div className="flex h-screen flex-col">
       <header className="flex flex-wrap items-center gap-x-8 gap-y-2 border-b px-4 pt-3.5 pb-3.5 sm:px-6">
-        <Link href="/" className="text-sm font-semibold">Resolve Bench</Link>
+        <Link href="/" className="text-sm font-semibold">C2A</Link>
         <div className="min-w-0">
           <div className="truncate font-mono text-xs">{meta.job}</div>
           <div className="text-[11px] text-muted-foreground">

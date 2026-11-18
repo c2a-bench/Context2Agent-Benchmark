@@ -29,9 +29,9 @@ export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpa
           <span ref={dividerRef} className="h-5 w-px" style={{ background: "var(--line)", opacity: home ? 0 : 1 }} aria-hidden />
           {home ? (
             /* where the travelling title docks: same text at nav size, kept invisible to reserve and measure the spot */
-            <span ref={slotRef} className="lp-title text-[17px] sm:text-[19px]" style={{ visibility: "hidden" }} aria-hidden>Resolve Bench</span>
+            <span ref={slotRef} className="lp-title relative top-[2px] text-[17px] sm:text-[19px]" style={{ visibility: "hidden" }} aria-hidden>C2A</span>
           ) : (
-            <Link to="/" className="lp-title text-[17px] sm:text-[19px]" style={{ color: "var(--ink)", textDecoration: "none" }}>Resolve Bench</Link>
+            <Link to="/" className="lp-title relative top-[2px] text-[17px] sm:text-[19px]" style={{ color: "var(--ink)", textDecoration: "none" }}>C2A</Link>
           )}
         </div>
         <nav className="mx-auto hidden gap-7 text-[15px] font-medium lg:flex" aria-label="Sections">
@@ -41,7 +41,9 @@ export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpa
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
           {/* below lg the section links are hidden, so Blog moves here to stay reachable */}
           <Link to="/blog" className="link px-2 text-[15px] font-medium lg:hidden" style={{ textDecorationColor: "transparent" }}>Blog</Link>
-          <ThemeToggle />
+          {/* Landing pages redefine --muted as a text grey, so the toggle's own hover:bg-muted would turn dark and hide its
+              icon: here the hover is a light tint of the ink instead. */}
+          <ThemeToggle className="hover:bg-[color-mix(in_srgb,var(--ink)_8%,transparent)] hover:text-[var(--ink)]" />
           <Link to={to("#results")} className="btn btn--primary max-sm:hidden">See the results</Link>
         </div>
       </div>

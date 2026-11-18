@@ -1,4 +1,4 @@
-import { use } from "react";
+import { use, useState } from "react";
 import Link, { TextLink } from "@/components/link";
 import { useParams } from "react-router";
 import { NotFound } from "@/pages/not-found";
@@ -8,14 +8,47 @@ import { FOCUS, architectureGroups, offLeaderboard } from "@/lib/leaderboard";
 import { ArchPicker, pooledRate } from "@/components/arch-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
-import { behaviorForStage, combineBehaviorStages } from "@/lib/behavior-coverage";
 
 const short = (m: string | null) => (m ? m.split("/").pop() : "—");
-const when = (iso: string | null, id: string) =>
-    iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : id;
+
+/** The runs tables' sortable columns: click a heading to sort by it, click again to flip the order. */
+type SortKey = "model" | "passed" | "cost";
+type Sort = { key: SortKey; desc: boolean };
+const SORT_DEFAULT: Sort = { key: "passed", desc: true };
+type SortRow = { model: string; passed: number | null; cost: number | null };
+function sortRows<T>(rows: T[], sort: Sort, val: (r: T) => SortRow): T[] {
+    const v = (r: T) => val(r)[sort.key];
+    return [...rows].sort((a, b) => {
+        const x = v(a), y = v(b);
+        if (x == null && y == null) return 0;
+        if (x == null) return 1; // empty values last, whichever the order
+        if (y == null) return -1;
+        const c = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y));
+        return sort.desc ? -c : c;
+    });
+}
+function SortTh({ label, k, sort, setSort }: { label: string; k: SortKey; sort: Sort; setSort: (s: Sort) => void }) {
+    const on = sort.key === k;
+    // text columns start A→Z, numbers start highest first
+    const first = k !== "model";
+    return (
+        <th className="px-4 py-2.5 font-medium" aria-sort={on ? (sort.desc ? "descending" : "ascending") : "none"}>
+            <button type="button" className={`inline-flex items-center gap-1 uppercase tracking-wider hover:text-foreground ${on ? "text-foreground" : ""}`} onClick={() => setSort(on ? { key: k, desc: !sort.desc } : { key: k, desc: first })}>
+                {label}
+                {/* up and down arrows stacked on every sortable column; on the sorted one, its direction lights up */}
+                <span aria-hidden className="inline-flex flex-col text-[7px] leading-[7px]">
+                    <span className={on && !sort.desc ? "text-foreground" : "opacity-35"}>▲</span>
+                    <span className={on && sort.desc ? "text-foreground" : "opacity-35"}>▼</span>
+                </span>
+            </button>
+        </th>
+    );
+}
+const HEADS: [string, SortKey][] = [["Builder model", "model"], ["Tickets passed", "passed"], ["Builder cost", "cost"]];
 
 export default function TaskRuns() {
     const { task = "" } = useParams();
+    const [sort, setSort] = useState<Sort>(SORT_DEFAULT);
     const info = use(listTasks()).find((t) => t.id === task);
     if (!info) return <NotFound />;
     const all = use(listJobs(task));
@@ -39,51 +72,33 @@ export default function TaskRuns() {
             {jobs.length === 0 ? (
                 <p className="mt-6 text-sm text-muted-foreground">No runs yet.</p>
             ) : (
+                // The same table as the architecture environments (ArchitectureRuns below), one row per run, best first.
                 <div className="mt-6 overflow-x-auto rounded-xl border">
                     <table className="w-full text-sm">
-                        <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
+                        <thead className="border-b bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                             <tr>
+                                {HEADS.slice(0, 2).map(([label, k]) => <SortTh key={k} label={label} k={k} sort={sort} setSort={setSort} />)}
+                                <th className="px-4 py-2.5 font-medium">Reasoning</th>
+                                {HEADS.slice(2).map(([label, k]) => <SortTh key={k} label={label} k={k} sort={sort} setSort={setSort} />)}
                                 <th className="px-4 py-2.5 font-medium">Run</th>
-                                <th className="px-4 py-2.5 font-medium">Score</th>
-                                <th className="px-4 py-2.5 font-medium">Builder</th>
-                                <th className="px-4 py-2.5 font-medium">Agent model</th>
-                                <th className="px-4 py-2.5 font-medium" title="Not recorded by the run: the agent model unless CUSTOMER_MODEL was set">Customer model*</th>
-                                <th className="px-4 py-2.5 font-medium">Cost</th>
-                                <th className="px-4 py-2.5 font-medium" title="Pass rate of each customer type over every stage's behavior tickets, averaged with every type counting the same (old runs: uniform mean over scenario cells)">Avg. across customer types</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {jobs.map((j) => {
+                            {sortRows(jobs, sort, (j) => ({ model: short(j.builder.model) ?? "", passed: pooledRate([j])?.rate ?? null, cost: j.cost ?? null })).map((j) => {
                                 const off = offLeaderboard(task, j, all);
-                                const cov = combineBehaviorStages(j.scores.map((s) => behaviorForStage(s.stage, s)))?.coverage;
+                                const rate = pooledRate([j]);
                                 return (
-                                <tr key={j.id} className="border-t align-top">
-                                    <td className="px-4 py-3">
-                                        <TextLink href={`/runs/${j.key}`} className="font-medium">{when(j.started, j.id)}</TextLink>
-                                        {off && <span className="ml-1 text-amber-700 dark:text-amber-400" title={off}>†</span>}
-                                        {j.architecture && <div className="mt-0.5 text-xs">architecture <span className="font-mono font-medium">{j.architecture}</span></div>}
-                                        <div className="font-mono text-[11px] text-muted-foreground">{j.id}</div>
-                                        {!j.finished && <Badge variant="outline" className="mt-1">not finished</Badge>}
-                                    </td>
-                                    <td className="px-4 py-3 text-base font-semibold tabular-nums">{j.score == null ? "—" : `${Math.round(j.score * 100)}%`}</td>
-                                    <td className="px-4 py-3">{agentName(j.builder.agent)}<div className="text-muted-foreground">{short(j.builder.model)}</div></td>
-                                    <td className="px-4 py-3">{short(j.bot)}</td>
-                                    <td className="px-4 py-3 text-muted-foreground">{short(j.bot)}*</td>
-                                    <td className="px-4 py-3 tabular-nums">{j.cost == null ? "—" : `$${j.cost.toFixed(2)}`}</td>
-                                    <td className="px-4 py-3">
-                                        {cov ? (
-                                            <TextLink
-                                              href={`/runs/${j.key}/research/behavior`}
-                                              className="font-mono text-sm font-semibold tabular-nums"
-                                              title={cov.mode === "per_ticket" ? `Average over ${cov.n_behaviors ?? Object.keys(cov.by_category ?? {}).length} behaviors` : `${cov.n_scenarios} scenario cells`}
-                                            >
-                                              {cov.q_coverage.toFixed(2)}
-                                            </TextLink>
-                                        ) : (
-                                            <span className="text-muted-foreground">—</span>
-                                        )}
-                                    </td>
-                                </tr>
+                                    <tr key={j.id} className="border-t align-top">
+                                        <td className="px-4 py-3">
+                                            {short(j.builder.model)}<span className="ml-2 text-xs text-muted-foreground">{agentName(j.builder.agent)}</span>
+                                            {off && <span className="ml-1 text-amber-700 dark:text-amber-400" title={off}>†</span>}
+                                            {!j.finished && <Badge variant="outline" className="ml-2">not finished</Badge>}
+                                        </td>
+                                        <td className="px-4 py-3 tabular-nums"><span className="text-base font-semibold">{rate ? `${Math.round(100 * rate.rate)}%` : "—"}</span>{rate && <span className="ml-2 text-xs text-muted-foreground">{rate.passed}/{rate.total}</span>}</td>
+                                        <td className="px-4 py-3 text-muted-foreground">{j.thinking || "—"}</td>
+                                        <td className="px-4 py-3 tabular-nums text-muted-foreground">{j.cost == null ? "—" : `$${j.cost.toFixed(2)}`}</td>
+                                        <td className="px-4 py-3"><TextLink href={`/runs/${j.key}`} className="font-medium">Open</TextLink></td>
+                                    </tr>
                                 );
                             })}
                         </tbody>
@@ -99,6 +114,8 @@ export default function TaskRuns() {
  *  architecture; the row asks which architecture's run to open. */
 function ArchitectureRuns({ name, groups }: { name: string; groups: ReturnType<typeof architectureGroups> }) {
     const pct = (n: number | null | undefined) => (n == null ? "—" : `${Math.round(100 * n)}%`);
+    const [sort, setSort] = useState<Sort>(SORT_DEFAULT);
+    const costOf = (runs: typeof groups[number]["runs"]) => { const c = runs.map((r) => r.cost).filter((x): x is number => x != null); return c.length ? c.reduce((a, x) => a + x, 0) : null; };
     return (
         <main className="mx-auto w-full max-w-6xl px-6 py-10">
             <ThemeToggle className="fixed top-4 right-6" />
@@ -109,16 +126,14 @@ function ArchitectureRuns({ name, groups }: { name: string; groups: ReturnType<t
                 <table className="w-full text-sm">
                     <thead className="border-b bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                         <tr>
-                            <th className="px-4 py-2.5 font-medium">Builder model</th>
-                            <th className="px-4 py-2.5 font-medium">Tickets passed</th>
-                            <th className="px-4 py-2.5 font-medium">Thinking</th>
-                            <th className="px-4 py-2.5 font-medium">Builder cost</th>
-                            <th className="px-4 py-2.5 font-medium">Started</th>
+                            {HEADS.slice(0, 2).map(([label, k]) => <SortTh key={k} label={label} k={k} sort={sort} setSort={setSort} />)}
+                            <th className="px-4 py-2.5 font-medium">Reasoning</th>
+                            {HEADS.slice(2).map(([label, k]) => <SortTh key={k} label={label} k={k} sort={sort} setSort={setSort} />)}
                             <th className="px-4 py-2.5 font-medium">Run</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {groups.map(({ lead, runs }) => {
+                        {sortRows(groups, sort, ({ lead, runs }) => ({ model: short(lead.builder.model) ?? "", passed: pooledRate(runs)?.rate ?? null, cost: costOf(runs) })).map(({ lead, runs }) => {
                             const rate = pooledRate(runs);
                             const costs = runs.map((r) => r.cost).filter((c): c is number => c != null);
                             return (
@@ -127,7 +142,6 @@ function ArchitectureRuns({ name, groups }: { name: string; groups: ReturnType<t
                                     <td className="px-4 py-3 tabular-nums"><span className="text-base font-semibold">{pct(rate?.rate)}</span>{rate && <span className="ml-2 text-xs text-muted-foreground">{rate.passed}/{rate.total}</span>}</td>
                                     <td className="px-4 py-3 text-muted-foreground">{lead.thinking || "—"}</td>
                                     <td className="px-4 py-3 tabular-nums text-muted-foreground">{costs.length ? `$${costs.reduce((a, c) => a + c, 0).toFixed(2)}` : "—"}</td>
-                                    <td className="px-4 py-3 text-muted-foreground">{when(lead.started, lead.id)}</td>
                                     <td className="px-4 py-3"><ArchPicker runs={runs} /></td>
                                 </tr>
                             );

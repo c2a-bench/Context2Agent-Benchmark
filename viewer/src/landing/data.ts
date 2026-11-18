@@ -100,7 +100,7 @@ export type MetaStage = {
   ticket_types?: Partial<Record<"discovery" | "regression" | "adaptability", Count>>;
   behavior_coverage?: { n_behaviors?: number } | null;
   facts?: { rule_recall?: number | null } | null;
-  failure_taxonomy?: { by_type?: Record<string, { party?: string | null; group?: string | null; count: number }> } | null;
+  failure_taxonomy?: { by_group?: Record<string, number>; by_type?: Record<string, { party?: string | null; group?: string | null; count: number }> } | null;
   architecture?: { observed?: { knowledge_access?: string[]; model_calls_avg?: number | null } | null } | null;
   latency?: { ticket?: { median?: number | null } | null } | null;
   cost?: { bot?: { in?: number | null; usd?: number | null } | null } | null;
@@ -156,7 +156,9 @@ export async function loadCatalog() {
   const redwood = latestByBuilder(byId[ENV.redwood] ?? []);
   const packs = latestByBuilder(byId[ENV.packs] ?? []);
   const skyway = latestByBuilder(byId[ENV.skyway] ?? []);
-  const skywayArch = latestByArchitecture(byId[ENV.skywayArch] ?? []);
+  // Published, the regraded set; a local checkout has only the runs folder itself (tasks/skyway-arch).
+  const skywayArchTask = byId[ENV.skywayArch] ? ENV.skywayArch : byId["skyway-arch"] ? "skyway-arch" : ENV.skywayArch;
+  const skywayArch = latestByArchitecture(byId[skywayArchTask] ?? []);
   const builders = new Set([...redwood, ...packs, ...skyway].map((b) => b.model));
   const last = all.flat().map((j) => j.started ?? "").sort().pop() ?? null;
   return {
@@ -165,6 +167,7 @@ export async function loadCatalog() {
     packs,
     skyway,
     skywayArch,
+    skywayArchTask,
     conversations: countConversations(all),
     builderCount: builders.size,
     last,
