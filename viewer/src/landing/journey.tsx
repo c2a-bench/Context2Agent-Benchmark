@@ -41,7 +41,7 @@ const poly = (pts: [number, number][]) => pts.map((p) => p.map((x) => x.toFixed(
 // ---- the five states ----
 /** The doc page, and the chat window stacked behind it, nudged up and right (the knowledge is documents and chats). */
 const DOC: Box = [72, 34, 248, 256];
-const DOC_STACK: [number, number][] = [[20, -66]];
+const DOC_STACK: [number, number][] = [[20, -72]];
 const S0: State = (() => {
   const order = ["f0", "A", "f1", "f2", "B", "f3", "C", "f4", "D", "f5", "E", "f6", "F", "f7"];
   const w: Record<string, number> = { f0: 100, A: 196, f1: 170, f2: 214, B: 150, f3: 200, C: 208, f4: 140, D: 180, f5: 216, E: 160, f6: 190, F: 204, f7: 120 };
@@ -64,16 +64,16 @@ const S1: State = (() => {
 })();
 
 /** The support agent: a flat robot head (the sheet itself) with a headset, and a speech bubble that carries what it says. */
-const AGENT: Box = [77, 98, 168, 151];
+const AGENT: Box = [123, 98, 168, 151]; // the head is centred under the counter
 const S2: State = (() => {
   const bars: Record<string, Bar> = {};
   for (const id of PROMPT) bars[id] = gone(S1.bars[id][0]);
   for (const id of ["f4", "f5", "f6", "f7"]) bars[id] = gone(S0.bars[id][0]);
   bars.D = gone(S1.bars.D[0]);
   bars.G = gone([200, 160, 0, 6]);
-  bars.A = [[262, 43, 77, 7], "fact"];
-  bars.f1 = [[262, 60, 53, 7], "filler"];
-  bars.B = [[262, 77, 67, 7], "fact"];
+  bars.A = [[308, 43, 64, 7], "fact"];
+  bars.f1 = [[308, 60, 44, 7], "filler"];
+  bars.B = [[308, 77, 56, 7], "fact"];
   return { card: AGENT, rx: 34, t: 9, plane: DESK, bars };
 })();
 
@@ -271,7 +271,7 @@ function Figure({ k, still }: { k: number; still: boolean }) {
             <line x1={DOC[0]} y1={DOC[1] + 21} x2={DOC[0] + DOC[2]} y2={DOC[1] + 21} className="j-edge" />
             {[
               { x: DOC[0] + 16, y: DOC[1] + 27, w: 112, agent: false },
-              { x: DOC[0] + DOC[2] - 16 - 124, y: DOC[1] + 45, w: 124, agent: true },
+              { x: DOC[0] + DOC[2] - 8 - 124, y: DOC[1] + 47, w: 124, agent: true },
             ].map((b, i) => (
               <g key={i}>
                 {!b.agent && <path d={`M${b.x + 12} ${b.y + 16}l-5 4.5l13 -4.5Z`} className="j-edge j-paper" />}
@@ -288,7 +288,7 @@ function Figure({ k, still }: { k: number; still: boolean }) {
         {/* support agent: a flat robot head with a little depth (edge, soft shadow, cups and bubble with thickness), a headset, and a speech bubble that carries what it says */}
         <g {...on(2)}>
           <OnSheet s={2}>
-            <g transform="translate(213 175) scale(1.2) translate(-213 -160)">
+            <g transform="translate(259 175) scale(1.2) translate(-213 -160)">
               <rect x="112" y="224" width="116" height="14" rx="7" className="j-halo" filter="url(#j-blur-s)" />
               <rect x="105" y="101" width="130" height="116" rx="19" className="j-groove" fill="none" />
               <rect x="164" y="91" width="12" height="6" rx="2" className="j-side j-edge" />
@@ -311,10 +311,10 @@ function Figure({ k, still }: { k: number; still: boolean }) {
                 </g>
               ))}
               <path d="M152 188Q170 200 188 188" className="j-stroke" fill="none" />
-              <rect x="242" y="37" width="98" height="64" rx="14" className="j-halo" filter="url(#j-blur-s)" />
-              <rect x="243" y="32" width="98" height="64" rx="14" className="j-side-dark j-edge" />
+              <rect x="242" y="37" width="88" height="64" rx="14" className="j-halo" filter="url(#j-blur-s)" />
+              <rect x="243" y="32" width="88" height="64" rx="14" className="j-side-dark j-edge" />
               <path d="M256 97L246 114L276 97Z" className="j-paper j-edge" />
-              <rect x="240" y="34" width="98" height="64" rx="14" className="j-paper j-edge" />
+              <rect x="240" y="34" width="88" height="64" rx="14" className="j-paper j-edge" />
             </g>
           </OnSheet>
         </g>
