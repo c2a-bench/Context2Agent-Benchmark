@@ -193,9 +193,9 @@ svg[data-k="4"] [data-bar="card"] { fill: color-mix(in oklab, var(--ink) 9%, var
 /* 2: the footer wordmark, in the header serif at Light. */
 .lp .lp-wordmark { font-family: var(--font-heading); font-weight: 300; letter-spacing: -0.03em; }
 /* The footer's closing name: huge, dotted in a tint of the footer colour and cut off by the page's bottom edge, so it sinks into the background. */
-.lp-foot { padding-bottom: 0; overflow: hidden; }
+.lp-foot { --h: 0; padding-bottom: 0; overflow: hidden; } /* as tall as its content, not a full screen with a hole in the middle */
 .lp .lp-wordmark--ghost {
-  margin: clamp(48px, 8vw, 112px) 0 -0.3em; font-weight: 400; font-size: clamp(50px, 13.4vw, 200px); line-height: 1; white-space: nowrap; user-select: none;
+  margin: clamp(32px, 5vw, 64px) 0 -0.3em; font-weight: 400; font-size: clamp(50px, 13.4vw, 200px); line-height: 1; white-space: nowrap; user-select: none;
   color: transparent; -webkit-background-clip: text; background-clip: text;
   background-image:
     radial-gradient(circle, color-mix(in srgb, var(--bg) 34%, var(--ink)) 0.9px, transparent 1.3px),
