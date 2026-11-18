@@ -63,15 +63,18 @@ const S1: State = (() => {
   return { card: PROMPT_CARD, rx: 6, t: 5, plane: DESK, bars };
 })();
 
-/** The support agent: a profile card, with the build it works from listed below the avatar. */
-const AGENT: Box = [92, 26, 216, 264];
+/** The support agent: a flat robot head (the sheet itself) with a headset, and a speech bubble that carries what it says. */
+const AGENT: Box = [77, 98, 168, 151];
 const S2: State = (() => {
   const bars: Record<string, Bar> = {};
-  PROMPT.forEach((id, i) => (bars[id] = [[id.startsWith("f") ? 118 : 130, 158 + i * 12.5, PW[id] * 0.95, id === "f0" ? 7 : 6], id.startsWith("f") ? "filler" : "fact"]));
+  for (const id of PROMPT) bars[id] = gone(S1.bars[id][0]);
   for (const id of ["f4", "f5", "f6", "f7"]) bars[id] = gone(S0.bars[id][0]);
   bars.D = gone(S1.bars.D[0]);
   bars.G = gone([200, 160, 0, 6]);
-  return { card: AGENT, rx: 12, t: 6, plane: DESK, bars };
+  bars.A = [[262, 43, 77, 7], "fact"];
+  bars.f1 = [[262, 60, 53, 7], "filler"];
+  bars.B = [[262, 77, 67, 7], "fact"];
+  return { card: AGENT, rx: 34, t: 6, plane: DESK, bars };
 })();
 
 const BUBBLES: { box: Box; who: "customer" | "agent"; dashed?: boolean }[] = [
@@ -284,26 +287,24 @@ function Figure({ k, still }: { k: number; still: boolean }) {
         <rect data-bar="card-shadow" className="j-halo" filter="url(#j-blur)" />
         <rect data-bar="card-back" className="j-side-dark j-edge" />
         <rect data-bar="card" className="j-paper j-edge" />
-        {/* support agent card: an avatar with a headset, what it works from, and the knowledge it may search */}
+        {/* support agent: antenna, headset and face on the head; the speech bubble sits behind the bars that fly into it */}
         <g {...on(2)}>
           <OnSheet s={2}>
-            <clipPath id="j-av"><circle cx="200" cy="88" r="33" /></clipPath>
-            <circle cx="200" cy="88" r="38" className="j-side-dark j-edge" />
-            <circle cx="200" cy="88" r="33" className="j-paper j-edge" />
-            <g clipPath="url(#j-av)">
-              <ellipse cx="200" cy="128" rx="32" ry="28" className="j-side-dark j-edge" />
-              <circle cx="200" cy="84" r="14" className="j-paper j-edge" />
+            <g transform="translate(213 175) scale(1.2) translate(-213 -160)">
+            <line x1="170" y1="96" x2="170" y2="76" className="j-stroke" />
+            <circle cx="170" cy="72" r="5" className="j-ink" />
+            <path d="M94 146C94 69 246 69 246 146" className="j-stroke" fill="none" />
+            <rect x="88" y="138" width="12" height="38" rx="6" className="j-edge" style={{ fill: "var(--action)" }} />
+            <rect x="240" y="138" width="12" height="38" rx="6" className="j-edge" style={{ fill: "var(--action)" }} />
+            <path d="M94 174C94 204 110 212 130 208" className="j-stroke" fill="none" />
+            <circle cx="133" cy="208" r="3.2" className="j-ink" />
+            <circle cx="146" cy="150" r="7" className="j-ink" />
+            <circle cx="194" cy="150" r="7" className="j-ink" />
+            <path d="M152 186Q170 198 188 186" className="j-stroke" fill="none" />
+            <rect x="242" y="38" width="98" height="64" rx="14" className="j-halo" filter="url(#j-blur-s)" />
+            <path d="M256 97L246 114L276 97Z" className="j-paper j-edge" />
+            <rect x="240" y="34" width="98" height="64" rx="14" className="j-paper j-edge" />
             </g>
-            <path d="M184 82C184 63 216 63 216 82" className="j-stroke" fill="none" />
-            <rect x="178" y="77" width="8" height="15" rx="4" className="j-edge" style={{ fill: "var(--action)" }} />
-            <rect x="214" y="77" width="8" height="15" rx="4" className="j-edge" style={{ fill: "var(--action)" }} />
-            <path d="M181 90C181 103 189 107 196 106" className="j-stroke" fill="none" />
-            <circle cx="197" cy="106" r="2.4" className="j-ink" />
-            <line x1="112" y1="140" x2="288" y2="140" className="j-groove" />
-            <rect x="254" y="154" width="32" height="40" rx="3" className="j-paper j-edge" strokeDasharray="3 3" />
-            {[164, 173, 182].map((y) => <rect key={y} x="260" y={y} width={y === 182 ? 12 : 20} height="3" rx="1.5" style={{ fill: "color-mix(in oklab, var(--ink) 30%, transparent)" }} />)}
-            <circle cx="276" cy="196" r="9" className="j-paper j-edge" />
-            <line x1="282.5" y1="202.5" x2="291" y2="211" className="j-stroke" />
           </OnSheet>
         </g>
         {/* doc page: folded corner */}
