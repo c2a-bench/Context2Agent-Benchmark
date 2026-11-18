@@ -20,9 +20,13 @@ export const SKYWAY_ARCH: Record<string, string> = {
 };
 
 /** The latest finished run of each architecture (the catalog lists newest first). */
+/** Skyway: each builder model's newest finished run of each architecture (jobs come newest first). */
 export function latestByArchitecture(jobs: JobSummary[]) {
   const seen = new Set<string>();
-  return jobs.filter((j) => j.finished && j.scores.length && j.architecture && !seen.has(j.architecture) && seen.add(j.architecture));
+  return jobs.filter((j) => {
+    const key = `${(j.builder.model ?? "").split("/").pop()}|${j.architecture}`;
+    return j.finished && j.scores.length && j.architecture && !seen.has(key) && seen.add(key);
+  });
 }
 /** Runs started before this date are on an older version of the tickets and are left out. */
 export const CURRENT = "2026-10-15";
@@ -156,8 +160,7 @@ export async function loadCatalog() {
   const redwood = latestByBuilder(byId[ENV.redwood] ?? []);
   const packs = latestByBuilder(byId[ENV.packs] ?? []);
   const skyway = latestByBuilder(byId[ENV.skyway] ?? []);
-  // Published, the regraded set; a local checkout has only the runs folder itself (tasks/skyway-arch).
-  const skywayArchTask = byId[ENV.skywayArch] ? ENV.skywayArch : byId["skyway-arch"] ? "skyway-arch" : ENV.skywayArch;
+  const skywayArchTask = ENV.skywayArch;
   const skywayArch = latestByArchitecture(byId[skywayArchTask] ?? []);
   const builders = new Set([...redwood, ...packs, ...skyway].map((b) => b.model));
   const last = all.flat().map((j) => j.started ?? "").sort().pop() ?? null;
