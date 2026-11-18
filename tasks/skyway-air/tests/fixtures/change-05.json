@@ -1,0 +1,42 @@
+[
+  {
+    "case": "change-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6053": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK7160": {
+          "to_flight": "SW882",
+          "change_fee": 75,
+          "fare_difference": 40
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "change-05",
+    "name": "no-fee",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK7160": {
+          "to_flight": "SW882",
+          "change_fee": 0,
+          "fare_difference": 40
+        }
+      },
+      "tickets": {
+        "SKY-6053": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

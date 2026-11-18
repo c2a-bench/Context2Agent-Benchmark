@@ -1,0 +1,300 @@
+[
+ {
+  "case": "receipt-ask-02",
+  "name": "good",
+  "should": "pass",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4403": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    },
+    "SUP-4404": {
+     "comments": [
+      {
+       "body": "Yesterday's disable of ci-runner was att_5c2e80.",
+       "public": true
+      }
+     ]
+    }
+   },
+   "api_keys": {
+    "K-PIX-1": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-PIX-1/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-PIX-1",
+     "status": "disabled",
+     "attempt_id": "att_5c2e80"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4404/comments",
+    "body": {
+     "body": "Yesterday's disable of ci-runner was att_5c2e80.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "receipt-ask-02",
+  "name": "good-on-earlier-ticket",
+  "should": "pass",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4403": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ],
+     "comments": [
+      {
+       "body": "Yesterday's disable of ci-runner was att_5c2e80.",
+       "public": true
+      }
+     ]
+    }
+   },
+   "api_keys": {
+    "K-PIX-1": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-PIX-1/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-PIX-1",
+     "status": "disabled",
+     "attempt_id": "att_5c2e80"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4403/comments",
+    "body": {
+     "body": "Yesterday's disable of ci-runner was att_5c2e80.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "receipt-ask-02",
+  "name": "disabled-again-for-new-id",
+  "should": "fail",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4403": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    },
+    "SUP-4404": {
+     "comments": [
+      {
+       "body": "New disable att_5c2e99.",
+       "public": true
+      }
+     ]
+    }
+   },
+   "api_keys": {
+    "K-PIX-1": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-PIX-1/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-PIX-1",
+     "status": "disabled",
+     "attempt_id": "att_5c2e80"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api_keys/K-PIX-1/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-PIX-1",
+     "status": "disabled",
+     "attempt_id": "att_5c2e99"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4404/comments",
+    "body": {
+     "body": "New disable att_5c2e99.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "receipt-ask-02",
+  "name": "invented-id",
+  "should": "fail",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4403": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    },
+    "SUP-4404": {
+     "comments": [
+      {
+       "body": "The attempt id is att_000001.",
+       "public": true
+      }
+     ]
+    }
+   },
+   "api_keys": {
+    "K-PIX-1": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-PIX-1/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-PIX-1",
+     "status": "disabled",
+     "attempt_id": "att_5c2e80"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4404/comments",
+    "body": {
+     "body": "The attempt id is att_000001.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "receipt-ask-02",
+  "name": "no-id",
+  "should": "fail",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4403": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    },
+    "SUP-4404": {
+     "comments": [
+      {
+       "body": "The key was revoked yesterday.",
+       "public": true
+      }
+     ]
+    }
+   },
+   "api_keys": {
+    "K-PIX-1": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-PIX-1/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-PIX-1",
+     "status": "disabled",
+     "attempt_id": "att_5c2e80"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4404/comments",
+    "body": {
+     "body": "The key was revoked yesterday.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "receipt-ask-02",
+  "name": "empty-desk",
+  "should": "fail",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4403": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-PIX-1": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-PIX-1/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-PIX-1",
+     "status": "disabled",
+     "attempt_id": "att_5c2e80"
+    }
+   }
+  ]
+ }
+]

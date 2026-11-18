@@ -1,0 +1,35 @@
+[
+  {
+    "case": "esc-02b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6354": {
+          "priority": "P3",
+          "first_response_target": "1bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "esc-02b",
+    "name": "guessed-production",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6354": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "offering-private"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

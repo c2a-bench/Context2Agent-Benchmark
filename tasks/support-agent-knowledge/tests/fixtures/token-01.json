@@ -1,0 +1,17 @@
+[
+  {
+    "case": "token-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6341": {
+          "labels": [
+            "token-accounting"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

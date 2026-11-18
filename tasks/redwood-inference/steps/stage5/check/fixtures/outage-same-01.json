@@ -1,0 +1,233 @@
+[
+ {
+  "case": "outage-same-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4201": {
+     "priority": "P0",
+     "labels": [
+      "escalated"
+     ]
+    },
+    "SUP-4202": {
+     "priority": null,
+     "labels": []
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4201/comments",
+    "body": {
+     "body": "Same incident, we are on it.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "outage-same-01",
+  "name": "second-p0",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4201": {
+     "priority": "P0"
+    },
+    "SUP-4202": {
+     "priority": "P0",
+     "labels": [
+      "escalated"
+     ]
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4201/comments",
+    "body": {
+     "body": "x",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "outage-same-01",
+  "name": "no-comment",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4201": {
+     "priority": "P0"
+    },
+    "SUP-4202": {
+     "priority": null
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "outage-same-01",
+  "name": "leftover-from-first",
+  "should": "pass",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4201": {
+     "priority": "P0",
+     "labels": [
+      "escalated"
+     ]
+    },
+    "SUP-4202": {
+     "priority": null,
+     "labels": []
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4201",
+    "body": {
+     "priority": "P0",
+     "first_response_target": "15m",
+     "escalation_status": "Eng engaged",
+     "status": "In Progress"
+    },
+    "status": 200
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4201/comments",
+    "body": {
+     "body": "Same incident, we are on it.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "outage-same-01",
+  "name": "refiled-open-ticket",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4201": {
+     "priority": "P0",
+     "labels": [
+      "escalated"
+     ]
+    },
+    "SUP-4202": {
+     "priority": null,
+     "labels": []
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4201/comments",
+    "body": {
+     "body": "Same incident, we are on it.",
+     "public": true
+    },
+    "status": 200
+   },
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4201",
+    "body": {
+     "priority": "P0"
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "outage-same-01",
+  "name": "status-on-open-ticket-ok",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4201": {
+     "priority": "P0",
+     "labels": [
+      "escalated"
+     ]
+    },
+    "SUP-4202": {
+     "priority": null,
+     "labels": []
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4201/comments",
+    "body": {
+     "body": "Same incident, we are on it.",
+     "public": true
+    },
+    "status": 200
+   },
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4201",
+    "body": {
+     "status": "Open"
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "outage-same-01",
+  "name": "refiled-open-ticket-rejected",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4201": {
+     "priority": "P0",
+     "labels": [
+      "escalated"
+     ]
+    },
+    "SUP-4202": {
+     "priority": null,
+     "labels": []
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4201/comments",
+    "body": {
+     "body": "Same incident, we are on it.",
+     "public": true
+    },
+    "status": 200
+   },
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4201",
+    "body": {
+     "priority": "P1"
+    },
+    "status": 500
+   }
+  ]
+ }
+]

@@ -1,0 +1,63 @@
+[
+  {
+    "case": "cancel-own-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6025": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK7810": {
+          "voluntary_cancellation": 97
+        }
+      },
+      "refunds": {
+        "SK7810": {
+          "amount": 95,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-own-01",
+    "name": "full-refund",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK7810": {
+          "amount": 267,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6025": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-own-01",
+    "name": "pet-kept",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK7810": {
+          "voluntary_cancellation": 97
+        }
+      },
+      "tickets": {
+        "SKY-6025": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

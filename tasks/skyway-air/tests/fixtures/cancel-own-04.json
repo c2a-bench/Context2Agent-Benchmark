@@ -1,0 +1,53 @@
+[
+  {
+    "case": "cancel-own-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6051": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK7140": {
+          "amount": 95,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-own-04",
+    "name": "refunded-all",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK7140": {
+          "amount": 194,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6051": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-own-04",
+    "name": "nothing-back",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6051": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

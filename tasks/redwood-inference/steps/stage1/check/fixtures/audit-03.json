@@ -1,0 +1,36 @@
+[
+  {
+    "case": "audit-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4634": {
+          "priority": "P1",
+          "assigned_team": "Eng Platform",
+          "needs_legal_review": false,
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "audit-03",
+    "name": "default-private",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4634": {
+          "priority": "P2",
+          "assigned_team": "Private Deployments",
+          "needs_legal_review": false
+        }
+      }
+    },
+    "requests": []
+  }
+]

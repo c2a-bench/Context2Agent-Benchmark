@@ -1,0 +1,85 @@
+[
+  {
+    "case": "multi-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6070": {
+          "category": "refund",
+          "labels": [
+            "agency-refund"
+          ]
+        }
+      },
+      "refunds": {
+        "SK2632": {
+          "amount": 238,
+          "method": "original_payment"
+        },
+        "SK2633": {
+          "amount": 182,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-04",
+    "name": "refunded-short-delay",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK2632": {
+          "amount": 238,
+          "method": "original_payment"
+        },
+        "SK2633": {
+          "amount": 182,
+          "method": "original_payment"
+        },
+        "SK2634": {
+          "amount": 197,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6070": {
+          "labels": [
+            "agency-refund"
+          ],
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-04",
+    "name": "refunded-agency-booking",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK2631": {
+          "amount": 201,
+          "method": "original_payment"
+        },
+        "SK2632": {
+          "amount": 238,
+          "method": "original_payment"
+        },
+        "SK2633": {
+          "amount": 182,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6070": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

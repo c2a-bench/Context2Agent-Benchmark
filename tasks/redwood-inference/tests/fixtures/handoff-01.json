@@ -1,0 +1,193 @@
+[
+  {
+    "case": "handoff-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "handoffs": {
+        "H-0001": {
+          "ticket_id": "SUP-4131",
+          "reason": "not_covered",
+          "summary": "s"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4131",
+          "reason": "not_covered",
+          "summary": "for a person"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "handoff-01",
+    "name": "guessed-an-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4131": {
+          "priority": "P4",
+          "first_response_target": "5bd"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "PATCH",
+        "path": "/tickets/SUP-4131",
+        "body": {
+          "priority": "P4",
+          "first_response_target": "5bd"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "handoff-01",
+    "name": "wrong-reason",
+    "should": "fail",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4131",
+          "reason": "churn_risk",
+          "summary": "for a person"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "handoff-01",
+    "name": "handed-off-and-changed-ticket",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4131": {
+          "priority": "P4"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "PATCH",
+        "path": "/tickets/SUP-4131",
+        "body": {
+          "priority": "P4"
+        },
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4131",
+          "reason": "not_covered",
+          "summary": "for a person"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "handoff-01",
+    "name": "handoff-rejected",
+    "should": "fail",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4131",
+          "reason": "not_covered"
+        },
+        "status": 400
+      }
+    ]
+  },
+  {
+    "case": "handoff-01",
+    "name": "handoff-with-comment",
+    "should": "pass",
+    "data": {
+      "handoffs": {
+        "H-0001": {
+          "ticket_id": "SUP-4131",
+          "reason": "not_covered",
+          "summary": "s"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4131",
+          "reason": "not_covered",
+          "summary": "for a person"
+        },
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4131/comments",
+        "body": {
+          "body": "Handed off: no doc covers this.",
+          "public": false
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "handoff-01",
+    "name": "handoff-changed-status",
+    "should": "fail",
+    "data": {
+      "handoffs": {
+        "H-0001": {
+          "ticket_id": "SUP-4131",
+          "reason": "not_covered",
+          "summary": "s"
+        }
+      },
+      "tickets": {
+        "SUP-4131": {
+          "status": "Waiting on Customer"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "PATCH",
+        "path": "/tickets/SUP-4131",
+        "body": {
+          "status": "Waiting on Customer"
+        },
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4131",
+          "reason": "not_covered",
+          "summary": "for a person"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

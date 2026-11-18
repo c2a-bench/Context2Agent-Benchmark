@@ -1,0 +1,38 @@
+[
+  {
+    "case": "retry-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4804": {
+          "priority": "P1",
+          "first_response_target": "15m",
+          "incident_id": "INC-3102",
+          "escalation_status": "Incident declared",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "retry-02",
+    "name": "old-30-minutes",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4804": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "incident_id": "INC-3102",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  }
+]

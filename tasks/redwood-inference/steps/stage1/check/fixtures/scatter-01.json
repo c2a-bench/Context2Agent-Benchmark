@@ -1,0 +1,32 @@
+[
+  {
+    "case": "scatter-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4162": {
+          "priority": "P2",
+          "assigned_team": "Eng Infra",
+          "labels": ["residency-review"]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "scatter-01",
+    "name": "only-the-priority-page",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4162": {
+          "priority": "P2",
+          "assigned_team": "Support",
+          "labels": []
+        }
+      }
+    },
+    "requests": []
+  }
+]

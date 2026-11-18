@@ -1,0 +1,45 @@
+[
+  {
+    "case": "key-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "active"
+        },
+        "K-BRI-2": {
+          "status": "active"
+        }
+      },
+      "tickets": {
+        "SUP-6333": {
+          "labels": [
+            "security-incident"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "key-03",
+    "name": "disabled-for-developer",
+    "should": "fail",
+    "data": {
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-BRI-1/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  }
+]

@@ -1,0 +1,34 @@
+[
+  {
+    "case": "sev-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4533": {
+          "priority": "P1",
+          "first_response_target": "15m",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "sev-03",
+    "name": "old-30-minutes",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4533": {
+          "priority": "P1",
+          "first_response_target": "30m"
+        }
+      }
+    },
+    "requests": []
+  }
+]

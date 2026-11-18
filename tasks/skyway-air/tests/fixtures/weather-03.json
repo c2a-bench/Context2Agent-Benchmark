@@ -1,0 +1,33 @@
+[
+  {
+    "case": "weather-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6044": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "weather-03",
+    "name": "paid-meal",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK6120": {
+          "meals": 15
+        }
+      },
+      "tickets": {
+        "SKY-6044": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

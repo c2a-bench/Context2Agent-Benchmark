@@ -1,0 +1,43 @@
+[
+  {
+    "case": "handoff-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6036": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK6301": {
+          "amount": 175,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "handoff-04",
+    "name": "handed-off",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6036": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "reason": "not_covered"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

@@ -1,0 +1,40 @@
+[
+  {
+    "case": "incident-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4511": {
+          "priority": "P1",
+          "first_response_target": "4h",
+          "incident_id": "INC-3101",
+          "escalation_status": "Incident declared",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "incident-01",
+    "name": "not-linked",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4511": {
+          "priority": "P1",
+          "first_response_target": "4h",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

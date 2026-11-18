@@ -1,0 +1,46 @@
+[
+  {
+    "case": "credit-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6343": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "credit-01",
+    "name": "posted-credit",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6343": {
+          "assigned_team": "Customer Success"
+        }
+      },
+      "credits": {
+        "CR-0001": {
+          "customer_id": "cust_ardent",
+          "amount_usd": 500,
+          "reason": "sla"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/credits",
+        "body": {
+          "customer_id": "cust_ardent",
+          "amount_usd": 500,
+          "reason": "sla"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

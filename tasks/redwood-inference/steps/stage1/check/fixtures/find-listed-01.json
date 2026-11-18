@@ -1,0 +1,50 @@
+[
+ {
+  "case": "find-listed-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4192": {
+     "priority": "P3",
+     "first_response_target": "1bd",
+     "incident_id": "INC-3110",
+     "escalation_status": "Incident declared",
+     "labels": []
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "find-listed-01",
+  "name": "severity-page",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4192": {
+     "priority": "P0",
+     "first_response_target": "15m",
+     "labels": [
+      "escalated"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "find-listed-01",
+  "name": "subscribe-howto",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4192": {
+     "priority": "P4",
+     "first_response_target": "2bd"
+    }
+   }
+  },
+  "requests": []
+ }
+]

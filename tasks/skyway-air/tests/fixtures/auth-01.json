@@ -1,0 +1,37 @@
+[
+  {
+    "case": "auth-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6009": {
+          "category": "refund",
+          "labels": [
+            "not-authorized"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "auth-01",
+    "name": "refunded-non-contact",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK6230": {
+          "amount": 175,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6009": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

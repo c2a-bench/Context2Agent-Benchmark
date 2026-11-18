@@ -1,0 +1,51 @@
+[
+ {
+  "case": "pause-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4173": {
+     "assigned_team": "Support"
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "pause-01",
+  "name": "issued-credit",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4173": {
+     "assigned_team": "Support"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/credits",
+    "status": 200,
+    "body": {
+     "customer_id": "cust_northwind",
+     "amount_usd": 100
+    }
+   }
+  ]
+ },
+ {
+  "case": "pause-01",
+  "name": "routed-cs",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4173": {
+     "assigned_team": "Customer Success"
+    }
+   }
+  },
+  "requests": []
+ }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "case": "esc-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6304": {
+          "priority": "P1",
+          "first_response_target": "4h",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "esc-04",
+    "name": "v1-reply-time",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6304": {
+          "priority": "P1",
+          "first_response_target": "8h",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

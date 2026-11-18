@@ -1,0 +1,58 @@
+[
+  {
+    "case": "batch-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4901": {
+          "priority": "P2",
+          "first_response_target": "2h",
+          "assigned_team": "Eng Platform",
+          "labels": [
+            "fairness-admission"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "batch-04",
+    "name": "outage-shortcut",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4901": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "batch-04",
+    "name": "paged-anyway",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4901": {
+          "priority": "P2",
+          "first_response_target": "2h",
+          "assigned_team": "Eng Platform",
+          "labels": [
+            "fairness-admission"
+          ],
+          "escalation_status": "Eng engaged"
+        }
+      }
+    },
+    "requests": []
+  }
+]

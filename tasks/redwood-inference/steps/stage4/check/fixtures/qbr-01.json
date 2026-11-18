@@ -1,0 +1,28 @@
+[
+  {
+    "case": "qbr-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4621": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "qbr-01",
+    "name": "kept-in-support",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4621": {
+          "assigned_team": "Support"
+        }
+      }
+    },
+    "requests": []
+  }
+]

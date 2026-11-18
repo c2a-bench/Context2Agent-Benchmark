@@ -1,0 +1,35 @@
+[
+  {
+    "case": "esc-07b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6356": {
+          "priority": "P3",
+          "first_response_target": "1bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "esc-07b",
+    "name": "guessed-outage",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6356": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "offering-private"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

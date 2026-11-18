@@ -1,0 +1,30 @@
+[
+  {
+    "case": "case-01",
+    "name": "good",
+    "should": "pass",
+    "data": { "tickets": { "SUP-4101": { "priority": "P1", "first_response_target": "30m", "status": "In Progress", "escalation_status": "Eng engaged", "labels": ["escalated", "offering-dedicated"] } } },
+    "requests": []
+  },
+  {
+    "case": "case-01",
+    "name": "stale-sla-v1-60min",
+    "should": "fail",
+    "data": { "tickets": { "SUP-4101": { "priority": "P1", "first_response_target": "1h", "labels": ["escalated", "offering-dedicated"] } } },
+    "requests": []
+  },
+  {
+    "case": "case-01",
+    "name": "slack-decoy-labels",
+    "should": "fail",
+    "data": { "tickets": { "SUP-4101": { "priority": "P1", "first_response_target": "30m", "labels": ["escalation", "dedicated"] } } },
+    "requests": []
+  },
+  {
+    "case": "case-01",
+    "name": "latency-tagged-as-timeout",
+    "should": "fail",
+    "data": { "tickets": { "SUP-4101": { "priority": "P1", "first_response_target": "30m", "labels": ["escalated", "offering-dedicated", "symptom-timeout"] } } },
+    "requests": []
+  }
+]

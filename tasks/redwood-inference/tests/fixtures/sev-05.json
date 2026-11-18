@@ -1,0 +1,34 @@
+[
+  {
+    "case": "sev-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4535": {
+          "priority": "P2",
+          "first_response_target": "2h"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "sev-05",
+    "name": "over-escalated",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4535": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated",
+            "offering-private"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

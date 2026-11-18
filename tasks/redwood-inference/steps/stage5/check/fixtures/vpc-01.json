@@ -1,0 +1,32 @@
+[
+  {
+    "case": "vpc-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4623": {
+          "priority": "P3",
+          "first_response_target": "4h",
+          "assigned_team": "Eng Infra"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "vpc-01",
+    "name": "old-1-business-day",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4623": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Eng Infra"
+        }
+      }
+    },
+    "requests": []
+  }
+]

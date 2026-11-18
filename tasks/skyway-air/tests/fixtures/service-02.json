@@ -1,0 +1,40 @@
+[
+  {
+    "case": "service-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6030": {
+          "category": "service"
+        }
+      },
+      "credits": {
+        "SK3120": {
+          "goodwill": 50,
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "service-02",
+    "name": "refunded-seat",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK3120": {
+          "amount": 39,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6030": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  }
+]

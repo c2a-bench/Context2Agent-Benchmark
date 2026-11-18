@@ -1,0 +1,31 @@
+[
+  {
+    "case": "activation-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4521": {
+          "assigned_team": "Customer Success",
+          "labels": [
+            "sla-exception"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "activation-01",
+    "name": "no-review-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4521": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": []
+  }
+]

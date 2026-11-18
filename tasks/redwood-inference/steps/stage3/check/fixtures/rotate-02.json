@@ -1,0 +1,41 @@
+[
+  {
+    "case": "rotate-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4702": {
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident"
+          ]
+        }
+      },
+      "api_keys": {
+        "K-MER-1": {
+          "status": "active"
+        },
+        "K-MER-2": {
+          "status": "active"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "rotate-02",
+    "name": "old-how-to",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4702": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "assigned_team": "Support"
+        }
+      }
+    },
+    "requests": []
+  }
+]

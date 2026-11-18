@@ -1,0 +1,43 @@
+[
+  {
+    "case": "laptop-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "api_keys": {
+        "K-NIM-1": {
+          "status": "disabled"
+        }
+      },
+      "tickets": {
+        "SUP-4641": {
+          "labels": [
+            "security-incident"
+          ]
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-NIM-1/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "laptop-02",
+    "name": "session-only",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4641": {
+          "priority": "P4",
+          "first_response_target": "5bd"
+        }
+      }
+    },
+    "requests": []
+  }
+]

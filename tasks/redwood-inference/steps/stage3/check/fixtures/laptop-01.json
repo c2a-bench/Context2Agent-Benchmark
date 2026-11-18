@@ -1,0 +1,37 @@
+[
+  {
+    "case": "laptop-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4618": {
+          "priority": "P4",
+          "first_response_target": "5bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "laptop-01",
+    "name": "disabled-org-keys",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4618": {
+          "priority": "P4",
+          "first_response_target": "5bd"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-PIX-2/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  }
+]

@@ -1,0 +1,36 @@
+[
+  {
+    "case": "bag-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6060": {
+          "category": "baggage"
+        }
+      },
+      "reimbursements": {
+        "SK6015": {
+          "bag_expenses": 60
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "bag-05",
+    "name": "sent-to-agency",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6060": {
+          "labels": [
+            "agency-refund"
+          ],
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  }
+]

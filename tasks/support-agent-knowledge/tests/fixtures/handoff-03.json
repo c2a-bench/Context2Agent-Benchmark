@@ -1,0 +1,34 @@
+[
+  {
+    "case": "handoff-03",
+    "name": "good",
+    "should": "pass",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-6345",
+          "reason": "churn_risk",
+          "summary": "s"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "handoff-03",
+    "name": "triaged-instead",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6345": {
+          "priority": "P3",
+          "first_response_target": "1bd"
+        }
+      }
+    },
+    "requests": []
+  }
+]

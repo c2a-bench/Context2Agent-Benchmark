@@ -1,0 +1,137 @@
+[
+ {
+  "case": "overnight-01",
+  "name": "stale-copy",
+  "data": {
+   "tickets": {
+    "SKY-6011": {
+     "category": "disruption"
+    }
+   },
+   "reimbursements": {
+    "SK5530": {
+     "meals": 65,
+     "hotel": 212
+    }
+   },
+   "credits": {
+    "SK5530": {
+     "compensation": 525
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "Above $175 a night, ask a supervisor to approve the room cost, up to $250."
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 65}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "stale copy"
+  ]
+ },
+ {
+  "case": "overnight-01",
+  "name": "current-doc-but-wrong",
+  "data": {
+   "tickets": {
+    "SKY-6011": {
+     "category": "disruption"
+    }
+   },
+   "reimbursements": {
+    "SK5530": {
+     "meals": 65,
+     "hotel": 212
+    }
+   },
+   "credits": {
+    "SK5530": {
+     "compensation": 525
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "Up to $225 a night needs no approval."
+     },
+     {
+      "role": "user",
+      "content": "Above $225, ask a supervisor to approve the room cost, up to $250."
+     },
+     {
+      "role": "user",
+      "content": "if the room is over $250, ask approval for $250 only; we don't cover the rest"
+     },
+     {
+      "role": "user",
+      "content": "This applies to every request handled from August 15, whatever the date of the flight."
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 65}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "misapplied rule"
+  ]
+ },
+ {
+  "case": "overnight-01",
+  "name": "rule-never-reached",
+  "data": {
+   "tickets": {
+    "SKY-6011": {
+     "category": "disruption"
+    }
+   },
+   "reimbursements": {
+    "SK5530": {
+     "meals": 65,
+     "hotel": 212
+    }
+   },
+   "credits": {
+    "SK5530": {
+     "compensation": 525
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "Crew scheduling: rest periods between duty days are set by the crew planning team."
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 65}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "retrieval"
+  ]
+ }
+]

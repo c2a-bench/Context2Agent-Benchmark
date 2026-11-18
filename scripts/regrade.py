@@ -93,8 +93,8 @@ verify.finish(results, cases, rules, bot, logs, baseline, self_report, bot_files
 
 
 def step_files(tests, task, step):
-    """The cases, rules and seed test.sh grades this step with: a staged task (redwood-inference, skyway-air,
-    skyway-arch) keeps a later stage's cases and rules in stages/<step>/, and its seed there too when the stage has
+    """The cases, rules and seed test.sh grades this step with: a staged task (redwood-inference,
+    skyway-air) keeps a later stage's cases and rules in stages/<step>/, and its seed there too when the stage has
     its own (skyway); otherwise the seed is tests/seed."""
     staged = tests / f"stages/{step}"
     if step != "stage0" and (staged / "cases.json").exists():
@@ -124,7 +124,7 @@ def verifier_env(task_dir, env_file=None):
     file, so a setting only in .env (REPLAY=0) must be read here, or the task.toml default (REPLAY=1) wins."""
     import tomllib
     env = tomllib.loads((task_dir / "task.toml").read_text()).get("verifier", {}).get("env", {})
-    names = ("BOT_MODEL", "EMBED_MODEL", "CUSTOMER_MODEL", "REPLAY", "ARCHITECTURE")  # ARCHITECTURE: skyway-arch only
+    names = ("BOT_MODEL", "EMBED_MODEL", "CUSTOMER_MODEL", "REPLAY", "ARCHITECTURE")  # ARCHITECTURE: skyway-air only
     from_file = env_file_values(env_file, names) if env_file else {}
     out = {}
     for k in names:
@@ -137,7 +137,7 @@ def verifier_env(task_dir, env_file=None):
 
 
 def architecture_of(cfg):
-    """skyway-arch: the architecture a run was given (the name of its architectures/<name>.md extra instruction),
+    """skyway-air: the architecture a run was given (the name of its architectures/<name>.md extra instruction),
     so a regraded stage gets the same architecture check as the run. "" when the run had none."""
     for p in cfg.get("extra_instruction_paths") or []:
         m = re.search(r"/architectures/([^/]+)\.md$", str(p))

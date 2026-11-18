@@ -1,0 +1,32 @@
+[
+  {
+    "case": "quota-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4612": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Eng Infra"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "quota-02",
+    "name": "hosted-routing",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4612": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Eng Platform"
+        }
+      }
+    },
+    "requests": []
+  }
+]

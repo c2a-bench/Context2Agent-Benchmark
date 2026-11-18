@@ -1,0 +1,36 @@
+[
+  {
+    "case": "audit-01b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6362": {
+          "priority": "P1",
+          "assigned_team": "Eng Infra",
+          "needs_legal_review": false,
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "audit-01b",
+    "name": "hosted-default",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6362": {
+          "priority": "P2",
+          "assigned_team": "Eng Platform",
+          "needs_legal_review": false
+        }
+      }
+    },
+    "requests": []
+  }
+]

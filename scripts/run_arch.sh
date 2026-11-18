@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run skyway-arch with one architecture fixed: its file from tasks/skyway-arch/architectures/ is appended to every
+# Run skyway-air with one architecture fixed: its file from tasks/skyway-air/architectures/ is appended to every
 # stage's instructions (Harbor's --extra-instruction-path), then the run is fact-judged (scripts/run_with_judge.sh), in
 # folder mode (JUDGE_MODE=folder: the judge opens the bot's files itself) unless JUDGE_MODE is set. One command runs
 # and judges; the judges take turns (JUDGE_SLOTS, default 2 at once).
@@ -14,18 +14,18 @@
 # which architecture it had.
 #
 # "all" answers Harbor's start-up question itself (-y), since its runs are in the background, and starts one run per architecture together (a few seconds apart, so Harbor's timestamped run folders differ) and
-# waits for all of them; each run's output goes to tasks/skyway-arch/jobs/arch-logs/<time>-<architecture>.log. To stay
+# waits for all of them; each run's output goes to tasks/skyway-air/jobs/arch-logs/<time>-<architecture>.log. To stay
 # under Daytona's 250-CPU limit, each run grades with fewer workers: 240 / (CPU per ticket x runs), at most 25, the
 # CPU per ticket being TICKET_SANDBOX_CPU (default 4: 6 runs -> 10 each, 6 x 10 x 4 = 240 CPU). The builders and graders run in Docker on this machine, not on Daytona.
 # Nothing else should use Daytona meanwhile. Set VERIFIER_WORKERS yourself to override it. A run that
 # fails is reported at the end; the others are not stopped.
 set -uo pipefail
 
-# Every skyway-arch run is judged in folder mode: its bots hold graphs, indexes and many files a pasted prompt cannot.
+# Every skyway-air run is judged in folder mode: its bots hold graphs, indexes and many files a pasted prompt cannot.
 export JUDGE_MODE="${JUDGE_MODE:-folder}"
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-TASK="${ARCH_TASK:-skyway-arch}"
+TASK="${ARCH_TASK:-skyway-air}"
 DIR="$REPO/tasks/$TASK/architectures"
 # A read loop, not mapfile: macOS ships bash 3.2, which has no mapfile.
 ARCHS=()

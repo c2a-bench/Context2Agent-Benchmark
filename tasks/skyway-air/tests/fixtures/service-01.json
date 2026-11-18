@@ -1,0 +1,44 @@
+[
+  {
+    "case": "service-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6029": {
+          "category": "service"
+        }
+      },
+      "refunds": {
+        "SK3120": {
+          "amount": 39,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK3120": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "service-01",
+    "name": "goodwill-instead",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK3120": {
+          "goodwill": 50
+        }
+      },
+      "tickets": {
+        "SKY-6029": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  }
+]

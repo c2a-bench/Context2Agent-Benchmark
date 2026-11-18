@@ -1,0 +1,34 @@
+[
+ {
+  "case": "window-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4171": {
+     "priority": "P1",
+     "assigned_team": "Eng Platform",
+     "labels": [
+      "escalated",
+      "offering-hosted"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "window-01",
+  "name": "old-7-day-window",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4171": {
+     "priority": "P2",
+     "assigned_team": "Eng Platform"
+    }
+   }
+  },
+  "requests": []
+ }
+]

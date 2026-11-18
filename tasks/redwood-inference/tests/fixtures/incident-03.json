@@ -1,0 +1,59 @@
+[
+  {
+    "case": "incident-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4513": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "incident-03",
+    "name": "linked-other-region",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4513": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ],
+          "incident_id": "INC-3101",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "incident-03",
+    "name": "linked-unrelated",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4513": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ],
+          "incident_id": "INC-3106"
+        }
+      }
+    },
+    "requests": []
+  }
+]

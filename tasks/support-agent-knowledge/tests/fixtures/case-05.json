@@ -1,0 +1,58 @@
+[
+  {
+    "case": "case-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4105": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "labels": []
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-05",
+    "name": "stale-sla-v1-5bd",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4105": {
+          "priority": "P4",
+          "first_response_target": "5bd",
+          "labels": []
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-05",
+    "name": "handed-off-normal-ticket",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4105": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "labels": []
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4105",
+          "reason": "not_covered",
+          "summary": "for a person"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

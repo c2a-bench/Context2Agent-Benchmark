@@ -1,0 +1,33 @@
+[
+ {
+  "case": "listed-p4-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4181": {
+     "priority": "P4",
+     "first_response_target": "5bd",
+     "incident_id": "INC-3110",
+     "escalation_status": "Incident declared",
+     "labels": []
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "listed-p4-01",
+  "name": "old-p3",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4181": {
+     "priority": "P3",
+     "first_response_target": "1bd"
+    }
+   }
+  },
+  "requests": []
+ }
+]

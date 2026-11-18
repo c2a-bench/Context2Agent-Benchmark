@@ -1,0 +1,58 @@
+[
+ {
+  "case": "batch-near-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4305": {
+     "priority": "P2",
+     "first_response_target": "2h",
+     "assigned_team": "Support"
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "batch-near-01",
+  "name": "fairness-rule-misapplied",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4305": {
+     "priority": "P2",
+     "assigned_team": "Eng Platform",
+     "labels": [
+      "fairness-admission"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "batch-near-01",
+  "name": "cousin-p0",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4305": {
+     "priority": "P0",
+     "labels": [
+      "escalated",
+      "offering-dedicated"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "batch-near-01",
+  "name": "empty-desk",
+  "should": "fail",
+  "data": {},
+  "requests": []
+ }
+]

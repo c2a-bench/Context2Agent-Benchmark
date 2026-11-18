@@ -1,0 +1,54 @@
+[
+  {
+    "case": "incident-same-01",
+    "name": "good",
+    "should": "pass",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4511/comments",
+        "body": {
+          "summary": "s"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "incident-same-01",
+    "name": "second-incident",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4704": {
+          "priority": "P1",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ],
+          "incident_id": "INC-3101",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "incident-same-01",
+    "name": "private-comment-on-open-ticket",
+    "should": "pass",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4511/comments",
+        "body": {
+          "summary": "s",
+          "public": false
+        },
+        "status": 200
+      }
+    ]
+  }
+]

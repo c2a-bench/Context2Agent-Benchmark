@@ -1,0 +1,47 @@
+[
+  {
+    "case": "change-06",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6054": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK7170": {
+          "to_flight": "SW338",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "credits": {
+        "SK7170": {
+          "fare_difference": 25
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "change-06",
+    "name": "no-credit-back",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK7170": {
+          "to_flight": "SW338",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "tickets": {
+        "SKY-6054": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

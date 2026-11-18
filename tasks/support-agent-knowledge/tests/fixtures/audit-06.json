@@ -1,0 +1,40 @@
+[
+  {
+    "case": "audit-06",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6326": {
+          "priority": "P1",
+          "assigned_team": "Eng Infra",
+          "needs_legal_review": false,
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "audit-06",
+    "name": "shortcut-routing",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6326": {
+          "priority": "P1",
+          "assigned_team": "Eng Platform",
+          "needs_legal_review": false,
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

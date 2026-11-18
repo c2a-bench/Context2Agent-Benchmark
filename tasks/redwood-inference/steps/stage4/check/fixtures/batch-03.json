@@ -1,0 +1,59 @@
+[
+ {
+  "case": "batch-03",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4304": {
+     "priority": "P2",
+     "assigned_team": "Eng Platform",
+     "labels": [
+      "fairness-admission"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "batch-03",
+  "name": "cousin-p0",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4304": {
+     "priority": "P0",
+     "first_response_target": "15m",
+     "escalation_status": "Eng engaged",
+     "labels": [
+      "escalated",
+      "offering-dedicated"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "batch-03",
+  "name": "old-stuck-batch-page",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4304": {
+     "priority": "P2",
+     "assigned_team": "Support"
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "batch-03",
+  "name": "empty-desk",
+  "should": "fail",
+  "data": {},
+  "requests": []
+ }
+]

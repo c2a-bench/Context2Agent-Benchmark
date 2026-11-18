@@ -1,0 +1,39 @@
+[
+  {
+    "case": "soc2-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4639": {
+          "priority": "P1",
+          "assigned_team": "Private Deployments",
+          "needs_legal_review": false,
+          "labels": [
+            "escalated",
+            "offering-private"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "soc2-02",
+    "name": "trust-center",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4639": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Legal",
+          "labels": [
+            "trust-center"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

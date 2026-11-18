@@ -1,0 +1,33 @@
+[
+  {
+    "case": "pause-02",
+    "name": "good",
+    "should": "pass",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4710",
+          "reason": "churn_risk",
+          "summary": "s"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "pause-02",
+    "name": "paused-credit-only",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4710": {
+          "assigned_team": "Support"
+        }
+      }
+    },
+    "requests": []
+  }
+]

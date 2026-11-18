@@ -1,0 +1,32 @@
+[
+  {
+    "case": "audit-04b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6363": {
+          "priority": "P2",
+          "assigned_team": "Eng Infra",
+          "needs_legal_review": false
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "audit-04b",
+    "name": "legal-anyway",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6363": {
+          "priority": "P2",
+          "assigned_team": "Eng Infra",
+          "needs_legal_review": true
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,281 @@
+[
+ {
+  "case": "receipt-ask-01",
+  "name": "good",
+  "should": "pass",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4401": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    },
+    "SUP-4402": {
+     "comments": [
+      {
+       "body": "This morning's disable was att_7f3c91.",
+       "public": true
+      }
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-3/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-ORB-3",
+     "status": "disabled",
+     "attempt_id": "att_7f3c91"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4402/comments",
+    "body": {
+     "body": "This morning's disable was att_7f3c91.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "receipt-ask-01",
+  "name": "good-on-earlier-ticket",
+  "should": "pass",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4401": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ],
+     "comments": [
+      {
+       "body": "This morning's disable was att_7f3c91.",
+       "public": true
+      }
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-3/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-ORB-3",
+     "status": "disabled",
+     "attempt_id": "att_7f3c91"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4401/comments",
+    "body": {
+     "body": "This morning's disable was att_7f3c91.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "receipt-ask-01",
+  "name": "missing-id",
+  "should": "fail",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4401": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    },
+    "SUP-4402": {
+     "comments": [
+      {
+       "body": "Already revoked this morning.",
+       "public": true
+      }
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-3/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "attempt_id": "att_7f3c91"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4402/comments",
+    "body": {
+     "body": "Already revoked this morning.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "receipt-ask-01",
+  "name": "invented-id",
+  "should": "fail",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4401": {
+     "assigned_team": "Security"
+    },
+    "SUP-4402": {
+     "comments": [
+      {
+       "body": "The attempt id is att_deadbeef.",
+       "public": true
+      }
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-3/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "attempt_id": "att_7f3c91"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4402/comments",
+    "body": {
+     "body": "The attempt id is att_deadbeef.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "receipt-ask-01",
+  "name": "disabled-again",
+  "should": "fail",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4401": {
+     "assigned_team": "Security"
+    },
+    "SUP-4402": {
+     "comments": [
+      {
+       "body": "New disable att_aa11bb.",
+       "public": true
+      }
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-3/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "attempt_id": "att_7f3c91"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-3/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "attempt_id": "att_aa11bb"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4402/comments",
+    "body": {
+     "body": "New disable att_aa11bb.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "receipt-ask-01",
+  "name": "empty-desk",
+  "should": "fail",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4401": {
+     "assigned_team": "Security"
+    }
+   },
+   "api_keys": {
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-3/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "attempt_id": "att_7f3c91"
+    }
+   }
+  ]
+ }
+]

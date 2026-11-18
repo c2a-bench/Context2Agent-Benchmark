@@ -1,0 +1,32 @@
+[
+  {
+    "case": "contract-07",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4507": {
+          "priority": "P2",
+          "assigned_team": "Eng Infra",
+          "needs_legal_review": true
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "contract-07",
+    "name": "skipped-legal",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4507": {
+          "priority": "P2",
+          "assigned_team": "Eng Infra",
+          "needs_legal_review": false
+        }
+      }
+    },
+    "requests": []
+  }
+]

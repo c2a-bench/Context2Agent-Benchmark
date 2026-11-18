@@ -1,0 +1,34 @@
+[
+  {
+    "case": "sev-09",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4562": {
+          "priority": "P0",
+          "first_response_target": "1h",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "sev-09",
+    "name": "guessed-minor",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4562": {
+          "priority": "P3",
+          "first_response_target": "2bd"
+        }
+      }
+    },
+    "requests": []
+  }
+]

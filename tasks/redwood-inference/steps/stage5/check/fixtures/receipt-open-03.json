@@ -1,0 +1,64 @@
+[
+  {
+    "case": "receipt-open-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4406": {
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident"
+          ]
+        }
+      },
+      "api_keys": {
+        "K-ORB-2": {
+          "status": "disabled"
+        },
+        "K-ORB-3": {
+          "status": "active"
+        },
+        "K-ORB-1": {
+          "status": "active"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-ORB-2/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "receipt-open-03",
+    "name": "guessed-edge",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4406": {
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident"
+          ]
+        }
+      },
+      "api_keys": {
+        "K-ORB-3": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-ORB-3/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  }
+]

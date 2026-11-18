@@ -1,0 +1,51 @@
+[
+ {
+  "case": "find-audit-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4191": {
+     "priority": "P1",
+     "assigned_team": "Eng Platform",
+     "labels": [
+      "escalated",
+      "offering-hosted"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "find-audit-01",
+  "name": "iso-cousin",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4191": {
+     "priority": "P3",
+     "assigned_team": "Legal",
+     "labels": [
+      "vendor-iso"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "find-audit-01",
+  "name": "how-to-cousin",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4191": {
+     "priority": "P4",
+     "assigned_team": "Support"
+    }
+   }
+  },
+  "requests": []
+ }
+]

@@ -1,0 +1,36 @@
+[
+  {
+    "case": "case-06",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4106": {
+          "priority": "P1",
+          "assigned_team": "Private Deployments",
+          "needs_legal_review": false,
+          "labels": [
+            "escalated",
+            "offering-private"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-06",
+    "name": "default-p2",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4106": {
+          "priority": "P2",
+          "assigned_team": "Private Deployments",
+          "needs_legal_review": false
+        }
+      }
+    },
+    "requests": []
+  }
+]

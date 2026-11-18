@@ -1,0 +1,34 @@
+[
+  {
+    "case": "bastion-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4617": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "assigned_team": "Support"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "bastion-01",
+    "name": "security-flagged",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4617": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "labels": [
+            "security-incident"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

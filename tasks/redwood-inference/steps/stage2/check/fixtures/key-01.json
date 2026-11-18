@@ -1,0 +1,42 @@
+[
+  {
+    "case": "key-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4541": {
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident"
+          ]
+        }
+      },
+      "api_keys": {
+        "K-MER-1": {
+          "status": "active"
+        },
+        "K-MER-2": {
+          "status": "active"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "key-01",
+    "name": "cs-note",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4541": {
+          "assigned_team": "Customer Success",
+          "labels": [
+            "security-incident"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

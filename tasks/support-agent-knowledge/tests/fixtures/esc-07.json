@@ -1,0 +1,40 @@
+[
+  {
+    "case": "esc-07",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6307": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "offering-private"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "esc-07",
+    "name": "tier-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6307": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "enterprise"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

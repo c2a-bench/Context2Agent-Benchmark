@@ -1,0 +1,42 @@
+[
+  {
+    "case": "change-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6028": {
+          "category": "change"
+        }
+      },
+      "changes": {
+        "SK7930": {
+          "to_flight": "SW334",
+          "change_fee": 0,
+          "fare_difference": 25
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "change-04",
+    "name": "charged-fee-on-flex",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK7930": {
+          "to_flight": "SW334",
+          "change_fee": 75,
+          "fare_difference": 25
+        }
+      },
+      "tickets": {
+        "SKY-6028": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

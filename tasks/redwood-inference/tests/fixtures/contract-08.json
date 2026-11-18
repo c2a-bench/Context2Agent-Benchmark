@@ -1,0 +1,40 @@
+[
+  {
+    "case": "contract-08",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4508": {
+          "priority": "P1",
+          "first_response_target": "4h",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "contract-08",
+    "name": "linked-5xx-incident",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4508": {
+          "priority": "P1",
+          "first_response_target": "4h",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ],
+          "incident_id": "INC-3101",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "case": "multi-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6069": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK2621": {
+          "amount": 476,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK2622": {
+          "compensation": 150
+        },
+        "SK2624": {
+          "compensation": 300
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-03",
+    "name": "one-passenger-amounts",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK2621": {
+          "amount": 238,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK2622": {
+          "compensation": 150
+        },
+        "SK2624": {
+          "compensation": 150
+        }
+      },
+      "tickets": {
+        "SKY-6069": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-03",
+    "name": "compensated-weather",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK2621": {
+          "amount": 476,
+          "method": "original_payment"
+        }
+      },
+      "credits": {
+        "SK2622": {
+          "compensation": 150
+        },
+        "SK2623": {
+          "compensation": 150
+        },
+        "SK2624": {
+          "compensation": 300
+        }
+      },
+      "tickets": {
+        "SKY-6069": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

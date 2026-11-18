@@ -1,0 +1,39 @@
+[
+ {
+  "case": "outage-open-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4201": {
+     "priority": "P0",
+     "first_response_target": "15m",
+     "escalation_status": "Eng engaged",
+     "labels": [
+      "escalated",
+      "offering-dedicated",
+      "symptom-request-timeout"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "outage-open-01",
+  "name": "as-p1",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4201": {
+     "priority": "P1",
+     "first_response_target": "30m",
+     "labels": [
+      "escalated"
+     ]
+    }
+   }
+  },
+  "requests": []
+ }
+]

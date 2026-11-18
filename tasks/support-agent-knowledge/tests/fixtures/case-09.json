@@ -1,0 +1,23 @@
+[
+  {
+    "case": "case-09",
+    "name": "good",
+    "should": "pass",
+    "data": { "tickets": { "SUP-4109": { "priority": "P2", "first_response_target": "2h", "assigned_team": "Eng Infra", "needs_legal_review": true } } },
+    "requests": []
+  },
+  {
+    "case": "case-09",
+    "name": "cross-region-missed",
+    "should": "fail",
+    "data": { "tickets": { "SUP-4109": { "priority": "P2", "assigned_team": "Eng Infra", "needs_legal_review": false } } },
+    "requests": []
+  },
+  {
+    "case": "case-09",
+    "name": "general-directory-routing",
+    "should": "fail",
+    "data": { "tickets": { "SUP-4109": { "priority": "P2", "assigned_team": "Eng Platform", "needs_legal_review": true } } },
+    "requests": []
+  }
+]

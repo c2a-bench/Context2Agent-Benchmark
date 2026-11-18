@@ -1,0 +1,46 @@
+[
+  {
+    "case": "key-04b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "disabled"
+        },
+        "K-BRI-2": {
+          "status": "active"
+        }
+      },
+      "tickets": {
+        "SUP-6364": {
+          "labels": [
+            "security-incident"
+          ]
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-BRI-1/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "key-04b",
+    "name": "treated-as-planned",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6364": {
+          "priority": "P4",
+          "first_response_target": "2bd"
+        }
+      }
+    },
+    "requests": []
+  }
+]

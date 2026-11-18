@@ -1,0 +1,30 @@
+[
+  {
+    "case": "sla-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6313": {
+          "priority": "P3",
+          "first_response_target": "1bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "sla-03",
+    "name": "v1-reply-time",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6313": {
+          "priority": "P3",
+          "first_response_target": "2bd"
+        }
+      }
+    },
+    "requests": []
+  }
+]

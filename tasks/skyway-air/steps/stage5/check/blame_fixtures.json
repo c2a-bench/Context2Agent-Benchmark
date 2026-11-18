@@ -1,0 +1,235 @@
+[
+ {
+  "case": "rename-03",
+  "name": "stale-copy",
+  "data": {
+   "tickets": {
+    "SKY-7004": {
+     "category": "disruption",
+     "labels": [
+      "awaiting-receipts"
+     ]
+    }
+   },
+   "credits": {
+    "SK8120": {
+     "compensation": 138
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "$150 travel credit per passenger who travelled"
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 138}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "stale copy"
+  ]
+ },
+ {
+  "case": "rename-03",
+  "name": "current-doc-but-wrong",
+  "data": {
+   "tickets": {
+    "SKY-7004": {
+     "category": "disruption",
+     "labels": [
+      "awaiting-receipts"
+     ]
+    }
+   },
+   "credits": {
+    "SK8120": {
+     "compensation": 138
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "arrive 3 or more hours late"
+     },
+     {
+      "role": "user",
+      "content": "$175 travel credit per passenger who travelled"
+     },
+     {
+      "role": "user",
+      "content": "$175 per passenger who travelled"
+     },
+     {
+      "role": "user",
+      "content": "Give compensation whenever it applies, even if the customer only asks about something else"
+     },
+     {
+      "role": "user",
+      "content": "Weather, air traffic control and airport security disruptions do not qualify"
+     },
+     {
+      "role": "user",
+      "content": "less than 72 hours' notice"
+     },
+     {
+      "role": "user",
+      "content": "This applies to every request handled from December 1, whatever the date of the flight."
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 138}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "misapplied rule"
+  ]
+ },
+ {
+  "case": "rename-03",
+  "name": "rule-never-reached",
+  "data": {
+   "tickets": {
+    "SKY-7004": {
+     "category": "disruption",
+     "labels": [
+      "awaiting-receipts"
+     ]
+    }
+   },
+   "credits": {
+    "SK8120": {
+     "compensation": 138
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "Crew scheduling: rest periods between duty days are set by the crew planning team."
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 138}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "retrieval"
+  ]
+ },
+ {
+  "case": "rcpt-01b",
+  "name": "first-write-never-made",
+  "data": {
+   "tickets": {
+    "SKY-11005": {
+     "category": "refund",
+     "comments": [
+      {
+       "body": "Your confirmation number is cf_fixture1.",
+       "public": true
+      }
+     ]
+    }
+   }
+  },
+  "model_calls": [],
+  "expect_blame": [
+   "no model call"
+  ],
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SKY-11005/comments",
+    "status": 200,
+    "body": {
+     "body": "Your confirmation number is cf_fixture1.",
+     "public": true
+    }
+   }
+  ],
+  "already": 0
+ },
+ {
+  "case": "rcpt-01b",
+  "name": "id-said-not-posted",
+  "data": {
+   "tickets": {
+    "SKY-11005": {
+     "category": "refund",
+     "comments": [
+      {
+       "body": "Your payment went through.",
+       "public": true
+      }
+     ]
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "t"
+     }
+    ],
+    "reply": {
+     "content": "Your confirmation number is cf_fixture1.",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "execution"
+  ],
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/refunds",
+    "body": {
+     "amount": 172,
+     "method": "original_payment"
+    },
+    "status": 200,
+    "response": {
+     "amount": 172,
+     "method": "original_payment",
+     "confirmation_id": "cf_fixture1"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SKY-11005/comments",
+    "status": 200,
+    "body": {
+     "body": "Your payment went through.",
+     "public": true
+    }
+   }
+  ],
+  "already": 1
+ }
+]

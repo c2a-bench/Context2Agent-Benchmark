@@ -1,0 +1,38 @@
+[
+  {
+    "case": "change-07",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6066": {
+          "category": "change",
+          "labels": [
+            "change-denied"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "change-07",
+    "name": "changed-basic",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK7190": {
+          "to_flight": "SW521",
+          "change_fee": 0,
+          "fare_difference": 0
+        }
+      },
+      "tickets": {
+        "SKY-6066": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

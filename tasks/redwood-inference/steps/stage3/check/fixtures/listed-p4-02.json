@@ -1,0 +1,36 @@
+[
+  {
+    "case": "listed-p4-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4810": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "listed-p4-02",
+    "name": "linked-listed",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4810": {
+          "priority": "P4",
+          "first_response_target": "5bd",
+          "incident_id": "INC-3110",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  }
+]

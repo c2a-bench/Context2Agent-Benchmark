@@ -1,0 +1,25 @@
+[
+  {
+    "case": "handoff-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6035": {
+          "category": "other"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SKY-6035",
+          "reason": "not_covered"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

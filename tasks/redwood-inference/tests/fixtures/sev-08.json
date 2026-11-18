@@ -1,0 +1,35 @@
+[
+  {
+    "case": "sev-08",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4561": {
+          "priority": "P3",
+          "first_response_target": "4h"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "sev-08",
+    "name": "guessed-outage",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4561": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "offering-private"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

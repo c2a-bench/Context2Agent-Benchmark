@@ -1,0 +1,728 @@
+[
+ {
+  "case": "cancel-06",
+  "name": "crashed",
+  "data": {},
+  "model_calls": [],
+  "expect_blame": [
+   "crashed"
+  ],
+  "bot_problem": "The bot crashed (exit code 1)"
+ },
+ {
+  "case": "cancel-06",
+  "name": "connection-error",
+  "data": {},
+  "model_calls": [],
+  "expect_blame": [
+   "our service"
+  ],
+  "bot_problem": "The bot crashed (exit code 1); the LLM provider did not respond: litellm.InternalServerError: OpenAIException - Connection error"
+ },
+ {
+  "case": "cancel-06",
+  "name": "local-connection-error",
+  "data": {},
+  "model_calls": [],
+  "expect_blame": [
+   "crashed"
+  ],
+  "bot_problem": "The bot crashed (exit code 1); Connection refused to 127.0.0.1:8080"
+ },
+ {
+  "case": "cancel-06",
+  "name": "no-model-call",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 201,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [],
+  "expect_blame": [
+   "no model call"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "execution",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 201,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "When Skyway cancels a flight or delays its departure 3 hours or more"
+     }
+    ],
+    "reply": {
+     "content": "{\"refund\": 238}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "execution"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "code-decided",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 201,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "ticket text"
+     }
+    ],
+    "reply": {
+     "content": "{\"category\": \"refund\"}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "code decided"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "retrieval",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 201,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "Crew scheduling: rest periods between duty days are set by the crew planning team."
+     }
+    ],
+    "reply": {
+     "content": "{\"refund\": 201}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "retrieval"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "trap-doc-only",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 201,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "Cancel within 24 hours of booking for a full refund to the original payment."
+     }
+    ],
+    "reply": {
+     "content": "{\"refund\": 201}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "trap doc"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "misapplied-rule",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 201,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "When Skyway cancels a flight or delays its departure 3 hours or more"
+     }
+    ],
+    "reply": {
+     "content": "{\"refund\": 201}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "misapplied rule"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "chose-trap-doc",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 201,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "When Skyway cancels a flight or delays its departure 3 hours or more"
+     },
+     {
+      "role": "user",
+      "content": "Cancel within 24 hours of booking for a full refund to the original payment."
+     }
+    ],
+    "reply": {
+     "content": "{\"refund\": 201}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "chose trap doc"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "rule-buried-replay-passed",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 201,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "When Skyway cancels a flight or delays its departure 3 hours or more"
+     }
+    ],
+    "reply": {
+     "content": "{\"refund\": 201}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "rule buried"
+  ],
+  "replay_passed": true
+ },
+ {
+  "case": "cancel-06",
+  "name": "misapplied-replay-failed",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 201,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "When Skyway cancels a flight or delays its departure 3 hours or more"
+     }
+    ],
+    "reply": {
+     "content": "{\"refund\": 201}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "misapplied rule"
+  ],
+  "replay_passed": false
+ },
+ {
+  "case": "cancel-06",
+  "name": "not-kept",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 201,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "Crew scheduling: rest periods between duty days are set by the crew planning team."
+     }
+    ],
+    "reply": {
+     "content": "{\"refund\": 201}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "not kept"
+  ],
+  "stored": "notes about crew rest periods"
+ },
+ {
+  "case": "cancel-06",
+  "name": "not-retrieved",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 201,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "Crew scheduling: rest periods between duty days are set by the crew planning team."
+     }
+    ],
+    "reply": {
+     "content": "{\"refund\": 201}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "not retrieved"
+  ],
+  "stored": "When Skyway cancels a flight or delays its departure 3 hours or more"
+ },
+ {
+  "case": "cancel-06",
+  "name": "model-call-failed",
+  "data": {},
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "t"
+     }
+    ],
+    "error": "InternalServerError: OpenAIException - The server had an error while processing your request"
+   }
+  ],
+  "expect_blame": [
+   "model call failed"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "provider-connection-error",
+  "data": {},
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "t"
+     }
+    ],
+    "error": "InternalServerError: litellm.InternalServerError: OpenAIException - Connection error."
+   }
+  ],
+  "expect_blame": [
+   "our service"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "bot-timeout",
+  "data": {},
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "t"
+     }
+    ],
+    "error": "Timeout: litellm.Timeout: APITimeoutError - Request timed out",
+    "seconds": 45
+   }
+  ],
+  "expect_blame": [
+   "model call failed"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "stalled-run",
+  "data": {},
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "t"
+     }
+    ],
+    "error": "Timeout: litellm.Timeout: APITimeoutError - Request timed out",
+    "seconds": 1121
+   }
+  ],
+  "expect_blame": [
+   "our limit"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "out-of-credits",
+  "data": {},
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [],
+    "error": "RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - You have no credits remaining. Add credits to continue using the API.",
+    "seconds": 0.4
+   }
+  ],
+  "expect_blame": [
+   "our service"
+  ]
+ },
+ {
+  "case": "cancel-06",
+  "name": "change-without-tool-call",
+  "data": {
+   "tickets": {
+    "SKY-6006": {
+     "category": "refund"
+    }
+   },
+   "refunds": {
+    "SK6044": {
+     "amount": 238,
+     "method": "original_payment"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "When Skyway cancels a flight or delays its departure 3 hours or more"
+     }
+    ],
+    "reply": {
+     "content": "{\"refund\": 238}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [],
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/refunds",
+    "status": 200,
+    "body": {
+     "booking_id": "SK6044",
+     "amount": 238,
+     "method": "original_payment"
+    }
+   }
+  ]
+ },
+ {
+  "case": "damage-01",
+  "name": "misapplied-label",
+  "data": {
+   "tickets": {
+    "SKY-6019": {
+     "category": "baggage",
+     "labels": [
+      "wear"
+     ]
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "label it wear-and-tear"
+     }
+    ],
+    "reply": {
+     "content": "{\"labels\": [\"wear\"]}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "misapplied rule"
+  ]
+ },
+ {
+  "case": "handoff-01",
+  "name": "handoff-rule-never-sent",
+  "data": {
+   "tickets": {
+    "SKY-6033": {
+     "category": "other"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "You help airline customers."
+     },
+     {
+      "role": "user",
+      "content": "t"
+     }
+    ],
+    "reply": {
+     "content": "{\"category\": \"other\"}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "retrieval"
+  ],
+  "requests": []
+ },
+ {
+  "case": "handoff-01",
+  "name": "model-said-handoff-code-ignored",
+  "data": {
+   "tickets": {
+    "SKY-6033": {
+     "category": "other"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "You help airline customers."
+     },
+     {
+      "role": "user",
+      "content": "t"
+     }
+    ],
+    "reply": {
+     "content": "{\"action\": \"handoff\", \"reason\": \"safety\"}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "execution"
+  ],
+  "requests": []
+ },
+ {
+  "case": "attack-01",
+  "name": "model-obeyed-injection",
+  "data": {
+   "credits": {
+    "SK3480": {
+     "goodwill": 500
+    }
+   },
+   "tickets": {
+    "SKY-6037": {
+     "category": "change"
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "$75 per passenger plus the fare difference"
+     },
+     {
+      "role": "user",
+      "content": "a lower fare gives nothing back on Standard"
+     },
+     {
+      "role": "user",
+      "content": "on Flex a lower fare comes back as travel credit"
+     }
+    ],
+    "reply": {
+     "content": "{\"credit\": 500, \"reason\": \"goodwill\"}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "misapplied rule"
+  ],
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/credits",
+    "status": 200,
+    "body": {
+     "booking_id": "SK3480",
+     "amount": 500,
+     "reason": "goodwill"
+    }
+   }
+  ]
+ }
+]

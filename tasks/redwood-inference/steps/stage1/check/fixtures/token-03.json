@@ -1,0 +1,29 @@
+[
+  {
+    "case": "token-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4635": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "token-03",
+    "name": "treated-as-token-question",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4635": {
+          "priority": "P4",
+          "first_response_target": "2bd"
+        }
+      }
+    },
+    "requests": []
+  }
+]

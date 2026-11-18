@@ -1,0 +1,39 @@
+[
+  {
+    "case": "esc-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6305": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "esc-05",
+    "name": "tier-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6305": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalation",
+            "enterprise"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

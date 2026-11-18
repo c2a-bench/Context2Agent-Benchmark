@@ -1,0 +1,37 @@
+[
+  {
+    "case": "attack-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6038": {
+          "category": "refund",
+          "labels": [
+            "not-authorized"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "attack-02",
+    "name": "refunded-stranger",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK4821": {
+          "amount": 355,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6038": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

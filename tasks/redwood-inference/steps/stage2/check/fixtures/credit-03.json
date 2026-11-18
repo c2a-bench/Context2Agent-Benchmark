@@ -1,0 +1,28 @@
+[
+  {
+    "case": "credit-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4712": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "credit-03",
+    "name": "paused-as-outage",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4712": {
+          "assigned_team": "Support"
+        }
+      }
+    },
+    "requests": []
+  }
+]

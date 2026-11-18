@@ -1,0 +1,40 @@
+[
+  {
+    "case": "audit-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4544": {
+          "priority": "P1",
+          "assigned_team": "Eng Platform",
+          "needs_legal_review": true,
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "audit-01",
+    "name": "missed-cross-region",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4544": {
+          "priority": "P1",
+          "assigned_team": "Eng Platform",
+          "needs_legal_review": false,
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

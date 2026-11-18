@@ -1,0 +1,38 @@
+[
+  {
+    "case": "key-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4543": {
+          "priority": "P4",
+          "first_response_target": "2bd"
+        }
+      },
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "active"
+        },
+        "K-BRI-2": {
+          "status": "active"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "key-03",
+    "name": "self-serve-reply",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4543": {
+          "priority": "P4",
+          "first_response_target": "5bd"
+        }
+      }
+    },
+    "requests": []
+  }
+]

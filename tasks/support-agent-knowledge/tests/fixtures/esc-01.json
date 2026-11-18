@@ -1,0 +1,40 @@
+[
+  {
+    "case": "esc-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6301": {
+          "priority": "P0",
+          "first_response_target": "1h",
+          "labels": [
+            "escalated",
+            "offering-hosted",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "esc-01",
+    "name": "v1-reply-time",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6301": {
+          "priority": "P0",
+          "first_response_target": "2h",
+          "labels": [
+            "escalated",
+            "offering-hosted",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,43 @@
+[
+  {
+    "case": "handoff-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6034": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SKY-6034",
+          "reason": "legal"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "handoff-02",
+    "name": "paid-bag",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK3010": {
+          "bag_expenses": 375
+        }
+      },
+      "tickets": {
+        "SKY-6034": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  }
+]

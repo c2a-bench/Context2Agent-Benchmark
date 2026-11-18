@@ -1,0 +1,114 @@
+[
+  {
+    "case": "done-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4105": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "labels": []
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "done-01",
+    "name": "edited-again",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4105": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "labels": []
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "PATCH",
+        "path": "/tickets/SUP-4105",
+        "body": {
+          "priority": "P4"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "done-01",
+    "name": "refiled-higher",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4105": {
+          "priority": "P3",
+          "first_response_target": "2bd",
+          "labels": []
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "PATCH",
+        "path": "/tickets/SUP-4105",
+        "body": {
+          "priority": "P3"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "done-01",
+    "name": "status-update-only",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4105": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "labels": [],
+          "status": "Waiting on Customer"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "PATCH",
+        "path": "/tickets/SUP-4105",
+        "body": {
+          "status": "Waiting on Customer"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "done-01",
+    "name": "edited-again-rejected",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4105": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "labels": []
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "PATCH",
+        "path": "/tickets/SUP-4105",
+        "body": {
+          "priority": "P4"
+        },
+        "status": 500
+      }
+    ]
+  }
+]

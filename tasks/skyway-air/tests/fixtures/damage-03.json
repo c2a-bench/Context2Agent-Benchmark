@@ -1,0 +1,36 @@
+[
+  {
+    "case": "damage-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6059": {
+          "category": "baggage",
+          "labels": [
+            "claim-late"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "damage-03",
+    "name": "paid-late-damage",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK3397": {
+          "bag_repair": 150
+        }
+      },
+      "tickets": {
+        "SKY-6059": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  }
+]

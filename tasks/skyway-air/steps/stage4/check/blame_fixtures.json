@@ -1,0 +1,130 @@
+[
+ {
+  "case": "service-02",
+  "name": "stale-copy",
+  "data": {
+   "tickets": {
+    "SKY-6030": {
+     "category": "service"
+    }
+   },
+   "credits": {
+    "SK3120": {
+     "goodwill": 23,
+     "compensation": 175
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "$150 travel credit per passenger who travelled"
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 23}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "stale copy"
+  ]
+ },
+ {
+  "case": "service-02",
+  "name": "current-doc-but-wrong",
+  "data": {
+   "tickets": {
+    "SKY-6030": {
+     "category": "service"
+    }
+   },
+   "credits": {
+    "SK3120": {
+     "goodwill": 23,
+     "compensation": 175
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "$175 per passenger who travelled"
+     },
+     {
+      "role": "user",
+      "content": "arrive 4 or more hours late"
+     },
+     {
+      "role": "user",
+      "content": "less than 72 hours' notice"
+     },
+     {
+      "role": "user",
+      "content": "Give compensation whenever it applies, even if the customer only asks about something else"
+     },
+     {
+      "role": "user",
+      "content": "Weather, air traffic control and airport security disruptions do not qualify"
+     },
+     {
+      "role": "user",
+      "content": "This applies to every request handled from August 15, whatever the date of the flight."
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 23}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "misapplied rule"
+  ]
+ },
+ {
+  "case": "service-02",
+  "name": "rule-never-reached",
+  "data": {
+   "tickets": {
+    "SKY-6030": {
+     "category": "service"
+    }
+   },
+   "credits": {
+    "SK3120": {
+     "goodwill": 23,
+     "compensation": 175
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "Crew scheduling: rest periods between duty days are set by the crew planning team."
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 23}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "retrieval"
+  ]
+ }
+]

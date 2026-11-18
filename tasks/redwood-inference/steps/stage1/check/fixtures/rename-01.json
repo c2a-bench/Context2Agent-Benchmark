@@ -1,0 +1,53 @@
+[
+  {
+    "case": "rename-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4121": {
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-request-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "rename-01",
+    "name": "old-label-name",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4121": {
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "rename-01",
+    "name": "both-label-names",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4121": {
+          "labels": [
+            "escalated",
+            "symptom-request-timeout",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

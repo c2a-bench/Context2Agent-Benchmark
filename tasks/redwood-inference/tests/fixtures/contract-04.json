@@ -1,0 +1,54 @@
+[
+  {
+    "case": "contract-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4504": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "contract-04",
+    "name": "guessed-p2",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4504": {
+          "priority": "P2",
+          "first_response_target": "2h"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "contract-04",
+    "name": "linked-latency-incident",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4504": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ],
+          "incident_id": "INC-3102",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  }
+]

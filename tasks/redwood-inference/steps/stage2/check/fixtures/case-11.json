@@ -1,0 +1,28 @@
+[
+  {
+    "case": "case-11",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4111": {
+          "assigned_team": "Support"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-11",
+    "name": "old-routing",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4111": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": []
+  }
+]

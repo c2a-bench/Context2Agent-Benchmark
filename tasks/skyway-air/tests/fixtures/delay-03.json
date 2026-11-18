@@ -1,0 +1,33 @@
+[
+  {
+    "case": "delay-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6045": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "delay-03",
+    "name": "paid-meal",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK3503": {
+          "meals": 15
+        }
+      },
+      "tickets": {
+        "SKY-6045": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

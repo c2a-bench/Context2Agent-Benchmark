@@ -1,0 +1,30 @@
+[
+  {
+    "case": "token-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6365": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "token-03",
+    "name": "token-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6365": {
+          "labels": [
+            "token-accounting"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,102 @@
+[
+ {
+  "case": "receipt-open-02",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4403": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-PIX-1": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-PIX-1/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-PIX-1",
+     "status": "disabled",
+     "attempt_id": "att_5c2e80"
+    }
+   }
+  ]
+ },
+ {
+  "case": "receipt-open-02",
+  "name": "not-disabled",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4403": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "receipt-open-02",
+  "name": "disabled-twice",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4403": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-PIX-1": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-PIX-1/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-PIX-1",
+     "status": "disabled",
+     "attempt_id": "att_5c2e80"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api_keys/K-PIX-1/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-PIX-1",
+     "status": "disabled",
+     "attempt_id": "att_5c2e81"
+    }
+   }
+  ]
+ },
+ {
+  "case": "receipt-open-02",
+  "name": "empty-desk",
+  "should": "fail",
+  "data": {},
+  "requests": []
+ }
+]

@@ -1,0 +1,39 @@
+[
+  {
+    "case": "cancel-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6002": {
+          "category": "disruption"
+        }
+      },
+      "credits": {
+        "SK4821": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-02",
+    "name": "refunded-anyway",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK4821": {
+          "amount": 355,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6002": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

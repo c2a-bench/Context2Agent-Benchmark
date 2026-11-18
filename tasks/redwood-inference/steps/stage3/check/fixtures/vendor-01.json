@@ -1,0 +1,42 @@
+[
+ {
+  "case": "vendor-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4182": {
+     "priority": "P3",
+     "assigned_team": "Legal",
+     "labels": [
+      "vendor-review"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "vendor-01",
+  "name": "handed-off",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4182": {
+     "priority": "P3"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/handoffs",
+    "status": 200,
+    "body": {
+     "ticket_id": "SUP-4182",
+     "reason": "not_covered"
+    }
+   }
+  ]
+ }
+]

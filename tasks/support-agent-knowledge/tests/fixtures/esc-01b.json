@@ -1,0 +1,34 @@
+[
+  {
+    "case": "esc-01b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6353": {
+          "priority": "P3",
+          "first_response_target": "2bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "esc-01b",
+    "name": "guessed-outage",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6353": {
+          "priority": "P0",
+          "first_response_target": "1h",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

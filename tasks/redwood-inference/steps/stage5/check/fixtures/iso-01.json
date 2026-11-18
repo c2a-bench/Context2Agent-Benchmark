@@ -1,0 +1,35 @@
+[
+  {
+    "case": "iso-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4614": {
+          "priority": "P3",
+          "first_response_target": "4h",
+          "assigned_team": "Legal",
+          "labels": [
+            "vendor-iso"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "iso-01",
+    "name": "old-1-business-day",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4614": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Legal"
+        }
+      }
+    },
+    "requests": []
+  }
+]

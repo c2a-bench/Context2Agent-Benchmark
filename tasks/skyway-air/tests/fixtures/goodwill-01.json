@@ -1,0 +1,33 @@
+[
+  {
+    "case": "goodwill-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6064": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "goodwill-01",
+    "name": "second-goodwill",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK3160": {
+          "goodwill": 100
+        }
+      },
+      "tickets": {
+        "SKY-6064": {
+          "category": "service"
+        }
+      }
+    },
+    "requests": []
+  }
+]

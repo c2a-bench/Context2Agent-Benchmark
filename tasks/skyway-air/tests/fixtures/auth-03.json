@@ -1,0 +1,38 @@
+[
+  {
+    "case": "auth-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6055": {
+          "category": "change",
+          "labels": [
+            "not-authorized"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "auth-03",
+    "name": "changed-by-passenger",
+    "should": "fail",
+    "data": {
+      "changes": {
+        "SK7180": {
+          "to_flight": "SW882",
+          "change_fee": 75,
+          "fare_difference": 40
+        }
+      },
+      "tickets": {
+        "SKY-6055": {
+          "category": "change"
+        }
+      }
+    },
+    "requests": []
+  }
+]

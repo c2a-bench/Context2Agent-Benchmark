@@ -1,0 +1,36 @@
+[
+  {
+    "case": "vendor-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4811": {
+          "priority": "P2",
+          "assigned_team": "Eng Infra",
+          "labels": [
+            "residency-review"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "vendor-03",
+    "name": "vendor-review",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4811": {
+          "priority": "P3",
+          "assigned_team": "Legal",
+          "labels": [
+            "vendor-review"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

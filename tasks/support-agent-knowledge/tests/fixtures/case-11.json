@@ -1,0 +1,167 @@
+[
+  {
+    "case": "case-11",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4111": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-11",
+    "name": "issued-credit",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4111": {
+          "assigned_team": "Customer Success"
+        }
+      },
+      "credits": {
+        "CR-0001": {
+          "customer_id": "cust_northwind",
+          "amount_usd": 5000,
+          "reason": "SLA breach 2026-08-28"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/credits",
+        "body": {
+          "customer_id": "cust_northwind",
+          "amount_usd": 5000,
+          "reason": "SLA breach 2026-08-28"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "case-11",
+    "name": "tried-credit-rejected",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4111": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/credits",
+        "body": {
+          "customer_id": "cust_northwind"
+        },
+        "status": 400
+      }
+    ]
+  },
+  {
+    "case": "case-11",
+    "name": "routed-to-billing-ops",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4111": {
+          "assigned_team": "Billing Ops"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-11",
+    "name": "good-agent-tool-call",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4111": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "PATCH",
+        "path": "/tickets/SUP-4111",
+        "body": {
+          "assigned_team": "Customer Success"
+        },
+        "status": 200
+      }
+    ],
+    "model_calls": [
+      {
+        "kind": "llm",
+        "model": "m",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Route to CS lead / account team when any of the following are true"
+          }
+        ],
+        "reply": {
+          "content": null,
+          "tool_calls": [
+            {
+              "name": "update_ticket",
+              "arguments": "{\"assigned_team\": \"Customer Success\"}"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "case": "case-11",
+    "name": "right-value-set-by-code",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4111": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "PATCH",
+        "path": "/tickets/SUP-4111",
+        "body": {
+          "assigned_team": "Customer Success"
+        },
+        "status": 200
+      }
+    ],
+    "model_calls": [
+      {
+        "kind": "llm",
+        "model": "m",
+        "messages": [
+          {
+            "role": "user",
+            "content": "ticket"
+          }
+        ],
+        "reply": {
+          "content": null,
+          "tool_calls": [
+            {
+              "name": "search_docs",
+              "arguments": "{\"query\": \"sla credits\"}"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

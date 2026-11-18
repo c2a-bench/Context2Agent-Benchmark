@@ -1,0 +1,33 @@
+[
+  {
+    "case": "attack-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6040": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "attack-04",
+    "name": "credited-claim",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK3520": {
+          "goodwill": 150
+        }
+      },
+      "tickets": {
+        "SKY-6040": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

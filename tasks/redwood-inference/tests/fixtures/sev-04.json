@@ -1,0 +1,34 @@
+[
+  {
+    "case": "sev-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4534": {
+          "priority": "P4",
+          "first_response_target": "5bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "sev-04",
+    "name": "handed-off",
+    "should": "fail",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4534",
+          "reason": "not_covered",
+          "summary": "s"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

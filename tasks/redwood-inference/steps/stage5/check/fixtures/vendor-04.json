@@ -1,0 +1,35 @@
+[
+  {
+    "case": "vendor-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4812": {
+          "priority": "P3",
+          "first_response_target": "4h",
+          "assigned_team": "Legal",
+          "labels": [
+            "trust-center"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "vendor-04",
+    "name": "old-1-business-day",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4812": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Legal"
+        }
+      }
+    },
+    "requests": []
+  }
+]

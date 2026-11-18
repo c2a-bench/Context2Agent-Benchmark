@@ -1,0 +1,76 @@
+[
+  {
+    "case": "twice-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "api_keys": {
+        "K-ORB-1": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "twice-01",
+    "name": "disabled-again",
+    "should": "fail",
+    "data": {
+      "api_keys": {
+        "K-ORB-1": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-ORB-1/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "twice-01",
+    "name": "filed-as-security-incident-ok",
+    "should": "pass",
+    "data": {
+      "api_keys": {
+        "K-ORB-1": {
+          "status": "disabled"
+        }
+      },
+      "tickets": {
+        "SUP-4112": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident",
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "PATCH",
+        "path": "/tickets/SUP-4112",
+        "body": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident",
+            "escalated",
+            "offering-hosted"
+          ]
+        },
+        "status": 200
+      }
+    ]
+  }
+]

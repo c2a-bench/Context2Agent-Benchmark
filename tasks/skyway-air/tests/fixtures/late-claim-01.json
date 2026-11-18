@@ -1,0 +1,36 @@
+[
+  {
+    "case": "late-claim-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6021": {
+          "category": "baggage",
+          "labels": [
+            "claim-late"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "late-claim-01",
+    "name": "paid-late-claim",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK2810": {
+          "bag_expenses": 75
+        }
+      },
+      "tickets": {
+        "SKY-6021": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  }
+]

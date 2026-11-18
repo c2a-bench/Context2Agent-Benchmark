@@ -1,0 +1,32 @@
+[
+  {
+    "case": "bastion-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4646": {
+          "priority": "P3",
+          "first_response_target": "4h",
+          "assigned_team": "Private Deployments"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "bastion-02",
+    "name": "bastion-rotation",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4646": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "assigned_team": "Support"
+        }
+      }
+    },
+    "requests": []
+  }
+]

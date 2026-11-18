@@ -1,0 +1,34 @@
+[
+  {
+    "case": "done-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6041": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "done-01",
+    "name": "refunded-twice",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK4910": {
+          "amount": 476,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6041": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

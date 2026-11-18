@@ -1,0 +1,30 @@
+[
+  {
+    "case": "webhook-same-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4652": {}
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "webhook-same-01",
+    "name": "refiled-new-ticket",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4652": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

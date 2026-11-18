@@ -1,0 +1,123 @@
+[
+ {
+  "case": "late-claim-02",
+  "name": "stale-copy",
+  "data": {
+   "tickets": {
+    "SKY-6022": {
+     "category": "baggage"
+    }
+   },
+   "reimbursements": {
+    "SK3301": {
+     "bag_expenses": 53
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "$75 for each full 24 hours"
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 53}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "stale copy"
+  ]
+ },
+ {
+  "case": "late-claim-02",
+  "name": "current-doc-but-wrong",
+  "data": {
+   "tickets": {
+    "SKY-6022": {
+     "category": "baggage"
+    }
+   },
+   "reimbursements": {
+    "SK3301": {
+     "bag_expenses": 53
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "$90 for each full 24 hours"
+     },
+     {
+      "role": "user",
+      "content": "up to $450 per bag"
+     },
+     {
+      "role": "user",
+      "content": "paid against receipts"
+     },
+     {
+      "role": "user",
+      "content": "count them from the flight's arrival to the bag's delivery"
+     },
+     {
+      "role": "user",
+      "content": "This applies to every request handled from July 1, whatever the date of the flight."
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 53}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "misapplied rule"
+  ]
+ },
+ {
+  "case": "late-claim-02",
+  "name": "rule-never-reached",
+  "data": {
+   "tickets": {
+    "SKY-6022": {
+     "category": "baggage"
+    }
+   },
+   "reimbursements": {
+    "SK3301": {
+     "bag_expenses": 53
+    }
+   }
+  },
+  "model_calls": [
+   {
+    "kind": "llm",
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "Crew scheduling: rest periods between duty days are set by the crew planning team."
+     }
+    ],
+    "reply": {
+     "content": "{\"amount\": 53}",
+     "tool_calls": []
+    }
+   }
+  ],
+  "expect_blame": [
+   "retrieval"
+  ]
+ }
+]

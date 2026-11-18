@@ -1,0 +1,44 @@
+[
+  {
+    "case": "overnight-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6056": {
+          "category": "disruption"
+        }
+      },
+      "reimbursements": {
+        "SK5540": {
+          "hotel": 300
+        }
+      },
+      "credits": {
+        "SK5540": {
+          "compensation": 600
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "overnight-03",
+    "name": "approval-for-total",
+    "should": "fail",
+    "data": {
+      "approvals": {
+        "SKY-6056": {
+          "kind": "hotel",
+          "amount": 300
+        }
+      },
+      "tickets": {
+        "SKY-6056": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

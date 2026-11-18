@@ -1,0 +1,39 @@
+[
+  {
+    "case": "cancel-own-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6026": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK7844": {
+          "amount": 143,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-own-02",
+    "name": "credit-minus-fee",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK7844": {
+          "voluntary_cancellation": 68
+        }
+      },
+      "tickets": {
+        "SKY-6026": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

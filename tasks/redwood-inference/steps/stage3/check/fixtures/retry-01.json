@@ -1,0 +1,54 @@
+[
+ {
+  "case": "retry-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4211": {
+     "priority": "P4",
+     "first_response_target": "2bd"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4211",
+    "body": {
+     "priority": "P4"
+    },
+    "status": 500
+   },
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4211",
+    "body": {
+     "priority": "P4",
+     "first_response_target": "2bd"
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "retry-01",
+  "name": "no-retry",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4211": {}
+   }
+  },
+  "requests": [
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4211",
+    "body": {
+     "priority": "P4"
+    },
+    "status": 500
+   }
+  ]
+ }
+]

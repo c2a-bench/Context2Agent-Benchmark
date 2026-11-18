@@ -1,0 +1,35 @@
+[
+  {
+    "case": "handoff-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6366": {
+          "labels": [
+            "token-accounting"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "handoff-05",
+    "name": "handed-off",
+    "should": "fail",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-6366",
+          "reason": "not_covered",
+          "summary": "s"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

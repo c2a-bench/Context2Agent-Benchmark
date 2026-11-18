@@ -1,0 +1,32 @@
+[
+  {
+    "case": "audit-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6323": {
+          "priority": "P2",
+          "assigned_team": "Private Deployments",
+          "needs_legal_review": true
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "audit-03",
+    "name": "no-legal",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6323": {
+          "priority": "P2",
+          "assigned_team": "Private Deployments",
+          "needs_legal_review": false
+        }
+      }
+    },
+    "requests": []
+  }
+]

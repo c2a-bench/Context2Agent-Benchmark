@@ -1,0 +1,321 @@
+[
+  {
+    "case": "receipt-ask-03",
+    "name": "good",
+    "should": "pass",
+    "already": 1,
+    "data": {
+      "tickets": {
+        "SUP-4701": {
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident"
+          ]
+        },
+        "SUP-4951": {
+          "comments": [
+            {
+              "body": "The disable earlier today was attempt att_5c2e81.",
+              "public": true
+            }
+          ]
+        }
+      },
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-BRI-1/disable",
+        "body": {},
+        "status": 200,
+        "response": {
+          "id": "K-BRI-1",
+          "status": "disabled",
+          "attempt_id": "att_5c2e81"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4951/comments",
+        "body": {
+          "body": "The disable earlier today was attempt att_5c2e81.",
+          "public": true
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "receipt-ask-03",
+    "name": "good-on-earlier-ticket",
+    "should": "pass",
+    "already": 1,
+    "data": {
+      "tickets": {
+        "SUP-4701": {
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident"
+          ],
+          "comments": [
+            {
+              "body": "The disable earlier today was attempt att_5c2e81.",
+              "public": true
+            }
+          ]
+        }
+      },
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-BRI-1/disable",
+        "body": {},
+        "status": 200,
+        "response": {
+          "id": "K-BRI-1",
+          "status": "disabled",
+          "attempt_id": "att_5c2e81"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4701/comments",
+        "body": {
+          "body": "The disable earlier today was attempt att_5c2e81.",
+          "public": true
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "receipt-ask-03",
+    "name": "missing-id",
+    "should": "fail",
+    "already": 1,
+    "data": {
+      "tickets": {
+        "SUP-4701": {
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident"
+          ]
+        },
+        "SUP-4951": {
+          "comments": [
+            {
+              "body": "Yes, it was revoked earlier today.",
+              "public": true
+            }
+          ]
+        }
+      },
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-BRI-1/disable",
+        "body": {},
+        "status": 200,
+        "response": {
+          "id": "K-BRI-1",
+          "status": "disabled",
+          "attempt_id": "att_5c2e81"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4951/comments",
+        "body": {
+          "body": "Yes, it was revoked earlier today.",
+          "public": true
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "receipt-ask-03",
+    "name": "invented-id",
+    "should": "fail",
+    "already": 1,
+    "data": {
+      "tickets": {
+        "SUP-4701": {
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident"
+          ]
+        },
+        "SUP-4951": {
+          "comments": [
+            {
+              "body": "The attempt id is att_deadbeef.",
+              "public": true
+            }
+          ]
+        }
+      },
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-BRI-1/disable",
+        "body": {},
+        "status": 200,
+        "response": {
+          "id": "K-BRI-1",
+          "status": "disabled",
+          "attempt_id": "att_5c2e81"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4951/comments",
+        "body": {
+          "body": "The attempt id is att_deadbeef.",
+          "public": true
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "receipt-ask-03",
+    "name": "quoted-earlier-only",
+    "should": "fail",
+    "already": 1,
+    "data": {
+      "tickets": {
+        "SUP-4701": {
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident"
+          ],
+          "comments": [
+            {
+              "body": "Disabled, attempt att_5c2e81.",
+              "public": false
+            }
+          ]
+        },
+        "SUP-4951": {
+          "comments": [
+            {
+              "body": "Thanks, we are looking into it.",
+              "public": true
+            }
+          ]
+        }
+      },
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-BRI-1/disable",
+        "body": {},
+        "status": 200,
+        "response": {
+          "id": "K-BRI-1",
+          "status": "disabled",
+          "attempt_id": "att_5c2e81"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4951/comments",
+        "body": {
+          "body": "Thanks, we are looking into it.",
+          "public": true
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "receipt-ask-03",
+    "name": "disabled-again",
+    "should": "fail",
+    "already": 1,
+    "data": {
+      "tickets": {
+        "SUP-4701": {
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident"
+          ]
+        },
+        "SUP-4951": {
+          "comments": [
+            {
+              "body": "New disable done.",
+              "public": true
+            }
+          ]
+        }
+      },
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-BRI-1/disable",
+        "body": {},
+        "status": 200,
+        "response": {
+          "id": "K-BRI-1",
+          "status": "disabled",
+          "attempt_id": "att_5c2e81"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4951/comments",
+        "body": {
+          "body": "New disable done.",
+          "public": true
+        },
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "path": "/api_keys/K-BRI-1/disable",
+        "body": {},
+        "status": 200,
+        "response": {
+          "attempt_id": "att_aa11bb"
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,61 @@
+[
+  {
+    "case": "leak-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4701": {
+          "assigned_team": "Security",
+          "labels": [
+            "security-incident"
+          ]
+        }
+      },
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "disabled"
+        },
+        "K-BRI-2": {
+          "status": "active"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-BRI-1/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "leak-02",
+    "name": "cs-note",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4701": {
+          "assigned_team": "Customer Success",
+          "labels": [
+            "security-incident"
+          ]
+        }
+      },
+      "api_keys": {
+        "K-BRI-1": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-BRI-1/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  }
+]

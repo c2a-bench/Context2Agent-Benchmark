@@ -1,0 +1,36 @@
+[
+  {
+    "case": "audit-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6325": {
+          "priority": "P2",
+          "assigned_team": "Private Deployments",
+          "needs_legal_review": true
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "audit-05",
+    "name": "30-day-window",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6325": {
+          "priority": "P1",
+          "assigned_team": "Private Deployments",
+          "needs_legal_review": true,
+          "labels": [
+            "escalated",
+            "offering-private"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

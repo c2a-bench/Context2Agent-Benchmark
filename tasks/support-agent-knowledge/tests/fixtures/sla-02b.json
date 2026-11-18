@@ -1,0 +1,35 @@
+[
+  {
+    "case": "sla-02b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6358": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "sla-02b",
+    "name": "guessed-p2",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6358": {
+          "priority": "P2",
+          "first_response_target": "2h"
+        }
+      }
+    },
+    "requests": []
+  }
+]

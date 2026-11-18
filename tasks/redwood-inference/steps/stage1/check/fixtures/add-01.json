@@ -1,0 +1,48 @@
+[
+  {
+    "case": "add-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4151": {
+          "assigned_team": "Eng Platform",
+          "labels": [
+            "model-retirement"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "add-01",
+    "name": "followed-draft",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4151": {
+          "assigned_team": "Customer Success",
+          "labels": [
+            "deprecated-model"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "add-01",
+    "name": "never-found-new-page",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4151": {
+          "assigned_team": "Support",
+          "labels": []
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "case": "case-13",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "api_keys": {
+        "K-PIX-1": {
+          "status": "disabled"
+        },
+        "K-PIX-2": {
+          "status": "active"
+        }
+      },
+      "tickets": {
+        "SUP-4113": {
+          "labels": [
+            "security-incident"
+          ]
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-PIX-1/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "case-13",
+    "name": "disabled-web-key",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4113": {
+          "labels": [
+            "security-incident"
+          ]
+        }
+      },
+      "api_keys": {
+        "K-PIX-2": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-PIX-2/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "case-13",
+    "name": "not-disabled",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4113": {
+          "labels": [
+            "security-incident"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

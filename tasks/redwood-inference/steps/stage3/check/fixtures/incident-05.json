@@ -1,0 +1,34 @@
+[
+  {
+    "case": "incident-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4515": {
+          "priority": "P4",
+          "first_response_target": "5bd",
+          "incident_id": "INC-3106",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "incident-05",
+    "name": "stage-1-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4515": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "incident_id": "INC-3106",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  }
+]

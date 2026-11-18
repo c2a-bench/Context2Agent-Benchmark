@@ -1,0 +1,40 @@
+[
+  {
+    "case": "webhook-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4616": {
+          "priority": "P4",
+          "first_response_target": "5bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "webhook-01",
+    "name": "treated-as-key-leak",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4616": {
+          "priority": "P4",
+          "first_response_target": "5bd",
+          "labels": [
+            "security-incident"
+          ]
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-PIX-1/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  }
+]

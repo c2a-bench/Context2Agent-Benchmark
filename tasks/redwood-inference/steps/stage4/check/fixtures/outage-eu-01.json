@@ -1,0 +1,46 @@
+[
+ {
+  "case": "outage-eu-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4303": {
+     "priority": "P0",
+     "first_response_target": "15m",
+     "escalation_status": "Eng engaged",
+     "labels": [
+      "escalated",
+      "offering-dedicated",
+      "symptom-request-timeout"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "outage-eu-01",
+  "name": "filed-as-fairness",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4303": {
+     "priority": "P2",
+     "assigned_team": "Eng Platform",
+     "labels": [
+      "fairness-admission"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "outage-eu-01",
+  "name": "empty-desk",
+  "should": "fail",
+  "data": {},
+  "requests": []
+ }
+]

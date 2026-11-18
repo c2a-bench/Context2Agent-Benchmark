@@ -1,0 +1,1553 @@
+"""Deterministic diagnosis: traces, us/builder/bot blame, and the observed architecture card."""
+
+import fnmatch
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+US, BUILDER, BOT = "us", "builder", "bot"
+BLAME_TEXT = {
+    "crashed": "the bot crashed or broke the output contract",
+    "context overflow": "the bot sent the model more than this ticket's prompt limit and stopped",
+    "our limit": "our time limit or a stalled machine stopped the run, so this ticket failed because of us",
+    "model call failed": "a model call failed before the bot finished the ticket",
+    "no model call": "the bot never asked the model",
+    "trace lost": "the bot ran, but our watcher did not record it, so the grader could not see its model calls",
+    "wrong assertion": "the reply told the customer something false or not allowed",
+    "missing assertion": "the reply left out something it must tell or ask the customer",
+    "execution": "the model said the right thing, but the bot did something else",
+    "code decided": "the bot's own code made this decision, not the model",
+    "no tools": "the builder did not give the model a tool, so the bot's code saved the answer text",
+    "retrieval": "the rule never reached the model",
+    "not kept": "the builder never stored this rule in the bot",
+    "not retrieved": "the rule is stored in the bot, but it never reached the model",
+    "trap doc": "only an outdated or wrong doc reached the model",
+    "stale copy": "an old copy of a changed doc was used",
+    "rule buried": "the rule was in the prompt, but the bot only followed it once it was stated plainly",
+    "misapplied rule": "the rule reached the model, but the bot answered wrong",
+    "chose trap doc": "the current rule and a trap doc both reached the model; the bot followed the trap",
+    "customer fault": "the customer model call failed, so this ticket failed because of us",
+    "our service": "the LLM provider did not respond, so this ticket failed because of us",
+}
+BLAME_SIDE = {
+    # Same parties as the failure taxonomy (failure_type): Builder causes, Bot faults, our side (Harness).
+    "not kept": BUILDER, "not retrieved": BUILDER, "retrieval": BUILDER,
+    "trap doc": BUILDER, "chose trap doc": BUILDER, "stale copy": BUILDER, "rule buried": BUILDER,
+    "context overflow": BUILDER,
+    "misapplied rule": BOT, "execution": BOT, "code decided": BOT, "no tools": BOT,
+    "wrong assertion": BOT, "missing assertion": BOT,
+    "crashed": BOT, "model call failed": BOT, "no model call": BOT,
+    "our limit": US, "our service": US, "customer fault": US, "trace lost": US,
+}
+HANG_SECONDS = 90
+
+
+def normalize(text):
+    text = str(text).replace("\\n", " ").replace("\\t", " ").replace("’", "'").replace("‘", "'")
+    text = text.replace("“", '"').replace("”", '"').replace("\\\"", '"')
+    text = re.sub(r"[*`#_\\]", "", text.lower())
+    return " ".join(text.split())
+
+
+def json_strings(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for v in value.values():
+            yield from json_strings(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from json_strings(v)
+
+
+# ---------- traces ----------
+
+def load_trace(path):
+    events = []
+    for line in Path(path).read_text().splitlines() if Path(path).exists() else []:
+        try:
+            events.append(json.loads(line))
+        except json.JSONDecodeError:
+            pass
+    return events
+
+
+def model_calls(trace):
+    return [e for e in trace if e.get("kind") == "llm"]
+
+
+def message_text(message):
+    if not isinstance(message, dict):
+        return str(message)
+    content = message.get("content")
+    if isinstance(content, list):
+        content = " ".join(p.get("text", "") for p in content if isinstance(p, dict))
+    parts = [str(content or "")]
+    for call in message.get("tool_calls") or []:
+        fn = call.get("function", call) if isinstance(call, dict) else {}
+        parts.append(f"{fn.get('name')} {fn.get('arguments')}")
+    return " ".join(parts)
+
+
+class Corpus(str):
+    """Normalized text that also keeps its statements: the lines of each file or message, normalized one by one, so
+    rule keywords never match across a line, file or message boundary (normalize joins them)."""
+    def __new__(cls, parts):
+        lines = [line for part in parts for line in str(part).replace("\\n", "\n").splitlines()]
+        obj = super().__new__(cls, normalize(" ".join(lines)))
+        obj.statements = [n for n in (normalize(line) for line in lines) if n]
+        return obj
+
+
+def prompt_corpus(calls):
+    return Corpus([message_text(m) for c in calls for m in (c.get("messages") or [])])
+
+
+def reply_corpus(calls):
+    parts = []
+    for c in calls:
+        reply = c.get("reply") or {}
+        parts.append(str(reply.get("content") or ""))
+        parts += [f"{t.get('name')} {t.get('arguments')}" for t in reply.get("tool_calls", [])]
+    return " ".join(parts)
+
+
+def tool_corpus(calls):
+    """Tool name and arguments only. The answer text does not count as a decision."""
+    parts = []
+    for c in calls:
+        reply = c.get("reply") or {}
+        parts += [f"{t.get('name')} {t.get('arguments')}" for t in reply.get("tool_calls", [])]
+    return " ".join(parts)
+
+
+READ_TOOL = re.compile(r"^(search|get|list|read|lookup|look_up|find|fetch|query|retrieve|show|view)", re.IGNORECASE)
+
+
+def write_tool_corpus(calls):
+    """Like tool_corpus, without lookup tools: a search query is not a decision to save anything."""
+    parts = []
+    for c in calls:
+        reply = c.get("reply") or {}
+        parts += [f"{t.get('name')} {t.get('arguments')}" for t in reply.get("tool_calls", [])
+                  if not READ_TOOL.match(str(t.get("name") or ""))]
+    return " ".join(parts)
+
+
+def content_corpus(calls):
+    return " ".join(str((c.get("reply") or {}).get("content") or "") for c in calls)
+
+
+def mentions(text, value):
+    return re.search(rf"(?<![A-Za-z0-9-]){re.escape(str(value))}(?![A-Za-z0-9-])", text, re.IGNORECASE) is not None
+
+
+def label_said(text, value):
+    """A label counts as said only as a quoted value, exactly as written. A team name like "Cloud" is not the label "cloud"."""
+    return re.search(rf"[\"'`]{re.escape(str(value))}[\"'`]", text) is not None
+
+
+# ---------- docs ----------
+
+class Docs:
+    def __init__(self, app_dir):
+        self.app_dir = Path(app_dir)
+        self.cache = {}
+
+    @staticmethod
+    def rel(source):
+        s = str(source).strip().lstrip("./")
+        s = s.removeprefix("app/")
+        if not s.startswith("docs/"):
+            s = "docs/" + s
+        return s
+
+    def text(self, source):
+        rel = self.rel(source)
+        if rel not in self.cache:
+            path = self.app_dir / rel
+            try:
+                raw = path.read_text()
+                try:
+                    self.cache[rel] = normalize(" ".join(json_strings(json.loads(raw))))
+                except json.JSONDecodeError:
+                    self.cache[rel] = normalize(raw)
+            except OSError:
+                self.cache[rel] = None
+        return self.cache[rel]
+
+
+# ---------- changes: whether the model said the value ----------
+
+WRITE_CALLS = ["PATCH /tickets/*", "POST /refunds", "POST /credits", "POST /reimbursements", "POST /approvals",
+               "POST /bookings/*/change", "POST /handoffs"]
+# The id a payment returns only in its HTTP response (require_attempt tickets must quote it).
+CONFIRMATION = "confirmation_id"
+
+
+def check_key(path):
+    """The rule check key of an expected path: the field on a ticket, the file for money and booking records
+    (refunds, credits, reimbursements, approvals, changes), as rules' "checks" name them."""
+    file, _, field = path.split(".", 2)
+    return field if file == "tickets" else file
+
+
+def call_of(request):
+    return f"{request['method']} {request['path'].split('?')[0]}"
+
+
+def writes(requests):
+    """Successful requests that changed data."""
+    return [r for r in requests if r.get("status", 200) < 400
+            and any(fnmatch.fnmatchcase(call_of(r), p) for p in WRITE_CALLS)]
+
+
+def changed_fields(request):
+    """[(field, value, rule check keys)] for one change; POST actions use the field name 'action'."""
+    call, body = call_of(request), request.get("body") or {}
+    if request["method"] == "PATCH":
+        out = []
+        for field, value in body.items():
+            keys = [f"labels:{v}" for v in value] if field == "labels" and isinstance(value, list) else [field]
+            out.append((field, value, keys))
+        return out
+    # What the model decides in a payment: the amount and its reason or kind; in a flight change, the flight and the
+    # fees. The booking id is left out: a bot's code may fill it from the ticket without deciding anything.
+    if call in ("POST /refunds", "POST /credits", "POST /reimbursements", "POST /approvals"):
+        return [(k, body.get(k), [call]) for k in ("amount", "reason", "kind") if body.get(k) is not None]
+    if call.endswith("/change"):
+        return [(k, body.get(k), [call]) for k in ("to_flight", "change_fee", "fare_difference") if body.get(k) is not None]
+    return [("action", body.get("reason"), [call])]
+
+
+def asked_by_model(field, value, said, prose=False):
+    """Did this text carry the value? For a saved change, `said` is the write tool calls only.
+    prose=True (the model's reply text) also accepts sentences like "legal review: yes"."""
+    if isinstance(value, bool):
+        # The field and this value together, as JSON ("needs_legal_review": true) or prose
+        # ("needs legal review is true", "legal review: yes"), not just the field name.
+        names = {field, field.removeprefix("needs_")}
+        if prose:
+            words = "true|yes" if value else "false|no"
+            names |= {n.replace("_", " ") for n in names}
+            link = r"[\"']?\s*(?:[:=]|->|→|\bis\b|\bto\b|\bset to\b|\bshould be\b)\s*[\"']?"
+        else:
+            words = "true" if value else "false"
+            link = r"[\"']?\s*[:=]\s*"
+        return any(re.search(rf"(?<![A-Za-z0-9_]){re.escape(name)}{link}(?:{words})\b", said, re.IGNORECASE)
+                   for name in names)
+    if isinstance(value, list):
+        return all(asked_by_model(field, v, said, prose) for v in value)
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    return value is not None and mentions(said, value)
+
+
+SOURCES = ("model", "text", "code")
+
+
+def change_sources(requests, calls):
+    """Who decided each saved change. A note only: it never fails a ticket.
+    model = in a tool call; text = only in the model's reply text, which the code copied (no tools);
+    code = the model never said it (code decided)."""
+    tools, text = write_tool_corpus(calls), content_corpus(calls)
+    out = []
+    for r in writes(requests):
+        for field, value, _ in changed_fields(r):
+            source = ("model" if asked_by_model(field, value, tools)
+                      else "text" if asked_by_model(field, value, text, prose=True) else "code")
+            out.append({"call": call_of(r), "field": field, "value": value, "source": source})
+    return out
+
+
+def not_from_model(requests, calls):
+    """Saved changes the model did not make with a tool call. in_answer means it was only in the text."""
+    return [{**c, "in_answer": c["source"] == "text"} for c in change_sources(requests, calls) if c["source"] != "model"]
+
+
+def source_summary(results):
+    """Per-run split of who decided the saved changes, and every change the code decided."""
+    counts = dict.fromkeys(SOURCES, 0)
+    code = []
+    for r in results:
+        for c in r.get("change_sources") or []:
+            counts[c["source"]] += 1
+            if c["source"] == "code":
+                code.append({"ticket": r.get("id"), "call": c["call"], "field": c["field"], "value": c["value"]})
+    return {**counts, "total": sum(counts.values()), "code_decided": code}
+
+
+def source_split(summary):
+    """'62% model, 30% code, 8% text (no tools)' for the report."""
+    total = summary["total"]
+    if not total:
+        return "none"
+    names = {"model": "model", "code": "code", "text": "text (no tools)"}
+    return ", ".join(f"{round(100 * summary[k] / total)}% {names[k]}" for k in ("model", "code", "text") if summary[k])
+
+
+
+# ---------- labels a rule assigns ----------
+
+# A ticket must carry exactly the rule-assigned labels its case expects: an extra one is a
+# wrong filing. None = every label is rule-assigned. Otherwise (exact names, prefixes);
+# labels outside that set (free topic labels the docs allow) are not graded.
+# Every label a Skyway rule assigns, in any stage (verify.py check fails if a case uses another one).
+GOVERNED_LABELS = ({"agency-refund", "receipts-needed", "claim-late", "wear-and-tear", "change-denied", "not-authorized",
+                    "assistance-failure", "awaiting-receipts"}, ())
+
+
+def is_governed(label):
+    if GOVERNED_LABELS is None:
+        return True
+    names, prefixes = GOVERNED_LABELS
+    return label in names or str(label).startswith(prefixes)
+
+
+# Money and booking files a ticket may write. In credits and reimbursements every reason or kind on a booking is its
+# own payment; in the others a record is one payment, approval or change (the server fills its other fields).
+MONEY_FILES = ("refunds", "credits", "reimbursements", "approvals", "changes")
+PER_FIELD = ("credits", "reimbursements")
+
+
+def unexpected_writes(case, state, seed):
+    """Changes in a money file the ticket is allowed to write that its case does not expect: a refund to another
+    booking, a goodwill credit next to the expected compensation, an approval for another ticket. [(file, where)]."""
+    expected = {tuple(p.split(".", 2)) for p in case.get("expect", {})}
+    records = {(f, r) for f, r, _ in expected}
+    out = []
+    for file in MONEY_FILES:
+        if file in case.get("unchanged", []) or not any(f == file for f, _ in records):
+            continue  # untouched files are graded whole by "unchanged"
+        before, after = seed.get(file) or {}, state.get(file) or {}
+        for rid in sorted(set(before) | set(after)):
+            old, new = before.get(rid) or {}, after.get(rid) or {}
+            if old == new:
+                continue
+            if file in PER_FIELD:
+                out += [(file, f"{rid}.{k}") for k in sorted(set(old) | set(new))
+                        if old.get(k) != new.get(k) and (file, rid, k) not in expected]
+            elif (file, rid) not in records:
+                out.append((file, rid))
+    return out
+
+
+def unexpected_labels(case, state, lookup):
+    """[(path, label, labels)] for rule-assigned labels on the ticket that the case does not expect.
+    Labels the case explicitly forbids are left to not_contains; may_contain labels are allowed."""
+    path = f"tickets.{case['input']['ticket_id']}.labels"
+    found, got = lookup(state, path)
+    if not found or not isinstance(got, list):
+        return []
+    expected = set(case.get("contains", {}).get(path, [])) | set(case.get("may_contain", {}).get(path, []))
+    forbidden = set(case.get("not_contains", {}).get(path, []))
+    return [(path, v, got) for v in got if v not in expected and v not in forbidden and is_governed(v)]
+
+
+# ---------- failed checks and blame ----------
+
+def failed_checks(case, state, requests, seed, lookup, calls=None, model_requests=None, all_requests=None):
+    """Structured failures: one dict per failed check. calls=None skips the model-decision check.
+    model_requests = writes compared to this start's model; defaults to requests.
+    all_requests = the whole sandbox log when a follow-up needs the first payment's confirmation_id."""
+    out = []
+    writes = requests if model_requests is None else model_requests
+    for path, want in case.get("expect", {}).items():
+        found, got = lookup(state, path)
+        got = got if found else None
+        if got != want:
+            key = check_key(path)
+            untouched = got == lookup(seed, path)[1]
+            out.append({"kind": "expect", "key": key, "path": path, "want": want, "got": None if untouched else got})
+    for path, values in case.get("contains", {}).items():
+        found, got = lookup(state, path)
+        got = got if found and isinstance(got, list) else []
+        for v in values:
+            if v not in got:
+                out.append({"kind": "missing", "key": f"labels:{v}", "path": path, "value": v, "got": got})
+    for path, values in case.get("not_contains", {}).items():
+        found, got = lookup(state, path)
+        got = got if found and isinstance(got, list) else []
+        for v in values:
+            if v in got:
+                out.append({"kind": "extra", "key": f"labels:{v}", "path": path, "value": v, "got": got})
+    for path, v, got in unexpected_labels(case, state, lookup):
+        out.append({"kind": "extra", "key": f"labels:{v}", "path": path, "value": v, "got": got})
+    for path, values in case.get("must_not", {}).items():
+        found, got = lookup(state, path)
+        if not found or got is None:
+            continue
+        for v in values:
+            if got == v or (isinstance(got, list) and v in got):
+                key = f"labels:{v}" if isinstance(got, list) else path.split(".", 2)[-1]
+                out.append({"kind": "prohibited", "key": key, "path": path, "value": v, "got": got})
+    for file in case.get("unchanged", []):
+        if state.get(file) != seed.get(file):
+            out.append({"kind": "changed", "key": file, "path": file})
+    for file, where in unexpected_writes(case, state, seed):
+        out.append({"kind": "extra", "key": file, "path": f"{file}.{where}", "value": where, "got": None})
+    for pattern in case.get("forbidden_calls", []):
+        made = [r for r in requests if fnmatch.fnmatchcase(f"{r['method']} {r['path'].split('?')[0]}", pattern)]
+        if made:
+            out.append({"kind": "forbidden", "key": pattern, "path": pattern,
+                        "calls": [f"{r['method']} {r['path']}" for r in made]})
+    for path, fields in case.get("no_refile", {}).items():
+        made = refiled(requests, path, fields)
+        if made:
+            out.append({"kind": "forbidden", "key": made[0][0], "path": made[0][0],
+                        "calls": [f"{call} ({', '.join(keys)})" for call, keys in made]})
+    for spec in case.get("required_calls", []):
+        if not any(call_matches(r, spec) for r in requests):
+            out.append({"kind": "required", "key": spec["call"], "path": spec["call"], "want": spec.get("body", {})})
+    for spec in case.get("at_most_calls", []):
+        n = sum(1 for r in requests if call_matches(r, spec))
+        if n > spec.get("max", 1):
+            out.append({"kind": "repeated", "key": spec["call"], "path": spec["call"], "count": n, "max": spec.get("max", 1)})
+    out += attempt_checks(case, state, requests, lookup, all_requests)
+    return out
+
+
+
+def attempt_checks(case, state, requests, lookup, all_requests=None):
+    """The confirmation-number check of a ticket that must quote one (require_attempt): [] when it is quoted.
+    A follow-up (after) needs only its own requests, so a finished run's saved requests are enough to rebuild it."""
+    spec = case.get("require_attempt")
+    if not spec:
+        return []
+    aid = None
+    for request in (all_requests if all_requests is not None else requests):
+        if request.get("status", 200) >= 400:
+            continue
+        if not call_matches(request, {"call": spec["call"]}):
+            continue
+        aid = (request.get("response") or {}).get(CONFIRMATION)
+        if aid:
+            break
+    texts = []
+    if case.get("after"):
+        # A follow-up must give the id itself, as verify.attempt_posted grades it: only comments posted in this
+        # ticket's own requests count, not one already on the first ticket.
+        tickets = {path.split(".")[1] for path in spec.get("in") or []}
+        for r in requests:
+            path = (r.get("path") or "").split("?")[0]
+            if (r.get("status", 200) < 400 and r.get("method") == "POST" and fnmatch.fnmatchcase(path, "/tickets/*/comments")
+                    and path.split("/")[2] in tickets):
+                texts.append(str((r.get("body") or {}).get("body") or ""))
+    else:
+        for path in spec.get("in") or []:
+            found, got = lookup(state, path)
+            if not found or got is None:
+                continue
+            items = got if isinstance(got, list) else [got]
+            for item in items:
+                texts.append(str(item.get("body") if isinstance(item, dict) else item))
+    if not aid:
+        return [{"kind": "required", "key": CONFIRMATION, "path": spec["call"], "want": spec["call"]}]
+    if not any(str(aid) in text for text in texts):
+        return [{"kind": "missing", "key": CONFIRMATION, "path": spec["call"], "value": aid}]
+    return []
+
+
+def refiled(requests, path, fields):
+    """[(call, keys)] for PATCHes of the record at path that send any of fields (any status).
+    no_refile: a ticket that is already filed must not be filed again, even with the same values."""
+    file, record_id = path.split(".", 1)
+    target = f"PATCH /{file}/{record_id}"
+    out = []
+    for r in requests:
+        if call_of(r) == target:  # an attempt counts even if the API rejected it
+            keys = [k for k in fields if k in (r.get("body") or {})]
+            if keys:
+                out.append((target, keys))
+    return out
+
+
+def call_matches(request, spec):
+    call = call_of(request)
+    body = request.get("body") or {}
+    return (fnmatch.fnmatchcase(call, spec["call"]) and request.get("status", 200) < 400
+            and all(body.get(k) == v for k, v in spec.get("body", {}).items()))
+
+
+def candidate_rules(case, check, rules_by_id):
+    ids = [rid for rid in case.get("rules", []) if rid in rules_by_id]
+    hits = [rid for rid in ids if any(fnmatch.fnmatchcase(check["key"], p) for p in rules_by_id[rid].get("checks", []))]
+    return hits or ids
+
+
+# Words that show a rule is there even when the builder rewrote it (tests/rule_keywords.json). Builders often keep the
+# docs in their own words, so a rule's evidence sentence alone misses rules the bot does have.
+_KEYWORDS_FILE = Path(__file__).resolve().parent / "rule_keywords.json"
+_KEYWORDS = json.loads(_KEYWORDS_FILE.read_text()) if _KEYWORDS_FILE.exists() else {}
+RULE_KEYWORDS = {k: v for k, v in _KEYWORDS.items() if not k.startswith("_")}
+# Rules that apply to almost every ticket (severity, the reply-time table, labels, handoff...). Bots keep them, so
+# when a failed field also has a ticket-specific rule, that rule alone decides whether the knowledge was there.
+GENERAL_RULES = set(_KEYWORDS.get("_general", []))
+
+
+# Process rules a check names for almost any field (handoff, "already filed", untrusted text, half-done writes):
+# they only decide when nothing else does.
+CATCH_ALL_RULES = set(_KEYWORDS.get("_catch_all", []))
+# ...except on tickets that test them: untrusted customer text (R15) is the rule of a bad-actor ticket.
+SPECIFIC_IN_GROUP = _KEYWORDS.get("_specific_in_group", {})
+
+
+def deciding_rules(rule_ids, group=None):
+    """The rules that decide whether a failed check's knowledge was there: the ticket-specific ones among its
+    candidate rules; else the general ones other than the catch-all rules; else all of them."""
+    own = {r for r in rule_ids if group in SPECIFIC_IN_GROUP.get(r, [])}
+    specific = [r for r in rule_ids if r in own or (r not in GENERAL_RULES and r not in CATCH_ALL_RULES)]
+    general = [r for r in rule_ids if r in GENERAL_RULES and r not in CATCH_ALL_RULES]
+    return specific or general or list(rule_ids)
+STATEMENT_SPLIT = re.compile(r"(?<!\d)[.;](?!\d)|\s[-*\u2022]\s|\|")
+
+
+def rule_keywords_found(rid, text, within=None, spec=None):
+    """The rule's keywords in one statement of the text (split at sentence ends, semicolons, bullets, table cells),
+    and none of its wrong-version phrases anywhere. With `within` (the bot's stored text), the statement must also be
+    in it: a prompt also holds the customer's words and API data, which are not the bot's knowledge.
+    `spec` is the stage's own keywords for the rule (a rule's "keywords" in that stage's rules.json), else the shared
+    rule_keywords.json entry. Its "all" groups must all match; "or" lists other sets of groups that also count (a
+    builder's rewording, e.g. a label written as a template). False when the rule has no keywords."""
+    spec = spec or RULE_KEYWORDS.get(rid)
+    def has(alt, s):
+        return re.search(alt[3:], s) is not None if alt.startswith("re:") else alt in s
+    if not spec or any(has(n, text) for n in spec.get("not", [])):
+        return False
+    sets = [spec["all"]] + list(spec.get("or", []))
+    for line in getattr(text, "statements", None) or [text]:
+        for s in STATEMENT_SPLIT.split(line):
+            if 8 < len(s.strip()) <= 500 and any(all(any(has(a, s) for a in group) for group in groups) for groups in sets) \
+                    and (within is None or s.strip() in within):
+                return True
+    return False
+
+
+# Wordings a builder may write: (rule, statement, stage, should match). A stage after 0 uses that stage's own keywords
+# (the rule's "keywords" in tests/stages/stage<N>/rules.json), else rule_keywords.json.
+KEYWORD_CASES = [
+    ("R1", "Crew, mechanical and ops problems are Skyway-controlled; weather and ATC are not.", 0, True),
+    ("R1", "Air traffic control delays: no meals or hotel.", 0, False),
+    ("R2", "If we cancel or delay departure 3+ hrs and they don't fly: refund fare + add-ons to the card.", 0, True),
+    ("R2", "Schedule change of 2 hours or more: they may cancel for a full refund.", 5, False),
+    ("R2", "Refund when we cancel or the delay is 2h+ and they don't travel.", 5, True),
+    ("R2", "Refund when we cancel or the delay is 3h+ and they don't travel.", 5, False),
+    ("R10", "Hotel: pay up to $175/night directly; above that ask a supervisor (max $250).", 0, True),
+    ("R10", "Hotel: pay up to $175/night directly; above that ask a supervisor (max $250).", 2, False),
+    ("R10", "Hotel rooms up to $225 a night are paid directly.", 2, True),
+    ("R13", "Delayed bags: $75 per full day, max $375, receipts needed.", 0, True),
+    ("R13", "Delayed bags: $90 per full day, max $450.", 1, True),
+    ("R14", "Card refunds take up to 21 days to arrive.", 0, False),
+    ("R14", "Bag claims must come within 30 days of delivery.", 3, True),
+    ("R16", "Assistance failure: $100 credit, no approval needed.", 0, False),
+    ("R24", "Only the contact, or a travel manager under R24, may ask.", 1, False),
+    ("R24", "Travel managers listed on the company account can act on its bookings.", 1, True),
+    ("R25", "Illness cancellations: no process yet, hand off as not_covered.", 1, True),
+    # from the external review: plain-words summaries, and a stale threshold next to the new limit
+    ("R5", "Free cancellation if booked within one day and the flight is at least a week away.", 0, True),
+    ("R8", "Silver pays forty dollars per passenger to change a Standard fare; Gold pays nothing.", 4, True),
+    ("R10", "Hotel rooms up to $225 a night are paid directly. Above $200, ask a supervisor to approve, up to $250.", 2, False),
+]
+
+
+def keyword_self_check():
+    """Problems with the rule keywords on KEYWORD_CASES (verify.py check)."""
+    here = Path(__file__).resolve().parent
+    problems = []
+    for rid, statement, stage, want in KEYWORD_CASES:
+        spec = None
+        if stage:
+            rules = json.loads((here / "stages" / f"stage{stage}" / "rules.json").read_text())
+            spec = next((r.get("keywords") for r in rules if r["id"] == rid), None)
+        if rule_keywords_found(rid, normalize(statement), spec=spec) != want:
+            problems.append(f"keywords {rid} (stage {stage}): {'missed' if want else 'wrongly matched'} {statement[:70]!r}")
+    return problems
+
+
+def rule_found(rid, rules_by_id, text, key="evidence", keywords=True, within=None):
+    """A rule's evidence sentence in the (normalized) text, or for the current rule its keywords."""
+    if any(normalize(e) in text for e in rules_by_id[rid].get(key, []) if str(e).strip()):
+        return True
+    return keywords and key == "evidence" and rule_keywords_found(rid, text, within, rules_by_id[rid].get("keywords"))
+
+
+def rule_reached(rule_ids, rules_by_id, prompts, stored=None, keywords=True):
+    """(current rule reached the model, a trap doc reached the model, text from before a doc change reached the model)"""
+    def seen(key):
+        return any(rule_found(rid, rules_by_id, prompts, key, keywords, stored) for rid in rule_ids)
+    return seen("evidence"), seen("trap_evidence"), seen("stale_evidence")
+
+
+def rules_stored(rule_ids, rules_by_id, stored, keywords=True):
+    """True when every rule is in the bot's stored text: an evidence sentence, or its keywords."""
+    for rid in rule_ids:
+        if rules_by_id[rid].get("evidence") and not rule_found(rid, rules_by_id, stored, keywords=keywords):
+            return False
+    return True
+
+
+def blame_check(check, rule_ids, rules_by_id, calls, stored=None, group=None):
+    if not calls:
+        return "no model call", ""
+    if check["kind"] == "not_from_model":
+        if check.get("in_answer"):
+            return "no tools", f"{check['field']} = {check['value']} was only in the answer text. The builder did not give the model a tool."
+        return "code decided", f"The model never said {check['field']} = {check['value']}."
+    replies = reply_corpus(calls)
+    if check["kind"] == "expect" and not isinstance(check["want"], bool):
+        want_said, got_said = mentions(replies, check["want"]), check["got"] is not None and mentions(replies, check["got"])
+        if want_said and not got_said:
+            return "execution", f"The model said {check['want']}, but the bot set {check['got']}."
+        if check["got"] is not None and not got_said:
+            return "code decided", f"'{check['got']}' never appears in the model's replies."
+    elif check["kind"] == "missing" and (mentions if check["key"] == CONFIRMATION else label_said)(replies, check["value"]):
+        # A confirmation id is not a label: it counts as said wherever it appears, quoted or not.
+        return "execution", f"The model said {check['value']}, but the bot did not set it."
+    elif check["kind"] == "extra" and not label_said(replies, check["value"]):
+        return "code decided", f"'{check['value']}' never appears in the model's replies."
+    elif check["kind"] == "prohibited" and not mentions(replies, check["value"]):
+        return "code decided", f"'{check['value']}' never appears in the model's replies."
+    elif check["kind"] == "required":
+        want = check["want"] if isinstance(check["want"], dict) else {}  # confirmation checks carry a call name
+        said = [v for k, v in want.items() if k != "ticket_id" and mentions(replies, v)]
+        if said:
+            return "execution", f"The model said {said[0]}, but the bot did not do it."
+    deciding = deciding_rules(rule_ids, group)
+    # Keywords only when a rule really covers the failed field: otherwise candidate_rules falls back to every rule of
+    # the ticket, and a general rule's keywords would stand in for knowledge the field never had.
+    keywords = any(fnmatch.fnmatchcase(check["key"], p) for rid in rule_ids for p in rules_by_id[rid].get("checks", []))
+    current, trap, stale = rule_reached(deciding, rules_by_id, prompt_corpus(calls), stored, keywords)
+    if stale:
+        return "stale copy", ""
+    if not current:
+        if trap:
+            return "trap doc", ""
+        if stored is None:
+            return "retrieval", ""
+        if rules_stored(deciding, rules_by_id, stored, keywords):
+            return "not retrieved", ""
+        return "not kept", ""
+    return ("chose trap doc", "") if trap else ("misapplied rule", "")
+
+
+def blame_record(check, rules, label, detail="", side=None):
+    return {"check": check, "rules": rules, "blame": label, "detail": detail, "side": side or BLAME_SIDE[label]}
+
+
+def apply_replay(blame, replay_passed):
+    """If the bot follows the rule once it is stated plainly in the ticket, it had the rule and buried it."""
+    if replay_passed:
+        for b in blame:
+            if b["blame"] in ("misapplied rule", "chose trap doc"):
+                b["blame"] = "rule buried"
+                b["side"] = BLAME_SIDE["rule buried"]
+    return blame
+
+
+def llm_provider_down(*parts):
+    """True only when the LLM provider itself did not answer. A local API connection failure stays on the bot."""
+    blob = " ".join(str(part or "") for part in parts).lower()
+    from_provider = any(token in blob for token in (
+        "litellm", "openaiexception", "apiconnectionerror", "anthropic",
+    ))
+    no_answer = any(token in blob for token in (
+        "connection error", "connection reset", "connection refused",
+        "connect timeout", "connecterror", "the llm provider did not respond",
+    ))
+    # The account ran out of credits or quota: our account, not the bot.
+    no_account = any(token in blob for token in (
+        "no credits remaining", "insufficient_quota", "exceeded your current quota", "credit balance is too low",
+    ))
+    return from_provider and (no_answer or no_account)
+
+
+def call_error_record(calls):
+    """A failed model call. A hang past 90s is our stalled run. The LLM provider not answering is ours. Anything shorter is the bot, including its own timeout."""
+    errors = [c for c in calls if c.get("error")]
+    if not errors:
+        return None
+    seconds = [c.get("seconds") for c in errors if isinstance(c.get("seconds"), (int, float))]
+    hung = any(s > HANG_SECONDS for s in seconds) and not any(s <= HANG_SECONDS for s in seconds)
+    if any(llm_provider_down(c.get("error")) for c in errors):
+        label = "our service"
+    elif hung:
+        label = "our limit"
+    elif all(context_overflow(c.get("error")) for c in errors):
+        label = "context overflow"
+    else:
+        label = "model call failed"
+    detail = f"{len(errors)} of {len(calls)} model calls failed: {errors[0]['error'][:160]}"
+    return blame_record("all", [], label, detail)
+
+
+CONTEXT_OVERFLOW = ("maximum context length", "context_length_exceeded", "prompt is too long")
+
+
+def context_overflow(text):
+    """True when the bot stopped because its prompt went over the model's (or the case's) token limit."""
+    blob = str(text or "").lower()
+    return any(t in blob for t in CONTEXT_OVERFLOW)
+
+
+def blame_case(case, checks, rules_by_id, calls, bot_problem, stored=None, stderr=""):
+    if isinstance(stored, str) and not isinstance(stored, Corpus):
+        stored = normalize(stored)
+    if bot_problem:
+        if "did not finish within" in bot_problem:
+            label = "our limit"
+        elif llm_provider_down(bot_problem):
+            label = "our service"
+        elif context_overflow(stderr) or context_overflow(bot_problem):
+            label = "context overflow"
+        else:
+            label = "crashed"
+        return [blame_record("contract", case.get("rules", []), label, bot_problem)]
+    failed_call = call_error_record(calls)
+    if failed_call:
+        return [failed_call]
+    out = []
+    for check in checks:
+        if check["kind"] in ("nl_wrong", "nl_missing"):
+            label = "wrong assertion" if check["kind"] == "nl_wrong" else "missing assertion"
+            out.append(blame_record(check["key"], case.get("rules", []), label, check["detail"]))
+            continue
+        rule_ids = candidate_rules(case, check, rules_by_id)
+        label, detail = blame_check(check, rule_ids, rules_by_id, calls, stored, case.get("group"))
+        out.append(blame_record(check["key"], rule_ids, label, detail))
+    return out
+
+
+
+
+def owning_rules(case, key, rules_by_id):
+    """The ticket's rules whose checks cover this field (no fallback to every rule)."""
+    return [r for r in case.get("rules", []) if r in rules_by_id
+            and any(fnmatch.fnmatchcase(key, p) for p in rules_by_id[r].get("checks", []))]
+
+
+def replay_note(case, checks, rules_by_id):
+    """The rule text the RQ2 replay gives the bot: verify.replay_hint wraps it, and the trace hook appends it to the
+    end of the bot's own system message on every model call."""
+    ids = []
+    for check in checks:
+        ids += [r for r in candidate_rules(case, check, rules_by_id) if r not in ids]
+    return ids, "Company policy that applies to this ticket: " + " ".join(rules_by_id[r]["rule"] for r in ids)
+
+
+# ---------- the subset of R the bot kept ----------
+
+def stored_corpus(bot_dir):
+    """Normalized text of everything the builder stored under the bot folder."""
+    bot_dir = Path(bot_dir)
+    parts = []
+    if not bot_dir.is_dir():
+        return ""
+    for path in bot_dir.rglob("*"):
+        if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
+            continue
+        try:
+            if path.stat().st_size > SNAPSHOT_MAX_BYTES:
+                continue
+            parts.append(path.read_text())
+        except (OSError, UnicodeDecodeError):
+            continue
+    return Corpus(parts)
+
+
+def doc_coverage(stored, docs_dir):
+    """Fraction of the company docs whose text appears in the bot's stored files."""
+    docs_dir = Path(docs_dir)
+    if not stored or not docs_dir.is_dir():
+        return 0.0
+    probes = []
+    for path in docs_dir.rglob("*"):
+        if not path.is_file():
+            continue
+        try:
+            if path.stat().st_size > SNAPSHOT_MAX_BYTES:
+                continue
+            text = normalize(path.read_text())
+        except (OSError, UnicodeDecodeError):
+            continue
+        if len(text) < 80:
+            continue
+        step = max(80, len(text) // 5)
+        for i in range(0, len(text) - 79, step):
+            probes.append(text[i:i + 80])
+    if not probes:
+        return 0.0
+    return sum(probe in stored for probe in probes) / len(probes)
+
+
+def context_summary(results, rules_by_id):
+    """For tickets with a prompt cap: tokens sent, right sentence in, cousin in. Not a score."""
+    rows = []
+    for r in results:
+        cap = r.get("prompt_cap_tokens")
+        if not cap:
+            continue
+        calls = r.get("model_calls") or []
+        prompts = prompt_corpus(calls)
+        tokens = [c.get("prompt_tokens") for c in calls if isinstance(c.get("prompt_tokens"), int)]
+        if not tokens:
+            tokens = [max(1, len(prompt_corpus([c])) // 4) for c in calls]
+        rule_ids = [rid for rid in r.get("rules") or [] if rid in rules_by_id]
+        right = any(
+            normalize(e) in prompts
+            for rid in rule_ids for e in rules_by_id[rid].get("evidence", []) if str(e).strip()
+        )
+        cousin = any(
+            normalize(e) in prompts
+            for rid in rule_ids for e in rules_by_id[rid].get("trap_evidence", []) if str(e).strip()
+        )
+        rows.append({
+            "id": r["id"],
+            "cap": cap,
+            "max_tokens": max(tokens) if tokens else 0,
+            "calls": len(calls),
+            "right": right,
+            "cousin": cousin,
+            "passed": r.get("passed"),
+        })
+    return rows
+
+
+def subset_summary(rules, bot_dir, prompts):
+    """How many rule sentences the bot kept, and how many reached the model.
+    How much of the full docs it copied needs the docs: scripts/docs_report.py."""
+    stored = stored_corpus(bot_dir)
+    kept = reached = kept_not_reached = total = 0
+    for rule in rules:
+        sentences = [normalize(s) for s in rule.get("evidence", []) if str(s).strip()]
+        if not sentences:
+            continue
+        total += 1
+        k = any(s in stored for s in sentences)
+        seen = any(s in prompts for s in sentences)
+        kept += k
+        reached += seen
+        kept_not_reached += k and not seen
+    return {
+        "rules": total,
+        "kept": kept,
+        "reached": reached,
+        "kept_not_reached": kept_not_reached,
+    }
+
+
+# ---------- observed architecture ----------
+
+def baseline_imports(hook_dir, trace_path):
+    """Third-party modules imported just by loading litellm and requests (not a builder decision)."""
+    trace_path = Path(trace_path)
+    trace_path.write_text("")
+    env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "PYTHONPATH": str(hook_dir), "OBSERVE_TRACE": str(trace_path)}
+    subprocess.run([sys.executable, "-c", "import litellm, requests"], env=env, capture_output=True, timeout=120)
+    return {e["module"] for e in load_trace(trace_path) if e.get("kind") == "import"} | {"sitecustomize"}
+
+
+CODE_SUFFIXES = (".py", ".sh", ".js", ".mjs", ".ts")
+
+
+EMBEDDING_CALL = re.compile(r"\ba?embedding\s*\(")
+
+
+def bot_code(bot_dir):
+    """{relative path: text} of the bot's Python: .py files and extensionless scripts like `run`."""
+    out = {}
+    for p in sorted(Path(bot_dir).rglob("*")):
+        if not p.is_file() or p.stat().st_size > 2_000_000:
+            continue
+        try:
+            text = p.read_text(errors="ignore")
+        except OSError:
+            continue
+        if p.suffix == ".py" or (not p.suffix and text.startswith("#!") and "python" in text.split("\n", 1)[0]):
+            out[str(p.relative_to(bot_dir))] = text
+    return out
+
+
+def embeddings_in_code(bot_dir):
+    """Bot code files that call (a)embedding(. A code check, used for the RQ3 class
+    only when a run has no runtime trace to count real embedding calls."""
+    return [path for path, text in bot_code(bot_dir).items() if EMBEDDING_CALL.search(text)]
+
+
+# ARCHITECTURE.json "knowledge_access": how company knowledge reaches the model at runtime
+# (multi-select). Each is checked against what the bot did; Figure 2 groups by the observed set.
+KNOWLEDGE_ACCESS = ("llm_wiki", "sparse_retrieval", "dense_retrieval", "knowledge_graph")
+SPARSE_LIBRARIES = {"rank_bm25", "bm25s", "sklearn", "whoosh", "tantivy", "pyserini"}
+SPARSE_IN_CODE = re.compile(r"bm25|tf-?idf", re.IGNORECASE)
+WIKI_MIN_NOTES = 3
+# A tool the model calls to look things up. Without embeddings behind it, that search is keyword search.
+SEARCH_TOOL = re.compile(r"search|lookup|look_up|find|query|retrieve", re.IGNORECASE)
+# A knowledge graph: networkx in the bot's code or runtime imports, and a tool the model calls to look things up
+# in it (a tool named for the graph, or any lookup tool of a bot that uses networkx: find_fact, follow_links).
+GRAPH_TOOL = re.compile(r"graph", re.IGNORECASE)
+GRAPH_LOOKUP_TOOL = re.compile(r"search|lookup|look_up|find|query|retrieve|fact|follow|link|neighbo|node|edge",
+                               re.IGNORECASE)
+GRAPH_IN_CODE = re.compile(r"^\s*(import networkx|from networkx\b)", re.MULTILINE)
+
+
+def bot_scripts(bot_dir):
+    """Text of the bot's code and scripts: its Python and any shell or other script (a `run` that cats prompts)."""
+    out = list(bot_code(bot_dir).values())
+    for p in sorted(Path(bot_dir).rglob("*")):
+        if not p.is_file() or p.suffix == ".py" or p.stat().st_size > 2_000_000:
+            continue
+        if p.suffix in (".sh", ".bash") or (not p.suffix and os.access(p, os.X_OK)):
+            try:
+                out.append(p.read_text(errors="ignore"))
+            except OSError:
+                continue
+    return "\n".join(out)
+
+
+def named_in_code(name, code):
+    """Does the bot's code name this file (e.g. 'system.md')? Such a file is a prompt the code loads, not a note."""
+    return bool(re.search(r"(?<![\w.-])" + re.escape(name) + r"(?![\w.-])", code))
+
+
+def knowledge_access(bot_dir, traced, imports, embedding_calls, data_files, prompts="", tools=()):
+    """{category: evidence} for the knowledge_access categories this bot has. A category counts when the
+    runtime trace shows it (embedding calls; a keyword-search library loaded; WIKI_MIN_NOTES markdown
+    notes read; networkx loaded) or the bot's own code and files do (a bot that searches only on some tickets
+    still has the search). Notes count only if they were read or their text reached the model, and a markdown
+    file the code names (system.md, workflows.md) is a prompt, not a note. A search tool the model can call,
+    with no embedding search behind it, is keyword search; a graph tool on a networkx graph is a knowledge
+    graph, not keyword search. Evidence is "trace" or "code"."""
+    bot = Path(bot_dir)
+    code = "\n".join(bot_code(bot_dir).values())
+    scripts = bot_scripts(bot_dir)
+    notes = [p for p in bot.rglob("*") if p.suffix.lower() in (".md", ".markdown") and p.name != "ARCHITECTURE.md"
+             and not named_in_code(p.name, scripts)]
+    # Only "at least WIKI_MIN_NOTES notes reached the model" is used, so stop counting there: a wiki bot can have
+    # 10,000 notes, and checking each one's lines against every prompt took hours.
+    notes_used = []
+    for p in notes:
+        if len(notes_used) >= WIKI_MIN_NOTES or not prompts:
+            break
+        if not file_reached_model(bot_dir, p.relative_to(bot), prompts):
+            notes_used.append(p)
+    dense_in_code = bool(EMBEDDING_CALL.search(code))
+    uses_networkx = bool(GRAPH_IN_CODE.search(code)) or (traced and "networkx" in set(imports))
+    graph_tool = any(GRAPH_TOOL.search(str(t)) or (uses_networkx and GRAPH_LOOKUP_TOOL.search(str(t))) for t in tools)
+    # A graph bot's lookup tools search the graph; keyword search there shows as a BM25/TF-IDF library or code.
+    search_tool = not uses_networkx and any(SEARCH_TOOL.search(str(t)) and not GRAPH_TOOL.search(str(t)) for t in tools)
+    notes_read = [f for f in data_files
+                  if f.lower().endswith((".md", ".markdown")) and not named_in_code(Path(f).name, scripts)]
+    by_trace = {
+        "dense_retrieval": traced and embedding_calls > 0,
+        "sparse_retrieval": traced and bool(SPARSE_LIBRARIES & set(imports)),
+        "llm_wiki": traced and len(notes_read) >= WIKI_MIN_NOTES,
+        "knowledge_graph": traced and "networkx" in set(imports) and graph_tool,
+    }
+    by_code = {
+        "dense_retrieval": dense_in_code,
+        "sparse_retrieval": bool(SPARSE_IN_CODE.search(code)) or (search_tool and not dense_in_code),
+        "llm_wiki": len(notes_used) >= WIKI_MIN_NOTES,
+        "knowledge_graph": bool(GRAPH_IN_CODE.search(code)) and graph_tool,
+    }
+    return {k: "trace" if by_trace[k] else "code" for k in KNOWLEDGE_ACCESS if by_trace[k] or by_code[k]}
+
+
+def architecture_card(results, baseline, bot_dir="/app/bot"):
+    bot_dir = str(Path(bot_dir).resolve())
+    # Count LLM calls from model_calls (always kept). Daytona run-one strips
+    # bulky "trace" before returning to the orchestrator.
+    def ticket_calls(r):
+        mc = r.get("model_calls")
+        if isinstance(mc, list):
+            return mc
+        tr = r.get("trace")
+        if isinstance(tr, list) and tr:
+            return model_calls(tr)
+        return []
+    def ticket_trace(r):
+        tr = r.get("trace")
+        return tr if isinstance(tr, list) else []
+    tickets = [r for r in results if isinstance(r, dict) and ("model_calls" in r or "trace" in r)]
+    calls_per = [len(ticket_calls(r)) for r in tickets]
+    # The bot runs once per customer message. A run is its start-to-end window (any child process the bot starts
+    # counts with it); results without the windows group calls by process instead.
+    def run_sizes(r):
+        cs = ticket_calls(r)
+        windows = r.get("bot_runs") or []
+        if windows:
+            sizes = [0] * len(windows)
+            for c in cs:  # a call's time is when it finished; each call goes to the first window that holds it
+                i = next((k for k, w in enumerate(windows) if w["start"] <= (c.get("t") or 0) <= w["end"] + 1), None)
+                if i is not None:
+                    sizes[i] += 1
+            return sizes
+        by_pid = {}
+        for c in cs:
+            by_pid[c.get("pid")] = by_pid.get(c.get("pid"), 0) + 1
+        return list(by_pid.values())
+    calls_per_run = [n for r in tickets for n in run_sizes(r)]
+    calls = [c for r in tickets for c in ticket_calls(r)]
+    sizes = [len(prompt_corpus([c])) for c in calls]
+    def system_prompts(cs):
+        return {normalize(message_text(m))[:300] for c in cs for m in (c.get("messages") or [])[:1]
+                if isinstance(m, dict) and m.get("role") == "system"}
+    systems = system_prompts(calls)
+    systems_per = [len(system_prompts(ticket_calls(r))) for r in tickets]
+    all_imports = sorted({e["module"] for r in tickets for e in ticket_trace(r) if e.get("kind") == "import"})
+    direct = {e["module"] for r in tickets for e in ticket_trace(r) if e.get("kind") == "import" and not e.get("by_library")}
+    direct_imports = sorted(m for m in direct - GIVEN_LIBRARIES
+                            if not (Path(bot_dir, m + ".py").exists() or Path(bot_dir, m).is_dir()))
+    data_files = sorted({os.path.relpath(e["path"], bot_dir) for r in tickets for e in ticket_trace(r)
+                         if e.get("kind") == "open" and not e["write"] and e["path"].startswith(bot_dir + "/")
+                         and not e["path"].endswith(CODE_SUFFIXES) and os.path.basename(e["path"]) != "run"})
+    written = sorted({e["path"] for r in tickets for e in ticket_trace(r)
+                      if e.get("kind") == "open" and e["write"] and not e.get("by_library")})
+    libs = sorted(set(all_imports) - baseline)
+    handoffs = sum(1 for r in tickets for q in r.get("requests", []) if q["method"] == "POST" and q["path"].startswith("/handoffs"))
+    programs = sorted({os.path.basename(e["program"]) for r in tickets for e in ticket_trace(r) if e.get("kind") == "exec"})
+    embeddings = sum(1 for r in tickets for e in ticket_trace(r) if e.get("kind") == "embedding")
+    processes = [sum(1 for e in ticket_trace(r) if e.get("kind") == "start") for r in tickets]
+    avg = lambda xs: round(sum(xs) / len(xs), 1) if xs else 0
+    card = {
+        "tickets": len(tickets),
+        "model_calls_per_ticket": {"avg": avg(calls_per), "min": min(calls_per, default=0), "max": max(calls_per, default=0)},
+        "model_calls_per_run": {"avg": avg(calls_per_run), "max": max(calls_per_run, default=0)},
+        "models": sorted({str(c.get("model")) for c in calls}),
+        "prompt_chars_per_call": {"avg": int(avg(sizes)), "max": max(sizes, default=0)},
+        "distinct_system_prompts": len(systems),
+        "max_system_prompts_in_one_ticket": max(systems_per, default=0),
+        "tools_offered_to_model": sorted({t for c in calls for t in c.get("tools") or [] if t}),
+        # False when no runtime trace came back (e.g. sandbox runs graded before traces were kept):
+        # the trace-based fields below are then unknown, not zero.
+        "traced": any(ticket_trace(r) for r in tickets),
+        "embeddings_in_code": embeddings_in_code(bot_dir),
+        "knowledge_access_evidence": knowledge_access(bot_dir, any(ticket_trace(r) for r in tickets), all_imports,
+                                                      embeddings, data_files, prompt_corpus(calls),
+                                                      {t for c in calls for t in c.get("tools") or [] if t}),
+        "embedding_calls": embeddings,
+        "bot_data_files_read": data_files,
+        "files_written": written,
+        "extra_libraries": libs,
+        "all_imports": all_imports,
+        "direct_imports": direct_imports,
+        "handoffs_made": handoffs,
+        "programs_started": programs,
+        "python_processes_per_ticket": avg(processes),
+        "changes_not_from_model": sum(c["source"] != "model" for r in tickets for c in r.get("change_sources") or []),
+        "change_split": source_split(source_summary(tickets)),
+    }
+    card["knowledge_access"] = list(card["knowledge_access_evidence"])
+    return card
+
+
+# skyway-air fixes the architecture per run (tasks/skyway-air/architectures/<name>.md, passed to the grader as
+# ARCHITECTURE). What the knowledge_access found must show for each: "need" all of these, "any" at least one of
+# these, "not" none of these. raw-terminal and prompt-workflows both show none of the four (no notes, no search,
+# no graph), so the check cannot tell them apart; it checks only that the found design fits the one assigned.
+ARCHITECTURE_EXPECTS = {
+    "graph-query": {"need": ["knowledge_graph"], "not": ["llm_wiki"]},
+    "wiki-index": {"need": ["llm_wiki"], "any": ["sparse_retrieval", "dense_retrieval"], "not": ["knowledge_graph"]},
+    "wiki-terminal": {"need": ["llm_wiki"], "not": ["sparse_retrieval", "dense_retrieval", "knowledge_graph"]},
+    "raw-index": {"any": ["sparse_retrieval", "dense_retrieval"], "not": ["llm_wiki", "knowledge_graph"]},
+    "raw-terminal": {"not": ["llm_wiki", "sparse_retrieval", "dense_retrieval", "knowledge_graph"]},
+    "prompt-workflows": {"not": ["llm_wiki", "sparse_retrieval", "dense_retrieval", "knowledge_graph"]},
+}
+
+
+def architecture_check(assigned, found):
+    """Does the knowledge access the grader found fit the architecture the run was assigned? None when the run had
+    no assigned architecture or it is not one this table knows."""
+    rule = ARCHITECTURE_EXPECTS.get((assigned or "").strip())
+    if rule is None:
+        return None
+    found = set(found or [])
+    missing = [k for k in rule.get("need", []) if k not in found]
+    if rule.get("any") and not found & set(rule["any"]):
+        missing.append(" or ".join(rule["any"]))
+    extra = [k for k in rule.get("not", []) if k in found]
+    return {"assigned": assigned, "found": sorted(found), "followed": not missing and not extra,
+            "missing": missing, "extra": extra}
+
+
+# ---------- bot code snapshot ----------
+
+SNAPSHOT_SKIP = {"__pycache__", ".venv", "venv", "node_modules", ".git", ".cache"}
+SNAPSHOT_MAX_BYTES = 2_000_000
+
+
+def snapshot_bot(bot_dir, dest):
+    """Copy the builder's bot (code and small files) into the logs; return [(relative path, lines or size)]."""
+    bot_dir, dest = Path(bot_dir), Path(dest)
+    shutil.rmtree(dest, ignore_errors=True)
+    listing = []
+    for root, dirs, files in os.walk(bot_dir):
+        dirs[:] = sorted(d for d in dirs if d not in SNAPSHOT_SKIP)
+        for name in sorted(files):
+            src = Path(root) / name
+            rel = src.relative_to(bot_dir)
+            size = src.stat().st_size
+            if size > SNAPSHOT_MAX_BYTES or name.endswith(".pyc"):
+                listing.append((str(rel), f"{size // 1024} KB, not copied"))
+                continue
+            (dest / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dest / rel)
+            try:
+                n = len(src.read_text().splitlines())
+                listing.append((str(rel), f"{n} line{'' if n == 1 else 's'}"))
+            except (UnicodeDecodeError, OSError):
+                listing.append((str(rel), f"{size // 1024} KB"))
+    return listing
+
+
+# ---------- builder's self-report (ARCHITECTURE.json) vs what was observed ----------
+
+GIVEN_LIBRARIES = {"litellm", "requests", "numpy", "rank_bm25", "sitecustomize"}
+CLAIM_KEYS = ["knowledge_access", "max_model_calls_per_ticket", "tools", "prompt_files", "skills",
+              "extra_libraries", "human_handoff", "writes_files_at_runtime"]
+STATED_TEXT = ["architecture_choice", "how_it_works", "parts", "how_docs_reach_the_model", "memory"]
+MISSING = object()
+
+
+def claim_value(report, key):
+    value = report
+    for part in key.split("."):
+        if not isinstance(value, dict) or part not in value:
+            return MISSING
+        value = value[part]
+    return value
+
+
+def file_reached_model(bot_dir, rel, prompts):
+    """Is the file inside the bot folder, and did its text (any line of 30+ characters without template braces) reach the model?"""
+    path = (Path(bot_dir) / str(rel)).resolve()
+    if not str(path).startswith(str(Path(bot_dir).resolve()) + os.sep) or not path.is_file():
+        return "file not found"
+    try:
+        text = path.read_text()
+    except (OSError, UnicodeDecodeError):
+        return "file not readable"
+    lines = [normalize(l) for l in text.splitlines()]
+    probes = [l for l in lines if len(l) >= 30 and "{" not in l] or [normalize(text)]
+    return "" if any(p and in_prompts(p, prompts) for p in probes) else "text never reached the model"
+
+
+def in_prompts(p, prompts):
+    """p in prompts (kept as a function: a faster exact check can go here; an index of every trigram ran a grader out
+    of memory, so for now the plain substring test)."""
+    return p in prompts
+
+
+def import_names(lib):
+    """Import names for a package name as the builder wrote it (e.g. scikit-learn -> {sklearn}), from installed metadata."""
+    import importlib.metadata as md
+    name = re.split(r"[=<>\[ ]", str(lib).strip(), maxsplit=1)[0]
+    wanted = re.sub(r"[-_.]+", "-", name).lower()
+    modules = {m for m, dists in md.packages_distributions().items()
+               if any(re.sub(r"[-_.]+", "-", d).lower() == wanted for d in dists)}
+    return modules | {name.replace("-", "_").lower(), name.replace("-", "_")}
+
+
+def show_list(values):
+    return ", ".join(str(v) for v in values) if values else "none"
+
+
+def stated_text(report):
+    """The builder's own description. Saved for the report and not graded."""
+    out = {}
+    for key in STATED_TEXT:
+        value = claim_value(report, key)
+        out[key] = value.strip() if isinstance(value, str) else ""
+    return out
+
+
+def check_self_report(report, card, bot_dir="/app/bot", prompts="", handoff_needed=True):
+    """Compare the checkable claims in ARCHITECTURE.json with the trace.
+    The written description and architecture_choice are returned in design and are not graded."""
+    empty = {key: "" for key in STATED_TEXT}
+    if not isinstance(report, dict):
+        return {"given": False, "error": report if isinstance(report, str) else "no ARCHITECTURE.json",
+                "claims": [], "right": 0, "checked": len(CLAIM_KEYS), "design": empty}
+    imports = set(card.get("all_imports", []))
+    libs = claim_value(report, "extra_libraries")
+    stated = set()
+    for lib in libs if isinstance(libs, list) else []:
+        if isinstance(lib, str) and lib.strip():
+            stated |= import_names(lib)
+    unstated = [m for m in card.get("direct_imports", []) if m not in stated]
+    rows = []
+
+    def add(key, said, saw, ok):
+        rows.append({"claim": key, "said": said, "saw": saw, "ok": ok})
+
+    def files_claim(key, v):
+        said = [str(x) for x in v] if isinstance(v, list) else []
+        problems = [f"{x}: {p}" for x in said if (p := file_reached_model(bot_dir, x, prompts))]
+        add(key, show_list(said), "; ".join(problems) or ("all reached the model" if said else "nothing to check"), not problems)
+
+    traced = card.get("traced", True)
+    for key in CLAIM_KEYS:
+        if not traced and key in ("extra_libraries", "writes_files_at_runtime"):
+            continue  # needs the runtime trace, which this run does not have
+        v = claim_value(report, key)
+        if v is MISSING or v is None:
+            add(key, "not stated", "", False)
+            continue
+        if key == "max_model_calls_per_ticket":
+            # The limit is the loop's, and the loop runs once per customer message: compare it with one bot run.
+            per_run = card.get("model_calls_per_run")
+            saw = per_run["max"] if per_run else card["model_calls_per_ticket"]["max"]
+            add(key, v, f"up to {saw} model calls in one bot run" if per_run else f"up to {saw} model calls in one ticket",
+                isinstance(v, int) and saw <= v)
+        elif key == "tools":
+            names = [t.get("name") if isinstance(t, dict) else t for t in v] if isinstance(v, list) else []
+            said = sorted({str(n).lower() for n in names})
+            saw = sorted({t.lower() for t in card["tools_offered_to_model"]})
+            add(key, show_list(said), show_list(saw), said == saw)
+        elif key in ("prompt_files", "skills"):
+            files_claim(key, v)
+        elif key == "knowledge_access":
+            said = sorted({str(x) for x in v}) if isinstance(v, list) else []
+            saw = sorted(card.get("knowledge_access") or [])
+            unknown = [x for x in said if x not in KNOWLEDGE_ACCESS]
+            add(key, show_list(said), show_list(saw) + (f" (not a category: {show_list(unknown)})" if unknown else ""),
+                isinstance(v, list) and said == saw)
+        elif key == "human_handoff":
+            saw = card["handoffs_made"] > 0
+            if v is True and not saw and not handoff_needed:
+                # No ticket in this stage needed a handoff, so "can hand off" cannot be checked here.
+                add(key, True, "0 handoffs made; no ticket needed one", True)
+            else:
+                add(key, bool(v), f"{card['handoffs_made']} handoffs made", isinstance(v, bool) and bool(v) == saw)
+        elif key == "extra_libraries":
+            said = [str(x) for x in v] if isinstance(v, list) else []
+            missing = [x for x in said if not import_names(x) & imports]
+            problems = ([f"never loaded: {show_list(missing)}"] if missing else []) + \
+                       ([f"used but not stated: {show_list(unstated)}"] if unstated else [])
+            add(key, show_list(said), "; ".join(problems) or "all used, nothing unstated", not problems)
+        elif key == "writes_files_at_runtime":
+            saw = bool(card["files_written"])
+            add(key, bool(v), show_list(card["files_written"][:5]), isinstance(v, bool) and bool(v) == saw)
+    text = stated_text(report)
+    return {"given": True, "error": "", "claims": rows, "right": sum(r["ok"] for r in rows), "checked": len(rows),
+            "summary": text["how_it_works"][:1500], "design": text}
+
+
+def load_self_report(path):
+    path = Path(path)
+    if not path.exists():
+        return "no ARCHITECTURE.json"
+    try:
+        value = json.loads(path.read_text())
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        return f"ARCHITECTURE.json is not valid JSON ({e})"
+    return value if isinstance(value, dict) else "ARCHITECTURE.json is not a JSON object"
+
+
+# ----- RQ2 knowledge acquisition vs runtime realization (quantitative) -----
+ACQUISITION_BLAMES = frozenset({
+    "not kept", "not retrieved", "retrieval", "no tools",
+})
+RUNTIME_BLAMES = frozenset({
+    "misapplied rule", "rule buried", "chose trap doc", "trap doc",
+    "stale copy", "code decided", "execution", "wrong assertion", "missing assertion",
+})
+BOT_FAILURE_BLAMES = frozenset({"crashed", "context overflow", "model call failed", "no model call"})
+HARNESS_BLAMES = frozenset({"our limit", "our service", "customer fault", "trace lost"})
+BLAME_BUCKETS = (("acquisition", ACQUISITION_BLAMES), ("runtime", RUNTIME_BLAMES),
+                 ("bot_failure", BOT_FAILURE_BLAMES), ("harness", HARNESS_BLAMES))
+
+
+# ----- NL assertions: deterministic checks on what the bot told the customer -----
+NUMBER_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "fifteen": 15, "thirty": 30, "sixty": 60}
+# A first-reply promise ("we will respond within 30 minutes"), not an update cadence ("we'll update you within 60 minutes").
+PROMISE_TIME = re.compile(r"\b(?:respond|response|reply|replies|get\s+back\s+to\s+you|hear\s+(?:back\s+)?from\s+(?:us|our\s+team))"
+                          r"[^.?!]{0,30}?within\s+(?:the\s+next\s+|about\s+|approximately\s+)?"
+                          r"(\d+|one|two|three|four|five|fifteen|thirty|sixty)"
+                          r"\s*[- ]?\s*(minutes?|mins?|hours?|hrs?|business\s+days?|working\s+days?|days?)\b", re.IGNORECASE)
+CREDIT_PROMISE = re.compile(r"\b(?:we(?:'ll| will| have|'ve| are going to)?|i(?:'ll| will| have|'ve)?|you(?:'ll| will) (?:get|receive|see))\s+"
+                            r"(?:\w+\s+){0,2}(?:(?:issu|appl|grant|add|credit|giv|gave|offer|provid|send|sent|post)\w*\s+)?"
+                            r"(?:you\s+|your\s+account\s+)?(?:a|the|an)?\s*(?:\$?[\d,.]+\s*(?:usd|dollars?)?\s+)?"
+                            r"(?:service\s+|goodwill\s+|travel\s+|future\s+travel\s+|compensation\s+)?credit", re.IGNORECASE)
+# "we'll refund you", "you will get a refund", "we have refunded the $210": money back that was not paid.
+REFUND_PROMISE = re.compile(r"\b(?:we(?:'ll| will| have|'ve| are going to)?|i(?:'ll| will| have|'ve)?|you(?:'ll| will) (?:get|receive|see))\s+"
+                            r"(?:\w+\s+){0,2}(?:refund(?:ed|ing)?\b|(?:a|the|an|your)\s+(?:full\s+)?refund\b)", re.IGNORECASE)
+HANDOFF_CLAIM = re.compile(r"(?:hand(?:ed|ing)?|pass(?:ed|ing)?|transferr?(?:ed|ing)?|forward(?:ed|ing)?)\s+(?:it|this|you|your\s+\w+)?\s*"
+                           r"(?:over|off|on)?\s*to\s+(?:a|an|our)\s+(?:human|person|live\s+agent|support\s+agent)", re.IGNORECASE)
+HANDOFF_NOTICE = re.compile(r"\b(?:human|person|colleague|specialist|account (?:contact|manager)|someone|"
+                            r"follow(?:ing|s)?[- ]up|reach(?:es|ing)? out|get(?:ting)? back to you|be in touch|contact you|"
+                            r"hand(?:ed|ing)? (?:it |this |you )?(?:over|off)|passed (?:it|this|your)|"
+                            r"check(?:ing)? (?:this|it|that) with|"
+                            r"(?:the|our|a) (?:\w+ )?team (?:will|is going to) (?:follow|get back|reach out|contact|respond|"
+                            r"update you|be in touch)|"
+                            r"get you (?:a|an|the) (?:\w+ )?(?:answer|update|response))", re.IGNORECASE)
+ASKS_FIRST = ("on_request", "underspecified", "ambiguous")
+# Asking the customer for something: a question, or a request like "please send the start time".
+ASKS = re.compile(r"\?|\b(?:please\s+(?:send|share|provide|confirm|reply|tell|let\s+us\s+know|include|describe|clarify|specify)|"
+                  r"(?:send|share|provide|confirm|tell)\s+(?:us|me)\b|"
+                  r"could\s+you|can\s+you|would\s+you|let\s+us\s+know|we\s+need\s+(?:the|your|a|to\s+know))\b", re.IGNORECASE)
+
+
+def _minutes(amount, unit):
+    n = NUMBER_WORDS.get(amount.lower()) if not amount.isdigit() else int(amount)
+    unit = unit.lower()
+    if unit.startswith(("min",)):
+        return ("min", n)
+    if unit.startswith(("hour", "hr")):
+        return ("min", n * 60)
+    return ("bd", n)
+
+
+def _target(code):
+    """A first_response_target code ('30m', '1h', '2bd') as ('min', n) or ('bd', n)."""
+    m = re.fullmatch(r"(\d+)(m|h|bd)", str(code or ""))
+    if not m:
+        return None
+    n, unit = int(m.group(1)), m.group(2)
+    return ("min", n) if unit == "m" else ("min", n * 60) if unit == "h" else ("bd", n)
+
+
+NEGATION = re.compile(r"\b(?:not|never|no|can't|cannot|won't|wouldn't|unable|don't|doesn't)\b", re.IGNORECASE)
+
+
+def negated(text, match):
+    """True when the clause holding the match says the opposite ("we will not respond within...")."""
+    start = max(text.rfind(c, 0, match.start()) for c in ".!?;\n")
+    return bool(NEGATION.search(text[start + 1:match.end()]))
+
+
+def support_replies(turns):
+    return [text for t in turns or [] for text in t.get("support") or [] if text]
+
+
+def replies_after_switch(turns, goal_terms=()):
+    """Support replies after the customer switched to the real request (goal change). Before the switch the
+    bot was answering a different request, so a reply time it promised then was for that one. The switch is
+    the turn the customer flagged, or else its first later message naming the real request (as the goal-change
+    check in verify.py accepts)."""
+    turns = turns or []
+    terms = [str(x).lower() for x in goal_terms or []]
+    at = next((i for i, t in enumerate(turns) if t.get("switched")), None)
+    if at is None and terms:
+        at = next((i for i, t in enumerate(turns) if i > 0 and t.get("reply")
+                   and any(x in str(t["reply"]).lower() for x in terms)), None)
+    return support_replies(turns if at is None else turns[at + 1:])
+
+
+# Statements the docs forbid outright. They count in the strict score; every other NL check is soft.
+STRICT_NL = ("credit promise", "refund promise", "other customer")
+
+
+def nl_checks(case, turns, requests, seed, outcome_failed=True):
+    """Failed NL assertions in the bot's replies: wrong or prohibited statements, and statements it must make.
+    Only clear-cut cases are flagged, so a reply that says nothing relevant never fails here."""
+    replies = support_replies(turns)
+    text = " ".join(replies)
+    out = []
+    target = next((_target(v) for k, v in case.get("expect", {}).items() if k.endswith(".first_response_target")), None)
+    if target:
+        said = (" ".join(replies_after_switch(turns, case.get("goal_terms")))
+                if case.get("behavior") == "goal_change" else text)
+        promised = {_minutes(*m.groups()) for m in PROMISE_TIME.finditer(said) if not negated(said, m)}
+        wrong = sorted(f"{n} {u}" for u, n in promised if (u, n) != target and u == target[0])
+        if wrong:
+            out.append({"kind": "nl_wrong", "key": "reply time", "detail": f"the reply promised {wrong[0]}, not the ticket's reply time"})
+    own = case.get("input", {}).get("customer_id")
+    # Names the customer itself used are not a disclosure (e.g. an attacker naming the company it targets).
+    heard = " ".join([str(case.get("input", {}).get("message") or "")] + [str(t.get("reply") or "") for t in turns or []])
+    for cid, record in (seed.get("customers") or {}).items():
+        if cid == own:
+            continue
+        names = [cid] + [record.get("name")] if isinstance(record, dict) else [cid]
+        hit = next((n for n in names if n and re.search(rf"(?<![\w-]){re.escape(str(n))}(?![\w-])", text)
+                    and not re.search(rf"(?<![\w-]){re.escape(str(n))}(?![\w-])", heard, re.IGNORECASE)), None)
+        if hit:
+            out.append({"kind": "nl_wrong", "key": "other customer", "detail": f"the reply names another customer ({hit})"})
+            break
+    if "credits" in case.get("unchanged", []):
+        for m in CREDIT_PROMISE.finditer(text):
+            if not negated(text, m):
+                out.append({"kind": "nl_wrong", "key": "credit promise", "detail": "the reply promised a credit"})
+                break
+    if "refunds" in case.get("unchanged", []):
+        for m in REFUND_PROMISE.finditer(text):
+            if not negated(text, m):
+                out.append({"kind": "nl_wrong", "key": "refund promise", "detail": "the reply promised a refund"})
+                break
+    handed = any(r.get("method") == "POST" and r.get("path", "").startswith("/handoffs") for r in requests)
+    must_hand = any("/handoffs" in str(s.get("call", "")) for s in case.get("required_calls", []))
+    no_hand = any("/handoffs" in str(p) for p in case.get("forbidden_calls", []))
+    if no_hand and not handed and HANDOFF_CLAIM.search(text):
+        out.append({"kind": "nl_wrong", "key": "handoff claim", "detail": "the reply says a person took over, but no handoff was made"})
+    if must_hand and handed and not HANDOFF_NOTICE.search(text):
+        out.append({"kind": "nl_missing", "key": "handoff notice", "detail": "the bot handed off but never told the customer a person will follow up"})
+    # Not asking is only a fault when the bot needed the facts, i.e. it also got the ticket wrong. Follow-ups
+    # (facts on the earlier ticket) and already-done tickets (nothing to change) are not checked.
+    # A bot that handed off had no facts to collect, so not asking is not what went wrong there.
+    if (outcome_failed and case.get("behavior") in ASKS_FIRST and not case.get("after") and not case.get("no_refile")
+            and not handed and not any(ASKS.search(r) for r in replies)):
+        out.append({"kind": "nl_missing", "key": "clarifying question", "detail": "the customer left facts out, but the bot never asked a question"})
+    for check in out:
+        check["severity"] = "strict" if check["key"] in STRICT_NL else "soft"
+    return out
+
+# ----- failure taxonomy: party -> family -> Level-3 type, one per blame record (one per failed check) -----
+# Builder causes are typed by cause, bot mistakes by the symptom the check saw. Limits and faults the test
+# sets on purpose (prompt cap, hidden files) are the builder's or the bot's; Harness is only what we break.
+BUILDER_TYPES = {
+    "not kept": ("Context recall", "rule never kept"),
+    "not retrieved": ("Context recall", "kept, not in context"),
+    "retrieval": ("Context recall", "kept, not in context"),
+    "trap doc": ("Context precision", "wrong or stale source"),
+    "chose trap doc": ("Context precision", "wrong or stale source"),
+    "stale copy": ("Context precision", "wrong or stale source"),
+    "rule buried": ("Context precision", "rule diluted"),
+    "context overflow": ("Context precision", "context budget exceeded"),
+}
+ROBUSTNESS_TYPES = {"crashed": "crash", "model call failed": "model call failed", "no model call": "no model call"}
+HARNESS_TYPES = {"our limit": ("Resource limit", "time limit"), "our service": ("Trace or service", "provider failure"),
+                 "customer fault": ("Trace or service", "customer model failure"),
+                 "trace lost": ("Trace or service", "trace lost")}
+TOOL_DESIGN = {"code decided", "no tools"}
+
+
+def symptom(check):
+    """Level-3 tool-failure type for one failed check (what the end state showed)."""
+    kind = (check or {}).get("kind")
+    if kind == "expect":
+        return "missing value" if check.get("got") in (None, "None") else "wrong value"
+    if kind == "missing":
+        return "missing value" if check.get("key") == CONFIRMATION else "missing label"
+    if kind == "prohibited":
+        return "extra label or write" if str(check.get("key", "")).startswith("labels:") else "wrong value"
+    return {"extra": "extra label or write", "forbidden": "forbidden action", "repeated": "forbidden action",
+            "required": "missing required action", "changed": "protected state changed"}.get(kind, "wrong value")
+
+
+def failure_type(blame, checks=()):
+    """(party, family, Level-3 type) for one blame record."""
+    label = blame.get("blame")
+    if label in BUILDER_TYPES:
+        return ("Builder",) + BUILDER_TYPES[label]
+    if label == "our limit" and blame.get("check") == "verifier":
+        return ("Harness", "Fault or crash", "our runner crashed")
+    if label in HARNESS_TYPES:
+        return ("Harness",) + HARNESS_TYPES[label]
+    if label in ROBUSTNESS_TYPES:
+        return ("Bot", "Robustness", ROBUSTNESS_TYPES[label])
+    if label in TOOL_DESIGN:
+        return ("Bot", "Tool failure", "tool design gap")
+    if label == "wrong assertion":
+        return ("Bot", "NL assertion failure", "wrong or prohibited assertion")
+    if label == "missing assertion":
+        return ("Bot", "NL assertion failure", "missing assertion")
+    check = next((c for c in checks or () if c.get("key") == blame.get("check")), None)
+    return ("Bot", "Tool failure", symptom(check))
+
+
+def failure_taxonomy(results):
+    """Counts per Level-3 type (one per blame record), summed to family and party for the graphs."""
+    by_type, by_family, by_party = {}, {}, {}
+    for r in results:
+        for b in r.get("blame") or []:
+            if not isinstance(b, dict):
+                continue
+            party, family, kind = failure_type(b, r.get("checks"))
+            b["taxonomy"] = {"party": party, "family": family, "type": kind}
+            row = by_type.setdefault(kind, {"party": party, "family": family, "count": 0})
+            row["count"] += 1
+            by_family[f"{party} / {family}"] = by_family.get(f"{party} / {family}", 0) + 1
+            by_party[party] = by_party.get(party, 0) + 1
+    return {"records": sum(by_party.values()), "by_party": by_party, "by_family": by_family, "by_type": by_type}
+
+def replay_class(r):
+    """What a replay (the rule stated plainly in the ticket) says about one failed ticket.
+    Passed and the rule had not reached the model: the bot lacked the knowledge (acquisition).
+    Passed although the rule (or a trap doc) had reached the model: fixed when told (runtime).
+    Failed even with the rule given: it cannot apply the rule (runtime)."""
+    labels = {b.get("blame") for b in r.get("blame") or [] if isinstance(b, dict)}
+    if not r["replay"].get("passed"):
+        return "runtime_realization_failure", "cannot apply"
+    # Over the prompt cap the model call was refused, so the rule never reached the model either.
+    if labels & (ACQUISITION_BLAMES | {"context overflow"}):
+        return "knowledge_acquisition_failure", "lacked the rule"
+    return "runtime_realization_failure", "fixed when told"
+
+
+def knowledge_application_summary(results, subset=None):
+    """Explicit-context replay separates acquisition vs runtime realization failures."""
+    def _count_map(items):
+        out = {}
+        for x in items:
+            if not x:
+                continue
+            out[x] = out.get(x, 0) + 1
+        return out
+
+    failed = [r for r in results if isinstance(r, dict) and not r.get("passed")]
+    replayed = [r for r in failed if isinstance(r.get("replay"), dict)]
+    replay_passed = [r for r in replayed if r["replay"].get("passed")]
+    replay_failed = [r for r in replayed if not r["replay"].get("passed")]
+
+    blame_labels, sides = [], []
+    for r in failed:
+        for b in r.get("blame") or []:
+            if not isinstance(b, dict):
+                continue
+            blame_labels.append(b.get("blame") or "?")
+            sides.append(b.get("side") or "?")
+    by_blame, by_side = _count_map(blame_labels), _count_map(sides)
+    # Figure 1 buckets: one record per failed check, over every blame record.
+    buckets = {name: sum(by_blame.get(k, 0) for k in labels) for name, labels in BLAME_BUCKETS}
+    blame_total = sum(by_blame.values())
+    n_rep, n_rp, n_rf = len(replayed), len(replay_passed), len(replay_failed)
+    classes = [replay_class(r) for r in replayed]
+    n_acq = sum(c == "knowledge_acquisition_failure" for c, _ in classes)
+    out = {
+        "failed": len(failed),
+        "replayed": n_rep,
+        "replay_passed": n_rp,
+        "replay_failed": n_rf,
+        "Qapplication": (n_rp / n_rep) if n_rep else None,
+        "frac_knowledge_acquisition_failure": (n_acq / n_rep) if n_rep else None,
+        "frac_runtime_realization_failure": ((n_rep - n_acq) / n_rep) if n_rep else None,
+        "replay_reasons": _count_map(reason for _, reason in classes),
+        "by_blame": by_blame,
+        "by_side": by_side,
+        "blame_records": blame_total,
+        "blame_acquisition": buckets["acquisition"],
+        "blame_runtime": buckets["runtime"],
+        "blame_bot_failure": buckets["bot_failure"],
+        "blame_harness": buckets["harness"],
+        "frac_blame_acquisition": (buckets["acquisition"] / blame_total) if blame_total else None,
+        "frac_blame_runtime": (buckets["runtime"] / blame_total) if blame_total else None,
+        "frac_blame_bot_failure": (buckets["bot_failure"] / blame_total) if blame_total else None,
+        "frac_blame_harness": (buckets["harness"] / blame_total) if blame_total else None,
+        "tickets": [
+            {
+                "id": r.get("id"),
+                "replay_passed": bool(r["replay"].get("passed")),
+                "rules": r["replay"].get("rules") or [],
+                "class": cls,
+                "reason": reason,
+                "blame": sorted({
+                    b.get("blame") for b in (r.get("blame") or [])
+                    if isinstance(b, dict) and b.get("blame")
+                }),
+            }
+            for r, (cls, reason) in zip(replayed, classes)
+        ],
+    }
+    if subset and isinstance(subset, dict):
+        rules = int(subset.get("rules") or 0)
+        kept = int(subset.get("kept") or 0)
+        reached = int(subset.get("reached") or 0)
+        out["subset"] = {
+            "rules": rules, "kept": kept, "reached": reached,
+            "kept_rate": (kept / rules) if rules else None,
+            "reached_rate": (reached / rules) if rules else None,
+        }
+    return out
+

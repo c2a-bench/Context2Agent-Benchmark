@@ -1,0 +1,34 @@
+[
+  {
+    "case": "handoff-04",
+    "name": "good",
+    "should": "pass",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-6346",
+          "reason": "not_covered",
+          "summary": "s"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "handoff-04",
+    "name": "guessed-answer",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6346": {
+          "priority": "P4",
+          "first_response_target": "2bd"
+        }
+      }
+    },
+    "requests": []
+  }
+]

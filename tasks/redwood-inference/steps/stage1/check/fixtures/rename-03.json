@@ -1,0 +1,34 @@
+[
+  {
+    "case": "rename-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4633": {
+          "priority": "P4",
+          "first_response_target": "5bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "rename-03",
+    "name": "treated-as-outage",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4633": {
+          "priority": "P0",
+          "first_response_target": "1h",
+          "labels": [
+            "escalated",
+            "offering-hosted"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

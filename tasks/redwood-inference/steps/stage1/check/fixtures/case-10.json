@@ -1,0 +1,62 @@
+[
+  {
+    "case": "case-10",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4110": {
+          "priority": "P4",
+          "labels": []
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-10",
+    "name": "still-uses-old-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4110": {
+          "priority": "P4",
+          "labels": ["token-accounting"]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-10",
+    "name": "issued-credit",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4110": {
+          "priority": "P4",
+          "labels": []
+        }
+      },
+      "credits": {
+        "CR-0001": {
+          "customer_id": "cust_pixelcraft",
+          "amount_usd": 120,
+          "reason": "token overbilling"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/credits",
+        "body": {
+          "customer_id": "cust_pixelcraft",
+          "amount_usd": 120,
+          "reason": "token overbilling"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

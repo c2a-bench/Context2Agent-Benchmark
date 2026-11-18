@@ -1,0 +1,203 @@
+[
+ {
+  "case": "audit-same-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4205": {
+     "priority": "P1"
+    },
+    "SUP-4206": {
+     "priority": null,
+     "labels": []
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4205/comments",
+    "body": {
+     "body": "Still on the export.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "audit-same-01",
+  "name": "second-p1",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4205": {
+     "priority": "P1"
+    },
+    "SUP-4206": {
+     "priority": "P1",
+     "labels": [
+      "escalated"
+     ]
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4205/comments",
+    "body": {
+     "body": "x",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "audit-same-01",
+  "name": "no-comment",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4205": {
+     "priority": "P1"
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "audit-same-01",
+  "name": "new-ticket-filed-p1",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4205": {
+     "priority": "P1"
+    },
+    "SUP-4206": {
+     "priority": "P1",
+     "labels": []
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4205/comments",
+    "body": {
+     "body": "Still on the export.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "audit-same-01",
+  "name": "refiled-open-ticket",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4205": {
+     "priority": "P1"
+    },
+    "SUP-4206": {
+     "priority": null,
+     "labels": []
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4205/comments",
+    "body": {
+     "body": "Still on the export.",
+     "public": true
+    },
+    "status": 200
+   },
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4205",
+    "body": {
+     "priority": "P1"
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "audit-same-01",
+  "name": "status-on-open-ticket-ok",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4205": {
+     "priority": "P1"
+    },
+    "SUP-4206": {
+     "priority": null,
+     "labels": []
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4205/comments",
+    "body": {
+     "body": "Still on the export.",
+     "public": true
+    },
+    "status": 200
+   },
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4205",
+    "body": {
+     "status": "Open"
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "audit-same-01",
+  "name": "refiled-open-ticket-rejected",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4205": {
+     "priority": "P1"
+    },
+    "SUP-4206": {
+     "priority": null,
+     "labels": []
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4205/comments",
+    "body": {
+     "body": "Still on the export.",
+     "public": true
+    },
+    "status": 200
+   },
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4205",
+    "body": {
+     "priority": "P1"
+    },
+    "status": 500
+   }
+  ]
+ }
+]

@@ -1,0 +1,35 @@
+[
+  {
+    "case": "slack-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4622": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "slack-01",
+    "name": "handed-off",
+    "should": "fail",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4622",
+          "reason": "not_covered",
+          "summary": "s"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

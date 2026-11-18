@@ -1,0 +1,39 @@
+[
+  {
+    "case": "cancel-own-05",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6052": {
+          "category": "refund"
+        }
+      },
+      "credits": {
+        "SK7150": {
+          "voluntary_cancellation": 90
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "cancel-own-05",
+    "name": "24h-refund",
+    "should": "fail",
+    "data": {
+      "refunds": {
+        "SK7150": {
+          "amount": 165,
+          "method": "original_payment"
+        }
+      },
+      "tickets": {
+        "SKY-6052": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

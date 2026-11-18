@@ -1,0 +1,32 @@
+[
+  {
+    "case": "quota-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4637": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Eng Platform"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "quota-04",
+    "name": "dedicated-route",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4637": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Eng Infra"
+        }
+      }
+    },
+    "requests": []
+  }
+]

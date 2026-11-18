@@ -1,0 +1,69 @@
+[
+  {
+    "case": "handoff-02",
+    "name": "good",
+    "should": "pass",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4132",
+          "reason": "churn_risk",
+          "summary": "for a person"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "handoff-02",
+    "name": "no-handoff",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4132": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "PATCH",
+        "path": "/tickets/SUP-4132",
+        "body": {
+          "assigned_team": "Customer Success"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "handoff-02",
+    "name": "handoff-with-comment",
+    "should": "pass",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4132",
+          "reason": "churn_risk",
+          "summary": "for a person"
+        },
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4132/comments",
+        "body": {
+          "body": "Handed off: no doc covers this.",
+          "public": false
+        },
+        "status": 200
+      }
+    ]
+  }
+]

@@ -1,0 +1,91 @@
+[
+ {
+  "case": "receipt-open-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4401": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-3/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-ORB-3",
+     "status": "disabled",
+     "attempt_id": "att_7f3c91"
+    }
+   }
+  ]
+ },
+ {
+  "case": "receipt-open-01",
+  "name": "not-revoked",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4401": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "receipt-open-01",
+  "name": "disabled-twice",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4401": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-3/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "attempt_id": "att_7f3c91"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-3/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "attempt_id": "att_aa11bb"
+    }
+   }
+  ]
+ }
+]

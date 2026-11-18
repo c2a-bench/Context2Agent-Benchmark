@@ -1,0 +1,33 @@
+[
+  {
+    "case": "contract-06",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4506": {
+          "priority": "P1",
+          "first_response_target": "15m",
+          "labels": [
+            "escalated",
+            "offering-private"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "contract-06",
+    "name": "policy-reply-time",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4506": {
+          "first_response_target": "30m"
+        }
+      }
+    },
+    "requests": []
+  }
+]

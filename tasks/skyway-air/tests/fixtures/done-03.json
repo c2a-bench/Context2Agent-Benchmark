@@ -1,0 +1,34 @@
+[
+  {
+    "case": "done-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6043": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "done-03",
+    "name": "asked-again",
+    "should": "fail",
+    "data": {
+      "approvals": {
+        "SKY-6043": {
+          "kind": "hotel",
+          "amount": 230
+        }
+      },
+      "tickets": {
+        "SKY-6043": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

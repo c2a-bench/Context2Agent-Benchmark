@@ -1,0 +1,33 @@
+[
+  {
+    "case": "token-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4603": {
+          "priority": "P4",
+          "first_response_target": "2bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "token-02",
+    "name": "old-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4603": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "labels": [
+            "token-accounting"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

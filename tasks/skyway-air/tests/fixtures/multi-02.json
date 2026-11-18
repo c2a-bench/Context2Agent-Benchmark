@@ -1,0 +1,53 @@
+[
+  {
+    "case": "multi-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6068": {
+          "category": "disruption"
+        }
+      },
+      "credits": {
+        "SK2611": {
+          "compensation": 150
+        },
+        "SK2612": {
+          "compensation": 150
+        },
+        "SK2613": {
+          "compensation": 150
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "multi-02",
+    "name": "compensated-long-notice",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK2611": {
+          "compensation": 150
+        },
+        "SK2612": {
+          "compensation": 150
+        },
+        "SK2613": {
+          "compensation": 150
+        },
+        "SK2614": {
+          "compensation": 150
+        }
+      },
+      "tickets": {
+        "SKY-6068": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

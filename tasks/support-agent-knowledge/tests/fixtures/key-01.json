@@ -1,0 +1,45 @@
+[
+  {
+    "case": "key-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "api_keys": {
+        "K-MER-1": {
+          "status": "active"
+        },
+        "K-MER-2": {
+          "status": "active"
+        }
+      },
+      "tickets": {
+        "SUP-6331": {
+          "labels": [
+            "security-incident"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "key-01",
+    "name": "disabled-for-billing",
+    "should": "fail",
+    "data": {
+      "api_keys": {
+        "K-MER-1": {
+          "status": "disabled"
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/api_keys/K-MER-1/disable",
+        "body": {},
+        "status": 200
+      }
+    ]
+  }
+]

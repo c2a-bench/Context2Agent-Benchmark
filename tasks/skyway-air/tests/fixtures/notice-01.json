@@ -1,0 +1,33 @@
+[
+  {
+    "case": "notice-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6046": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "notice-01",
+    "name": "compensated",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK5160": {
+          "compensation": 150
+        }
+      },
+      "tickets": {
+        "SKY-6046": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

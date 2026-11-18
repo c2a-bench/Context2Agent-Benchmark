@@ -1,0 +1,111 @@
+[
+  {
+    "case": "rename-01",
+    "name": "stale-copy-of-renamed-label",
+    "expect_blame": [
+      "stale copy"
+    ],
+    "data": {
+      "tickets": {
+        "SUP-4121": {
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": [],
+    "model_calls": [
+      {
+        "kind": "llm",
+        "model": "m",
+        "messages": [
+          {
+            "role": "system",
+            "content": "Exactly one primary symptom should be chosen. For timeouts: **symptom-timeout**"
+          },
+          {
+            "role": "user",
+            "content": "t"
+          }
+        ],
+        "reply": {
+          "content": "{\"labels\": [\"escalated\", \"symptom-timeout\"]}",
+          "tool_calls": []
+        }
+      }
+    ]
+  },
+  {
+    "case": "rename-01",
+    "name": "fresh-doc-but-wrong-label",
+    "expect_blame": [
+      "misapplied rule"
+    ],
+    "data": {
+      "tickets": {
+        "SUP-4121": {
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": [],
+    "model_calls": [
+      {
+        "kind": "llm",
+        "model": "m",
+        "messages": [
+          {
+            "role": "system",
+            "content": "For timeouts: **symptom-request-timeout**"
+          },
+          {
+            "role": "user",
+            "content": "t"
+          }
+        ],
+        "reply": {
+          "content": "{\"labels\": [\"escalated\", \"symptom-timeout\"]}",
+          "tool_calls": []
+        }
+      }
+    ]
+  },
+  {
+    "case": "edit-01",
+    "name": "left-default-team",
+    "expect_blame": [
+      "retrieval"
+    ],
+    "data": {
+      "tickets": {
+        "SUP-4122": {
+          "priority": "P2"
+        }
+      }
+    },
+    "requests": [],
+    "model_calls": [
+      {
+        "kind": "llm",
+        "model": "m",
+        "messages": [
+          {
+            "role": "user",
+            "content": "t"
+          }
+        ],
+        "reply": {
+          "content": "{\"priority\": \"P2\"}",
+          "tool_calls": []
+        }
+      }
+    ]
+  }
+]

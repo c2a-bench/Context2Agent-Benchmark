@@ -1,0 +1,38 @@
+[
+  {
+    "case": "iso-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4638": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Legal",
+          "labels": [
+            "trust-center"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "iso-02",
+    "name": "iso-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4638": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Legal",
+          "labels": [
+            "vendor-iso"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

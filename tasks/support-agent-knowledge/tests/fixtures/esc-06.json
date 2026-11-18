@@ -1,0 +1,42 @@
+[
+  {
+    "case": "esc-06",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6306": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "esc-06",
+    "name": "v1-reply-time",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6306": {
+          "priority": "P0",
+          "first_response_target": "30m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,59 @@
+[
+ {
+  "case": "gone-01",
+  "name": "good-left",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4213": {
+     "assigned_team": "Support",
+     "labels": []
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "gone-01",
+  "name": "good-handoff",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4213": {
+     "assigned_team": "Support",
+     "labels": []
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/handoffs",
+    "body": {
+     "ticket_id": "SUP-4213",
+     "reason": "not_covered",
+     "summary": "No pages."
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "gone-01",
+  "name": "guessed-p0",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4213": {
+     "priority": "P0",
+     "assigned_team": "Support",
+     "labels": [
+      "escalated",
+      "symptom-request-timeout"
+     ]
+    }
+   }
+  },
+  "requests": []
+ }
+]

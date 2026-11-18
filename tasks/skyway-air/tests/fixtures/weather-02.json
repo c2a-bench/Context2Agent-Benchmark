@@ -1,0 +1,33 @@
+[
+  {
+    "case": "weather-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6008": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "weather-02",
+    "name": "paid-hotel",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK6107": {
+          "hotel": 140
+        }
+      },
+      "tickets": {
+        "SKY-6008": {
+          "category": "disruption"
+        }
+      }
+    },
+    "requests": []
+  }
+]

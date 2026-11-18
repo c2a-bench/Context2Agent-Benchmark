@@ -1,0 +1,34 @@
+[
+  {
+    "case": "sla-06b",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6360": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated",
+            "offering-private"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "sla-06b",
+    "name": "guessed-p2",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6360": {
+          "priority": "P2",
+          "first_response_target": "2h"
+        }
+      }
+    },
+    "requests": []
+  }
+]

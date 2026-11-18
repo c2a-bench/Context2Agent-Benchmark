@@ -1,0 +1,40 @@
+[
+  {
+    "case": "soc2-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4615": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Legal",
+          "labels": [
+            "trust-center"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "soc2-01",
+    "name": "deadline-raised",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4615": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "assigned_team": "Legal",
+          "labels": [
+            "trust-center",
+            "escalated",
+            "offering-private"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

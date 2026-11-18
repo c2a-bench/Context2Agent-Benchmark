@@ -1,0 +1,34 @@
+[
+  {
+    "case": "coldstart-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4624": {
+          "priority": "P4",
+          "first_response_target": "2bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "coldstart-01",
+    "name": "treated-as-degradation",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4624": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

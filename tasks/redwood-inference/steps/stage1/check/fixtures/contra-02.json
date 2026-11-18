@@ -1,0 +1,36 @@
+[
+  {
+    "case": "contra-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4631": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "contra-02",
+    "name": "linked-listed-hosted",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4631": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "incident_id": "INC-3111",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  }
+]

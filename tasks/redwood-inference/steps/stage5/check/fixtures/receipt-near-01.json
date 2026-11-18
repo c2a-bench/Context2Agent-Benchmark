@@ -1,0 +1,133 @@
+[
+ {
+  "case": "receipt-near-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4405": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-2": {
+     "status": "disabled"
+    },
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-2/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-ORB-2",
+     "status": "disabled",
+     "attempt_id": "att_9b1d42"
+    }
+   }
+  ]
+ },
+ {
+  "case": "receipt-near-01",
+  "name": "only-quoted-old-disable",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4405": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ],
+     "comments": [
+      {
+       "body": "Edge was already disabled this morning; nothing more to do.",
+       "public": true
+      }
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4405/comments",
+    "body": {
+     "body": "Edge was already disabled this morning; nothing more to do.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "receipt-near-01",
+  "name": "disabled-edge-again",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4405": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-2": {
+     "status": "disabled"
+    },
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-3/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "attempt_id": "att_9b1d40"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-2/disable",
+    "body": {},
+    "status": 200,
+    "response": {
+     "id": "K-ORB-2",
+     "status": "disabled",
+     "attempt_id": "att_9b1d42"
+    }
+   }
+  ]
+ },
+ {
+  "case": "receipt-near-01",
+  "name": "empty-desk",
+  "should": "fail",
+  "data": {
+   "api_keys": {
+    "K-ORB-3": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": []
+ }
+]

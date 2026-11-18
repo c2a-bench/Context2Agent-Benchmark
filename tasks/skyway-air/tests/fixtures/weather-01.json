@@ -1,0 +1,52 @@
+[
+  {
+    "case": "weather-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6007": {
+          "category": "refund"
+        }
+      },
+      "refunds": {
+        "SK6107": {
+          "amount": 191,
+          "method": "original_payment"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "weather-01",
+    "name": "no-refund-for-weather",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SKY-6007": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "weather-01",
+    "name": "compensation-for-weather",
+    "should": "fail",
+    "data": {
+      "credits": {
+        "SK6107": {
+          "compensation": 150
+        }
+      },
+      "tickets": {
+        "SKY-6007": {
+          "category": "refund"
+        }
+      }
+    },
+    "requests": []
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "case": "key-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6334": {
+          "priority": "P4",
+          "first_response_target": "2bd"
+        }
+      },
+      "api_keys": {
+        "K-BRI-2": {
+          "status": "active"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "key-04",
+    "name": "security-alarm",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6334": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "labels": [
+            "security-incident"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

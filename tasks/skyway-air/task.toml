@@ -1,0 +1,194 @@
+schema_version = "1.4"
+
+# One job, one builder container. Stage 0 builds the bot. Stages 1-5 run
+# setup.sh to update /app/docs, then the builder updates the same bot.
+# Every ticket has one customer behaviour (scripts/build_stage*_tickets.py).
+# Each stage's verifier is an orchestrator (separate container). Default is
+# in-process ticket threads (TICKET_SANDBOX=local). Set TICKET_SANDBOX=daytona (or modal)
+# to fan each ticket into its own 4-CPU Daytona sandbox. Harbor's headline
+# reward is the mean of the six stages.
+multi_step_reward_strategy = "mean"
+
+[task]
+name = "newmeasure/skyway-air"
+version = "0.1.0"
+description = "Skyway Air with a large policy base and a 12k-token cap per model call; the architecture is fixed per run (tasks/skyway-air/architectures). A builder turns messy Skyway Air docs into an airline support agent. A customer model talks from a private note the builder never sees, and the bot may be started again when the customer replies."
+keywords = ["support-agent", "agent-building", "harbor"]
+
+[metadata]
+difficulty = "hard"
+category = "agent-building"
+tags = ["customer-support", "airline", "knowledge-to-behavior", "user-behavior", "deterministic"]
+
+[agent]
+timeout_sec = 1800.0
+
+[verifier]
+timeout_sec = 7200.0
+
+[verifier.env]
+BOT_MODEL = "${BOT_MODEL:-openai/gpt-5.6-sol}"
+EMBED_MODEL = "${EMBED_MODEL:-openai/text-embedding-3-small}"
+CUSTOMER_MODEL = "${CUSTOMER_MODEL:-}"
+OPENAI_API_KEY = "${OPENAI_API_KEY:-}"
+ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}"
+GEMINI_API_KEY = "${GEMINI_API_KEY:-}"
+OPENROUTER_API_KEY = "${OPENROUTER_API_KEY:-}"
+REPLAY = "${REPLAY:-1}"
+ARCHITECTURE = "${ARCHITECTURE:-}"
+# Max concurrent ticket sandboxes (or local threads when TICKET_SANDBOX=local).
+VERIFIER_WORKERS = "${VERIFIER_WORKERS:-25}"
+# local = in-process threads (default); daytona or modal = one sandbox per ticket on that provider.
+TICKET_SANDBOX = "${TICKET_SANDBOX:-local}"
+DAYTONA_API_KEY = "${DAYTONA_API_KEY:-}"
+MODAL_TOKEN_ID = "${MODAL_TOKEN_ID:-}"
+MODAL_TOKEN_SECRET = "${MODAL_TOKEN_SECRET:-}"
+TICKET_SANDBOX_MODAL_APP = "${TICKET_SANDBOX_MODAL_APP:-skyway-tickets}"
+TICKET_SANDBOX_CPU = "${TICKET_SANDBOX_CPU:-4}"
+TICKET_SANDBOX_MEMORY_GIB = "${TICKET_SANDBOX_MEMORY_GIB:-4}"
+TICKET_SANDBOX_SNAPSHOT = "${TICKET_SANDBOX_SNAPSHOT:-}"
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 900.0
+os = "linux"
+cpus = 2
+memory_mb = 8192
+storage_mb = 10240
+
+# An index or notes have to be built while the docs are readable, so the builder's
+# container gets the bot's models and the provider keys too.
+[environment.env]
+BOT_MODEL = "${BOT_MODEL:-openai/gpt-5.6-sol}"
+EMBED_MODEL = "${EMBED_MODEL:-openai/text-embedding-3-small}"
+OPENAI_API_KEY = "${OPENAI_API_KEY:-}"
+ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}"
+GEMINI_API_KEY = "${GEMINI_API_KEY:-}"
+OPENROUTER_API_KEY = "${OPENROUTER_API_KEY:-}"
+
+[[steps]]
+name = "stage0"
+artifacts = ["/app/bot"]
+
+[steps.agent]
+timeout_sec = 1800.0
+
+[steps.verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+
+[steps.verifier.env]
+STAGE = "stage0"
+# The world's "now" for this stage (when its tickets were created): the bot's clock starts here.
+WORLD_NOW = "2026-05-20T10:00:00Z"
+
+[steps.verifier.environment]
+# Orchestrator only when tickets run on Daytona; keep light.
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+
+[[steps]]
+name = "stage1"
+artifacts = ["/app/bot"]
+
+[steps.agent]
+timeout_sec = 1800.0
+
+[steps.verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+
+[steps.verifier.env]
+STAGE = "stage1"
+# The world's "now" for this stage (when its tickets were created): the bot's clock starts here.
+WORLD_NOW = "2026-07-01T10:00:00Z"
+
+[steps.verifier.environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+
+[[steps]]
+name = "stage2"
+artifacts = ["/app/bot"]
+
+[steps.agent]
+timeout_sec = 1800.0
+
+[steps.verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+
+[steps.verifier.env]
+STAGE = "stage2"
+# The world's "now" for this stage (when its tickets were created): the bot's clock starts here.
+WORLD_NOW = "2026-08-19T10:00:00Z"
+
+[steps.verifier.environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+
+[[steps]]
+name = "stage3"
+artifacts = ["/app/bot"]
+
+[steps.agent]
+timeout_sec = 1800.0
+
+[steps.verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+
+[steps.verifier.env]
+STAGE = "stage3"
+# The world's "now" for this stage (when its tickets were created): the bot's clock starts here.
+WORLD_NOW = "2026-09-02T10:00:00Z"
+
+[steps.verifier.environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+
+[[steps]]
+name = "stage4"
+artifacts = ["/app/bot"]
+
+[steps.agent]
+timeout_sec = 1800.0
+
+[steps.verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+
+[steps.verifier.env]
+STAGE = "stage4"
+# The world's "now" for this stage (when its tickets were created): the bot's clock starts here.
+WORLD_NOW = "2026-11-04T10:00:00Z"
+
+[steps.verifier.environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+
+[[steps]]
+name = "stage5"
+artifacts = ["/app/bot"]
+
+[steps.agent]
+timeout_sec = 1800.0
+
+[steps.verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+
+[steps.verifier.env]
+STAGE = "stage5"
+# The world's "now" for this stage (when its tickets were created): the bot's clock starts here.
+WORLD_NOW = "2026-12-02T10:00:00Z"
+
+[steps.verifier.environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096

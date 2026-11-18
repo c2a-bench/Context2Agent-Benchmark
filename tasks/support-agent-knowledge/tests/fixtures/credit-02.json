@@ -1,0 +1,28 @@
+[
+  {
+    "case": "credit-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-6344": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "credit-02",
+    "name": "kept-in-support",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-6344": {
+          "assigned_team": "Support"
+        }
+      }
+    },
+    "requests": []
+  }
+]

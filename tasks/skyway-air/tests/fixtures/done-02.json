@@ -1,0 +1,33 @@
+[
+  {
+    "case": "done-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SKY-6042": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "done-02",
+    "name": "paid-again",
+    "should": "fail",
+    "data": {
+      "reimbursements": {
+        "SK3399": {
+          "bag_expenses": 300
+        }
+      },
+      "tickets": {
+        "SKY-6042": {
+          "category": "baggage"
+        }
+      }
+    },
+    "requests": []
+  }
+]

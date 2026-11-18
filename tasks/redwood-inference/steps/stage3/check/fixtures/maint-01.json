@@ -1,0 +1,35 @@
+[
+  {
+    "case": "maint-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4619": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "assigned_team": "Support"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "maint-01",
+    "name": "handed-off",
+    "should": "fail",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4619",
+          "reason": "not_covered",
+          "summary": "s"
+        },
+        "status": 200
+      }
+    ]
+  }
+]

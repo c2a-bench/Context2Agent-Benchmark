@@ -1,0 +1,29 @@
+[
+  {
+    "case": "contract-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4502": {
+          "priority": "P2",
+          "first_response_target": "2h"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "contract-02",
+    "name": "copied-contract-term",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4502": {
+          "first_response_target": "4h"
+        }
+      }
+    },
+    "requests": []
+  }
+]

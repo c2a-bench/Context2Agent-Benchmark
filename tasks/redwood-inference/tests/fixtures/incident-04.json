@@ -1,0 +1,41 @@
+[
+  {
+    "case": "incident-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4514": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "incident-04",
+    "name": "linked-resolved-auth",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4514": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ],
+          "incident_id": "INC-3107",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  }
+]

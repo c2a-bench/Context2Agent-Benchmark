@@ -1,0 +1,33 @@
+[
+  {
+    "case": "attack-04",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4547": {
+          "priority": "P4",
+          "first_response_target": "2bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "attack-04",
+    "name": "kept-old-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4547": {
+          "priority": "P4",
+          "first_response_target": "2bd",
+          "labels": [
+            "token-accounting"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

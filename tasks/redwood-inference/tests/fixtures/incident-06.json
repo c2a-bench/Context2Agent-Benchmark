@@ -1,0 +1,43 @@
+[
+  {
+    "case": "incident-06",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4516": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "incident-06",
+    "name": "linked-old-incident",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4516": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-timeout"
+          ],
+          "incident_id": "INC-3103",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  }
+]

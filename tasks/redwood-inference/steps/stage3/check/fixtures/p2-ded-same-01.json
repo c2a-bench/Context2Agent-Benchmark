@@ -1,0 +1,52 @@
+[
+  {
+    "case": "p2-ded-same-01",
+    "name": "good",
+    "should": "pass",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4801/comments",
+        "body": {
+          "summary": "s"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "p2-ded-same-01",
+    "name": "refiled-new-ticket",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4807": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "labels": [
+            "escalated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "p2-ded-same-01",
+    "name": "private-comment-on-open-ticket",
+    "should": "pass",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/tickets/SUP-4801/comments",
+        "body": {
+          "summary": "s",
+          "public": false
+        },
+        "status": 200
+      }
+    ]
+  }
+]

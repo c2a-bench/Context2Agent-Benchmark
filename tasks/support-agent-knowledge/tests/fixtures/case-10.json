@@ -1,0 +1,31 @@
+[
+  {
+    "case": "case-10",
+    "name": "good",
+    "should": "pass",
+    "data": { "tickets": { "SUP-4110": { "priority": "P3", "labels": ["token-accounting"] } } },
+    "requests": [
+      { "method": "GET", "path": "/tickets/SUP-4110", "body": null, "status": 200 },
+      { "method": "PATCH", "path": "/tickets/SUP-4110", "body": { "labels": ["token-accounting"] }, "status": 200 }
+    ]
+  },
+  {
+    "case": "case-10",
+    "name": "issued-credit",
+    "should": "fail",
+    "data": {
+      "tickets": { "SUP-4110": { "labels": ["token-accounting"] } },
+      "credits": { "CR-0001": { "customer_id": "cust_pixelcraft", "amount_usd": 120, "reason": "token overbilling" } }
+    },
+    "requests": [
+      { "method": "POST", "path": "/credits", "body": { "customer_id": "cust_pixelcraft", "amount_usd": 120, "reason": "token overbilling" }, "status": 200 }
+    ]
+  },
+  {
+    "case": "case-10",
+    "name": "wrong-label",
+    "should": "fail",
+    "data": { "tickets": { "SUP-4110": { "labels": ["billing"] } } },
+    "requests": []
+  }
+]

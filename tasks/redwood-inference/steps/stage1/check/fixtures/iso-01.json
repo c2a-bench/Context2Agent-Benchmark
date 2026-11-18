@@ -1,0 +1,38 @@
+[
+  {
+    "case": "iso-01",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4614": {
+          "priority": "P3",
+          "first_response_target": "1bd",
+          "assigned_team": "Legal",
+          "labels": [
+            "vendor-iso"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "iso-01",
+    "name": "treated-as-export",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4614": {
+          "priority": "P1",
+          "assigned_team": "Eng Infra",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

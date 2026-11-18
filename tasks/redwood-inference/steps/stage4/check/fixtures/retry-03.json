@@ -1,0 +1,32 @@
+[
+  {
+    "case": "retry-03",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4816": {
+          "priority": "P3",
+          "first_response_target": "1bd"
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "retry-03",
+    "name": "linked-dedicated-incident",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4816": {
+          "priority": "P1",
+          "first_response_target": "30m",
+          "incident_id": "INC-3102",
+          "escalation_status": "Incident declared"
+        }
+      }
+    },
+    "requests": []
+  }
+]

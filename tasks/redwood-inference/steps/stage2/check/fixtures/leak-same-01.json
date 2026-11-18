@@ -1,0 +1,235 @@
+[
+ {
+  "case": "leak-same-01",
+  "name": "good",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4203": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-2": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4203/comments",
+    "body": {
+     "body": "Already revoked this morning.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "leak-same-01",
+  "name": "disabled-again",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4203": {
+     "assigned_team": "Security"
+    }
+   },
+   "api_keys": {
+    "K-ORB-2": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4203/comments",
+    "body": {
+     "body": "x",
+     "public": true
+    },
+    "status": 200
+   },
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-2/disable",
+    "body": {},
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "leak-same-01",
+  "name": "no-comment",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4203": {
+     "assigned_team": "Security"
+    }
+   }
+  },
+  "requests": []
+ },
+ {
+  "case": "leak-same-01",
+  "name": "leftover-from-first",
+  "should": "pass",
+  "already": 1,
+  "data": {
+   "tickets": {
+    "SUP-4203": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-2": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/api_keys/K-ORB-2/disable",
+    "body": {},
+    "status": 200
+   },
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4203/comments",
+    "body": {
+     "body": "Already revoked this morning.",
+     "public": true
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "leak-same-01",
+  "name": "refiled-open-ticket",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4203": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-2": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4203/comments",
+    "body": {
+     "body": "Already revoked this morning.",
+     "public": true
+    },
+    "status": 200
+   },
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4203",
+    "body": {
+     "priority": "P1"
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "leak-same-01",
+  "name": "status-on-open-ticket-ok",
+  "should": "pass",
+  "data": {
+   "tickets": {
+    "SUP-4203": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-2": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4203/comments",
+    "body": {
+     "body": "Already revoked this morning.",
+     "public": true
+    },
+    "status": 200
+   },
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4203",
+    "body": {
+     "status": "Open"
+    },
+    "status": 200
+   }
+  ]
+ },
+ {
+  "case": "leak-same-01",
+  "name": "refiled-open-ticket-rejected",
+  "should": "fail",
+  "data": {
+   "tickets": {
+    "SUP-4203": {
+     "assigned_team": "Security",
+     "labels": [
+      "security-incident"
+     ]
+    }
+   },
+   "api_keys": {
+    "K-ORB-2": {
+     "status": "disabled"
+    }
+   }
+  },
+  "requests": [
+   {
+    "method": "POST",
+    "path": "/tickets/SUP-4203/comments",
+    "body": {
+     "body": "Already revoked this morning.",
+     "public": true
+    },
+    "status": 200
+   },
+   {
+    "method": "PATCH",
+    "path": "/tickets/SUP-4203",
+    "body": {
+     "priority": "P1"
+    },
+    "status": 500
+   }
+  ]
+ }
+]

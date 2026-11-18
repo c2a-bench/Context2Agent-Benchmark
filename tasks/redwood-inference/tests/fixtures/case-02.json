@@ -1,0 +1,103 @@
+[
+  {
+    "case": "case-02",
+    "name": "good",
+    "should": "pass",
+    "data": {
+      "tickets": {
+        "SUP-4102": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "status": "In Progress",
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-02",
+    "name": "tier-used-as-offering",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4102": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "enterprise",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-02",
+    "name": "not-paged",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4102": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-timeout"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-02",
+    "name": "missing-timeout-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4102": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "labels": [
+            "escalated",
+            "offering-dedicated"
+          ]
+        }
+      }
+    },
+    "requests": []
+  },
+  {
+    "case": "case-02",
+    "name": "second-symptom-label",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4102": {
+          "priority": "P0",
+          "first_response_target": "15m",
+          "escalation_status": "Eng engaged",
+          "status": "In Progress",
+          "labels": [
+            "escalated",
+            "offering-dedicated",
+            "symptom-timeout",
+            "symptom-latency"
+          ]
+        }
+      }
+    },
+    "requests": []
+  }
+]

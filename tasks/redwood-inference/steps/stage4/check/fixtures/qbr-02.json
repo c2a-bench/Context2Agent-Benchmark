@@ -1,0 +1,33 @@
+[
+  {
+    "case": "qbr-02",
+    "name": "good",
+    "should": "pass",
+    "data": {},
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/handoffs",
+        "body": {
+          "ticket_id": "SUP-4644",
+          "reason": "churn_risk",
+          "summary": "s"
+        },
+        "status": 200
+      }
+    ]
+  },
+  {
+    "case": "qbr-02",
+    "name": "qbr-only",
+    "should": "fail",
+    "data": {
+      "tickets": {
+        "SUP-4644": {
+          "assigned_team": "Customer Success"
+        }
+      }
+    },
+    "requests": []
+  }
+]
