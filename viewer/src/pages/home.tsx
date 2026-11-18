@@ -776,8 +776,8 @@ export default function Home() {
         </section>
         <section id="how" className="pb-16">
           <div className="lp-wrap">
-            <h2 className="max-w-[24ch]">From company docs to a resolved ticket</h2>
-            <p className="lead muted mt-4 max-w-[62ch]">A builder agent turns a company's documents into a support agent, and we test that agent on customer tickets. Each step below shows where things can go wrong.</p>
+            <h2 className="max-w-[24ch]">Can the agent keep up with the business?</h2>
+            <p className="lead muted mt-4 max-w-[62ch]">Policies and procedures keep changing, and a support agent has to keep up. Each step below shows how we test that, and where it can go wrong.</p>
             <div className="mt-8"><Journey onFailure={showFailure} /></div>
           </div>
         </section>

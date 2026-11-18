@@ -8,7 +8,8 @@
  * runs on its own 700 ms clock (scroll never scrubs it). Reduced motion: no tween.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { GROUPS, type FailureGroup } from "./data";
+import type { FailureGroup } from "./data";
+import { REASONS, type ReasonKey } from "./simple-charts";
 
 type Box = [number, number, number, number];
 type Role = "fact" | "filler" | "lost" | "ghost" | "missing-recall" | "missing-customer" | "wrong" | "gone";
@@ -97,9 +98,9 @@ const S3: State = (() => {
 const ROWS: { id: string; w: number; ok: boolean; role: Role; term?: string; color?: string }[] = [
   { id: "A", w: 86, ok: true, role: "fact" },
   { id: "B", w: 74, ok: true, role: "fact" },
-  { id: "C", w: 80, ok: false, role: "wrong", term: "database check", color: "var(--f-state)" },
-  { id: "D", w: 72, ok: false, role: "missing-recall", term: "missing knowledge", color: "var(--f-recall)" },
-  { id: "G", w: 68, ok: false, role: "missing-customer", term: "missing customer info", color: "var(--f-customer)" },
+  { id: "C", w: 80, ok: false, role: "wrong", term: "wrong action", color: "var(--f-state)" },
+  { id: "D", w: 72, ok: false, role: "missing-recall", term: "missing a rule", color: "var(--f-recall)" },
+  { id: "G", w: 68, ok: false, role: "missing-customer", term: "missed customer info", color: "var(--f-customer)" },
 ];
 const rowY = (i: number) => 96 + i * 40;
 /** The clipboard: board, the paper on it, the clip. */
@@ -153,34 +154,35 @@ const VB = (() => {
   const xs = pts.map((p) => p[0]);
   const ys = pts.map((p) => p[1]);
   const [x0, y0] = [Math.min(...xs) - 10, Math.min(...ys) - 10];
-  return [x0, y0, Math.max(...xs) + 10 - x0, Math.max(...ys) + 14 - y0].map((n) => Math.round(n));
+  return [x0, y0, Math.max(...xs) + 36 - x0, Math.max(...ys) + 14 - y0].map((n) => Math.round(n));
 })();
 
-type Tag = { group: FailureGroup; gloss: string; label?: string }; // label: plainer chip text than the failure chart's own term
+// A step's failure chips use the failure chart's own plain names (REASONS), so the two always read alike.
+type Tag = { group: FailureGroup; reason: ReasonKey };
 const STEPS: { name: string; body: string; tags: Tag[] }[] = [
-  { name: "Business context", body: "A company's policies and procedures are spread across many systems, and they keep changing.", tags: [] },
+  { name: "Business context", body: "A company's policies and procedures live in many documents and systems, and they keep changing.", tags: [] },
   {
     name: "Builder",
-    body: "A builder agent reads those documents and builds the support agent. In this example, one fact doesn't make it in.",
+    body: "The agent has to take that context in. One approach we test: an AI builder reads the documents and sets up the support agent. In this example, one fact doesn't make it in.",
     tags: [
-      { group: "Missing knowledge (rule recall)", label: "Missing knowledge", gloss: "a needed fact never reaches the support agent" },
-      { group: "Build spec failure", gloss: "the support agent can't be set up or won't start" },
+      { group: "Missing knowledge (rule recall)", reason: "recall" },
+      { group: "Build spec failure", reason: "spec" },
     ],
   },
   {
     name: "Support agent",
-    body: "The support agent answers customers inside the support system. Depending on its design, it works from what the builder wrote and may also search the company's documents.",
-    tags: [{ group: "Agent crash", gloss: "the agent breaks down mid-ticket" }],
+    body: "The support agent then handles the company's tickets. Depending on its design, it works from what the builder set up and may also search the documents.",
+    tags: [{ group: "Agent crash", reason: "crash" }],
   },
   {
     name: "Customer",
-    body: "Simulated customers write in, each with their own way of behaving. To resolve a ticket, the agent has to ask for details that only the customer knows.",
-    tags: [{ group: "Missing customer info (customer recall)", label: "Missing customer info", gloss: "the agent never asks for a detail only the customer has" }],
+    body: "Simulated customers write in, each behaving differently. To resolve a ticket, the agent has to ask for details only the customer knows.",
+    tags: [{ group: "Missing customer info (customer recall)", reason: "customer" }],
   },
   {
     name: "QA evaluation",
     body: "Like a contact center QA form, each ticket is scored on whether the issue was resolved in the right system and in line with company policy. This one passes 2 of 5.",
-    tags: [{ group: "Wrong end state (database check)", label: "Wrong outcome", gloss: "the agent had the fact but recorded the wrong value" }],
+    tags: [{ group: "Wrong end state (database check)", reason: "state" }],
   },
 ];
 
@@ -357,7 +359,7 @@ function Figure({ k, still }: { k: number; still: boolean }) {
           </OnSheet>
           <Label s={1} u={90} v={44} text="</>" />
           <Label s={1} u={320} v={268} text="size cap" color="var(--f-spec)" dx={4} dy={4} />
-          <Label s={1} u={326} v={166} lift={12} text="missing knowledge" color="var(--f-recall)" dy={13} />
+          <Label s={1} u={326} v={166} lift={12} text="missing a rule" color="var(--f-recall)" dy={13} />
         </g>
         {/* chat window: title bar, prompt panel, floating bubbles */}
         <g {...on(3)}>
@@ -372,7 +374,7 @@ function Figure({ k, still }: { k: number; still: boolean }) {
               <rect key={i} x={b.box[0]} y={b.box[1]} width={b.box[2]} height={b.box[3]} rx="10" className={`j-edge ${b.who === "agent" ? "j-bubble-agent" : "j-paper"}`} strokeDasharray={b.dashed ? "4 4" : undefined} />
             ))}
           </OnSheet>
-          <Label s={3} u={156} v={180} lift={LIFT} text="missing customer info" color="var(--f-customer)" dx={4} dy={13} />
+          <Label s={3} u={156} v={180} lift={LIFT} text="missed customer info" color="var(--f-customer)" dx={4} dy={13} />
         </g>
         {/* checklist */}
         <g {...on(4)}>
@@ -438,14 +440,14 @@ export function Journey({ onFailure }: { onFailure: (g: FailureGroup) => void })
             {s.tags.length > 0 && (
               <ul className="mt-4 space-y-2">
                 {s.tags.map((t) => {
-                  const g = GROUPS.find((x) => x.group === t.group)!;
+                  const g = REASONS.find((x) => x.key === t.reason)!;
                   return (
                     <li key={t.group} className="text-[14px] leading-[1.45]">
                       <button type="button" className="lp-fail" style={{ ["--c" as string]: g.color }} onClick={() => onFailure(t.group)} title="See it in the failure chart">
                         <span className="size-2 rounded-full" style={{ background: g.color }} />
-                        {t.label ?? g.term}
+                        {g.name}
                       </button>
-                      <span className="muted ml-2">{t.gloss}</span>
+                      <span className="muted ml-2">{g.long}</span>
                     </li>
                   );
                 })}
