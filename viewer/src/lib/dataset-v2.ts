@@ -3,7 +3,7 @@ import type { BuildEvent, BuildsData, CasesData, CaseVersion, CodeData, CodeStag
 
 export type DatasetRef = { repository: string; revision: string; path: string; inventorySha256: string };
 export type DatasetRelease = { schemaVersion: 2; provider: "huggingface"; domains: string[]; benchmark: DatasetRef; runs: DatasetRef };
-export type TaskStage = { index: number; label: string; kind: "update" | "condition"; docs_mode: "delta" | "snapshot" };
+export type TaskStage = { index: number; label: string; kind: "update" | "condition"; docs_mode: "delta" | "snapshot"; files?: string[]; tests_from?: number };
 export type BenchmarkTask = { schema_version: 2; id: string; name: string; description: string; sources: { label: string; url: string }[]; source_domain: string; stages: TaskStage[] };
 export type BenchmarkCase = Omit<CaseVersion, "step" | "result"> & { id: string };
 export type StageChanges = { changes: Transition["docChanges"]; rule_changes: Transition["ruleChanges"]; new_docs: Transition["newDocs"]; deleted: string[] };
@@ -47,6 +47,62 @@ export function caseView(c: BenchmarkCase): BenchmarkCase {
   return { ...c, pass, rules, rule_facts } as BenchmarkCase;
 }
 
+/** A stage's rules.json row: the rule's text, the docs that state it (sources) and look-alikes (decoys), quotes. */
+export type RuleRow = { id: string; rule: string; sources: string[]; decoys: string[]; evidence: string[]; trap_evidence: string[] };
+/** The rule fields a ticket shows, from the stage's rules (tickets store only the rule id and the facts they need). */
+export function ruleView(r: RuleRow) {
+  return { text: r.rule, real: r.sources, traps: r.decoys, quote: r.evidence[0] ?? "", trap_quote: r.trap_evidence[0] ?? "" };
+}
+type RuleChangeStub = { id: string; status: string; what?: string | null; diff?: unknown };
+type DocEntry = { born: number; edited: number | null; file?: Record<string, unknown>; text?: string };
+
+// The display text of a doc was first built in Python, so field values that are not text read as Python prints them.
+const hex = (c: number, n: number) => c.toString(16).padStart(n, "0");
+const NONPRINT = /[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{Zl}\p{Zp}]|(?! )\p{Zs}/u;
+function pyQuote(s: string): string {
+  const q = s.includes("'") && !s.includes('"') ? '"' : "'";
+  let out = q;
+  for (const ch of s) {
+    const c = ch.codePointAt(0)!;
+    if (ch === q || ch === "\\") out += "\\" + ch;
+    else if (ch === "\n") out += "\\n"; else if (ch === "\r") out += "\\r"; else if (ch === "\t") out += "\\t";
+    else if (NONPRINT.test(ch)) out += c < 0x100 ? "\\x" + hex(c, 2) : c < 0x10000 ? "\\u" + hex(c, 4) : "\\U" + hex(c, 8);
+    else out += ch;
+  }
+  return out + q;
+}
+function pyRepr(v: unknown): string {
+  if (v === null || v === undefined) return "None";
+  if (typeof v === "boolean") return v ? "True" : "False";
+  if (typeof v === "number") return String(v);
+  if (typeof v === "string") return pyQuote(v);
+  if (Array.isArray(v)) return `[${v.map(pyRepr).join(", ")}]`;
+  return `{${Object.entries(v as Record<string, unknown>).map(([k, x]) => `${pyQuote(k)}: ${pyRepr(x)}`).join(", ")}}`;
+}
+const pyStr = (v: unknown) => (typeof v === "string" ? v : pyRepr(v));
+const truthy = (v: unknown) => !(v == null || v === false || v === 0 || v === "" || (Array.isArray(v) && !v.length) || (typeof v === "object" && !Array.isArray(v) && !Object.keys(v as object).length));
+const META = new Set(["title", "author", "status", "last_updated", "created_at", "owner_team", "source_system", "space", "document_type", "dataset_doc_uuid", "title_field_name", "content_field_names", "confidentiality"]);
+
+/** A doc as the pages show it, from its original fields (docs.json `file`): title, status, date, author, readable text. */
+export function docView(path: string, e: DocEntry): Doc {
+  const name = path.split("/").pop()!;
+  if (!e.file) return { title: name, status: "", updated: "", author: "", text: e.text ?? "", source: "api" as Doc["source"], born: e.born, edited: e.edited };
+  const raw = e.file;
+  let fields = raw.content_field_names as string[] | string | undefined;
+  if (typeof fields === "string") fields = JSON.parse(fields.replace(/'/g, '"')) as string[];
+  let text = (fields && fields.length ? fields : ["body", "content", "messages", "thread"]).filter((f) => truthy(raw[f])).map((f) => pyStr(raw[f])).join("\n\n");
+  if (!text.trim()) text = Object.entries(raw).filter(([k, v]) => !META.has(k) && typeof v === "string" && v.trim()).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v as string}`).join("\n\n");
+  const slack = path.startsWith("docs/slack/");
+  let updated = (truthy(raw.last_updated) ? raw.last_updated : truthy(raw.created_at) ? raw.created_at : "") as string;
+  if (!updated && slack && truthy(raw.last_message_ts)) updated = new Date(parseFloat(String(raw.last_message_ts)) * 1000).toISOString().slice(0, 10);
+  return {
+    title: (truthy(raw.title) ? raw.title : truthy(raw.channel) ? `#${raw.channel as string}` : name.replace(/\.[^.]*$/, "")) as string,
+    status: (truthy(raw.status) ? raw.status : slack ? "slack thread" : "") as string,
+    updated, author: ("author" in raw ? raw.author : "") as string,
+    text: e.text ?? text, source: slack ? "slack" : "confluence", born: e.born, edited: e.edited,
+  };
+}
+
 /** Reconstruct the old UI projection without duplicating benchmark definitions in each run. */
 export function caseTicketBase(c: BenchmarkCase): Partial<Ticket> {
   const tags = c.tags as Record<string, unknown>;
@@ -84,9 +140,41 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
     return value;
   });
   const stage = (domain: string, job: string, n: number) => memo(`stage:${domain}/${job}/${n}`, () => read<StageRecord>("runs", `${domain}/${job}/stages/${n}/stage.json`));
-  const definitions = (domain: string, n: number) => memo(`cases:${domain}/${n}`, async () => (await read<BenchmarkCase[]>("benchmark", `${domain}/stages/${n}/cases.json`)).map(caseView));
+  const stageOf = async (domain: string, n: number) => (await task(domain)).stages.find((s) => s.index === n)!;
+  // task.json lists each stage's files; an older bench (no list) always has changes.json and cases.json, no rules.json
+  const has = async (domain: string, n: number, file: string) => { const s = await stageOf(domain, n); return s.files ? s.files.includes(file) : file === "changes.json"; };
+  /** The rules of stage n: what stages up to n add or change, by id. */
+  const rules = (domain: string, n: number) => memo(`rules:${domain}/${n}`, async () => {
+    const out = new Map<string, RuleRow>();
+    for (const s of (await task(domain)).stages.filter((s) => s.index <= n)) {
+      if (await has(domain, s.index, "rules.json")) for (const r of await read<RuleRow[]>("benchmark", `${domain}/stages/${s.index}/rules.json`)) out.set(r.id, r);
+    }
+    return out;
+  });
+  const definitions = (domain: string, n: number) => memo(`cases:${domain}/${n}`, async () => {
+    const s = await stageOf(domain, n), byId = await rules(domain, n);
+    const rows = await read<BenchmarkCase[]>("benchmark", s.files ? `${domain}/stages/${s.tests_from ?? n}/test.json` : `${domain}/stages/${n}/cases.json`);
+    return rows.map((c) => caseView({ ...c, rules: c.rules.map((r) => byId.has(r.id) ? { ...ruleView(byId.get(r.id)!), ...r } : r) } as BenchmarkCase));
+  });
   const results = (domain: string, job: string, n: number) => memo(`results:${domain}/${job}/${n}`, () => read<ResultRecord[]>("runs", `${domain}/${job}/stages/${n}/results.json`));
-  const changes = (domain: string, n: number) => memo(`changes:${domain}/${n}`, () => read<StageChanges>("benchmark", `${domain}/stages/${n}/changes.json`));
+  const EMPTY: StageChanges = { changes: [], rule_changes: [], new_docs: [], deleted: [] };
+  const stageChanges = (domain: string, n: number) => memo(`changes-file:${domain}/${n}`, async () =>
+    (await has(domain, n, "changes.json")) ? { ...EMPTY, ...await read<StageChanges>("benchmark", `${domain}/stages/${n}/changes.json`) } : EMPTY);
+  /** A stage's changes; each changed rule's text, docs and quotes come from the stage's rules and docs. */
+  const changes = (domain: string, n: number) => memo(`changes:${domain}/${n}`, async (): Promise<StageChanges> => {
+    const c = await stageChanges(domain, n);
+    if (!c.rule_changes.length) return c;
+    const [byId, d] = await Promise.all([rules(domain, n), docs(domain)]);
+    const at = d[String(n)] ?? {};
+    const ref = (path: string) => ({ path, title: at[path]?.title, status: at[path]?.status, updated: at[path]?.updated });
+    const rule_changes = (c.rule_changes as unknown as RuleChangeStub[]).map((stub) => {
+      const r = byId.get(stub.id);
+      if (!r) return stub;
+      const v = ruleView(r);
+      return { id: stub.id, status: stub.status, text: v.text, diff: stub.diff ?? null, what: stub.what, sources: r.sources.map(ref), traps: r.decoys.map(ref), quote: v.quote, trapQuote: v.trap_quote };
+    }) as unknown as StageChanges["rule_changes"];
+    return { ...c, rule_changes };
+  });
   const index = () => memo("index", async (): Promise<PublishedIndex> => ({ updatedAt: release.runs.revision, prefix: "", tasks: await Promise.all(release.domains.map(async (domain) => {
     const metadata = await task(domain);
     const text = await options.text("runs", `data/${domain}.jsonl`);
@@ -115,7 +203,8 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
     let effective: Record<string, Doc> = {};
     const output: DocsData = {};
     for (const s of (await task(domain)).stages) {
-      const [delta, change] = await Promise.all([read<Record<string, Doc>>("benchmark", `${domain}/stages/${s.index}/docs.json`), changes(domain, s.index)]);
+      const [entries, change] = await Promise.all([read<Record<string, DocEntry | Doc>>("benchmark", `${domain}/stages/${s.index}/docs.json`), stageChanges(domain, s.index)]);
+      const delta = Object.fromEntries(Object.entries(entries).map(([p, e]) => [p, "born" in e && !("title" in e) ? docView(p, e as DocEntry) : e as Doc]));
       effective = s.docs_mode === "snapshot" ? { ...delta } : { ...effective, ...delta };
       for (const key of change.deleted) delete effective[key];
       output[String(s.index)] = effective;
@@ -162,5 +251,5 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
     if (typeof shard[ref] !== "string") throw new Error(`Missing content ${ref}`);
     return shard[ref];
   });
-  return { index, task, run, stage, definitions, results, meta, interactions, docs, code, cases, builds, events, text };
+  return { index, task, run, stage, definitions, results, meta, interactions, docs, changes, code, cases, builds, events, text };
 }
