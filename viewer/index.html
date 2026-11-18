@@ -8,7 +8,7 @@
     <link rel="icon" href="%BASE_URL%favicon.ico" sizes="any" />
     <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
     <!-- Before first paint: the saved theme (ThemeToggle), else follow the OS. -->
-    <script>(()=>{const saved=()=>{try{return localStorage.getItem('theme')}catch{return null}};const m=matchMedia('(prefers-color-scheme: dark)');const s=()=>{const t=saved();document.documentElement.classList.toggle('dark',t?t==='dark':m.matches)};s();m.addEventListener('change',s)})()</script>
+    <script>(()=>{const saved=()=>{try{return localStorage.getItem('theme')}catch{return null}};const s=()=>{const t=saved();document.documentElement.classList.toggle('dark',t?t==='dark':true)};s()})()</script>
   </head>
   <body class="min-h-full flex flex-col bg-background text-foreground">
     <div id="root" class="contents"></div>

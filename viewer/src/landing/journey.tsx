@@ -98,8 +98,8 @@ const ROWS: { id: string; w: number; ok: boolean; role: Role; term?: string; col
   { id: "A", w: 86, ok: true, role: "fact" },
   { id: "B", w: 74, ok: true, role: "fact" },
   { id: "C", w: 80, ok: false, role: "wrong", term: "database check", color: "var(--f-state)" },
-  { id: "D", w: 72, ok: false, role: "missing-recall", term: "rule recall", color: "var(--f-recall)" },
-  { id: "G", w: 68, ok: false, role: "missing-customer", term: "customer recall", color: "var(--f-customer)" },
+  { id: "D", w: 72, ok: false, role: "missing-recall", term: "missing knowledge", color: "var(--f-recall)" },
+  { id: "G", w: 68, ok: false, role: "missing-customer", term: "missing customer info", color: "var(--f-customer)" },
 ];
 const rowY = (i: number) => 96 + i * 40;
 /** The clipboard: board, the paper on it, the clip. */
@@ -156,31 +156,31 @@ const VB = (() => {
   return [x0, y0, Math.max(...xs) + 10 - x0, Math.max(...ys) + 14 - y0].map((n) => Math.round(n));
 })();
 
-type Tag = { group: FailureGroup; gloss: string };
+type Tag = { group: FailureGroup; gloss: string; label?: string }; // label: plainer chip text than the failure chart's own term
 const STEPS: { name: string; body: string; tags: Tag[] }[] = [
-  { name: "Business context", body: "The company maintains its SOPs, policies, approvals, and business updates across multiple systems, including knowledge management platforms, internal wikis, UCaaS solutions, and other applications. The six facts this ticket needs are spread across them.", tags: [] },
+  { name: "Business context", body: "A company's policies and procedures are spread across many systems, and they keep changing.", tags: [] },
   {
     name: "Builder",
-    body: "The agent builder, such as Codex, Claude Code or Gemini CLI, reads the docs and writes the support agent's prompt and code. In this example, one fact doesn't make it in.",
+    body: "A builder agent reads those documents and builds the support agent. In this example, one fact doesn't make it in.",
     tags: [
-      { group: "Missing knowledge (rule recall)", gloss: "a needed fact never reaches the agent" },
-      { group: "Build spec failure", gloss: "the prompt exceeds the size cap, or the agent fails to start" },
+      { group: "Missing knowledge (rule recall)", label: "Missing knowledge", gloss: "a needed fact never reaches the support agent" },
+      { group: "Build spec failure", gloss: "the support agent can't be set up or won't start" },
     ],
   },
   {
     name: "Support agent",
-    body: "The agent runs on a fixed model inside the support system; it can't see the docs, only what the builder wrote.",
-    tags: [{ group: "Agent crash", gloss: "a model call fails mid-ticket" }],
+    body: "The support agent answers customers inside the support system. Depending on its design, it works from what the builder wrote and may also search the company's documents.",
+    tags: [{ group: "Agent crash", gloss: "the agent breaks down mid-ticket" }],
   },
   {
     name: "Customer",
-    body: "A simulated customer writes in and sends up to five messages. Each customer acts out one of 14 behaviors, and some facts only the customer knows, so the agent has to ask for them.",
-    tags: [{ group: "Missing customer info (customer recall)", gloss: "the agent never asks for a fact only the customer has" }],
+    body: "Simulated customers write in, each with their own way of behaving. To resolve a ticket, the agent has to ask for details that only the customer knows.",
+    tags: [{ group: "Missing customer info (customer recall)", label: "Missing customer info", gloss: "the agent never asks for a detail only the customer has" }],
   },
   {
-    name: "Resolution check",
-    body: "Resolution only counts when the customer's issue is resolved in the appropriate system, with an outcome that aligns with company policies and knowledge. This one passes 2 of 5.",
-    tags: [{ group: "Wrong end state (database check)", gloss: "the agent had the fact but wrote the wrong value" }],
+    name: "QA evaluation",
+    body: "Like a contact center QA form, each ticket is scored on whether the issue was resolved in the right system and in line with company policy. This one passes 2 of 5.",
+    tags: [{ group: "Wrong end state (database check)", label: "Wrong outcome", gloss: "the agent had the fact but recorded the wrong value" }],
   },
 ];
 
@@ -357,7 +357,7 @@ function Figure({ k, still }: { k: number; still: boolean }) {
           </OnSheet>
           <Label s={1} u={90} v={44} text="</>" />
           <Label s={1} u={320} v={268} text="size cap" color="var(--f-spec)" dx={4} dy={4} />
-          <Label s={1} u={326} v={166} lift={12} text="rule recall" color="var(--f-recall)" dy={13} />
+          <Label s={1} u={326} v={166} lift={12} text="missing knowledge" color="var(--f-recall)" dy={13} />
         </g>
         {/* chat window: title bar, prompt panel, floating bubbles */}
         <g {...on(3)}>
@@ -372,7 +372,7 @@ function Figure({ k, still }: { k: number; still: boolean }) {
               <rect key={i} x={b.box[0]} y={b.box[1]} width={b.box[2]} height={b.box[3]} rx="10" className={`j-edge ${b.who === "agent" ? "j-bubble-agent" : "j-paper"}`} strokeDasharray={b.dashed ? "4 4" : undefined} />
             ))}
           </OnSheet>
-          <Label s={3} u={156} v={180} lift={LIFT} text="customer recall" color="var(--f-customer)" dx={4} dy={13} />
+          <Label s={3} u={156} v={180} lift={LIFT} text="missing customer info" color="var(--f-customer)" dx={4} dy={13} />
         </g>
         {/* checklist */}
         <g {...on(4)}>
@@ -443,7 +443,7 @@ export function Journey({ onFailure }: { onFailure: (g: FailureGroup) => void })
                     <li key={t.group} className="text-[14px] leading-[1.45]">
                       <button type="button" className="lp-fail" style={{ ["--c" as string]: g.color }} onClick={() => onFailure(t.group)} title="See it in the failure chart">
                         <span className="size-2 rounded-full" style={{ background: g.color }} />
-                        {g.term}
+                        {t.label ?? g.term}
                       </button>
                       <span className="muted ml-2">{t.gloss}</span>
                     </li>
