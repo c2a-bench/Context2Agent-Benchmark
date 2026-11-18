@@ -32,6 +32,7 @@ function useDockedTitle(hero: React.RefObject<HTMLElement | null>, slot: React.R
       const hr = h.getBoundingClientRect(), nr = n.getBoundingClientRect();
       m = { left: hr.left, top: hr.top + scrollY, size: parseFloat(getComputedStyle(h).fontSize), toLeft: nr.left, toTop: nr.top, toSize: parseFloat(getComputedStyle(n).fontSize) };
       t.style.fontSize = `${m.size}px`;
+      t.style.width = `${hr.width}px`; // the long title wraps exactly as the hero h1 does
       draw();
     };
     const draw = () => {
@@ -44,12 +45,17 @@ function useDockedTitle(hero: React.RefObject<HTMLElement | null>, slot: React.R
       t.style.transform = `translate(${x}px, ${y}px) scale(${sc})`;
       t.style.pointerEvents = p >= 1 ? "auto" : "none";
       d.style.opacity = String(Math.max(0, (p - 0.8) / 0.2));
+      // the long name hands over to the short one on the way up
+      const sm = (x: number) => { const k = Math.min(1, Math.max(0, x)); return k * k * (3 - 2 * k); };
+      (t.firstElementChild as HTMLElement).style.opacity = String(1 - sm((p - 0.1) / 0.35));
+      (t.lastElementChild as HTMLElement).style.opacity = String(sm((p - 0.45) / 0.35));
     };
     let raf = 0;
     const onScroll = () => (raf ||= requestAnimationFrame(() => ((raf = 0), draw())));
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(document.documentElement);
+    ro.observe(n.parentElement!); // the logo next to the slot loads late and shifts it; re-measure so the title never lands on the logo
     addEventListener("scroll", onScroll, { passive: true });
     document.fonts?.ready.then(measure);
     return () => {
@@ -739,14 +745,13 @@ export default function Home() {
   return (
     <div className="lp min-h-screen">
       <Nav slotRef={navSlot} dividerRef={navDivider} />
-      <Link ref={flyTitle} to="/#top" className="lp-title lp-fly" aria-hidden tabIndex={-1}>C2A</Link>
+      <Link ref={flyTitle} to="/#top" className="lp-title lp-fly" aria-hidden tabIndex={-1}><span style={{ display: "block", whiteSpace: "normal" }}>Context to Agent Benchmark</span><span style={{ position: "absolute", left: 0, top: 0 }}>C2A</span></Link>
       <main>
         <section id="top" className="lp-hero">
           <div className="lp-wrap">
             <div className="grid gap-x-12 gap-y-12 lg:grid-cols-12 lg:items-center">
               <div className="lg:col-span-7">
-                <h1 ref={heroName} className="lp-title" style={{ opacity: 0 }}>C2A</h1>
-                <div className="mt-3" style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(22px, 1vw + 16px, 30px)", lineHeight: 1.2 }}>Context to Agent Benchmark</div>
+                <h1 ref={heroName} className="lp-title" style={{ opacity: 0, whiteSpace: "normal" }}>Context to Agent Benchmark</h1>
                 <p className="lead muted mt-5 max-w-[40ch]" style={{ fontSize: "clamp(20px, 0.8vw + 16px, 26px)", lineHeight: 1.35 }}>
                   Can an AI agent learn and adapt to changing business context to resolve customer issues?
                 </p>
