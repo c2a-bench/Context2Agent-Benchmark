@@ -1,16 +1,16 @@
-import resolveBench from "./introducing-resolve-bench.md?raw";
+import introducingC2A from "./introducing-c2a.md?raw";
 
 /** The blog post (one; /blog shows the first). Its body is Markdown (GitHub flavour), rendered by pages/blog-post.tsx. */
 export type Post = { slug: string; title: string; summary: string; date: string; body: string };
 
 export const POSTS: Post[] = [
   {
-    slug: "introducing-resolve-bench",
+    slug: "introducing-c2a",
     title: "C2A: can agents keep up with a business that keeps changing?",
     summary:
-      "601 test cases, eight builder models and six agent architectures: what happens when coding agents build support agents, and then have to keep them up to date as the docs change.",
+      "668 test cases, seven builder models and six agent architectures: what happens when coding agents build support agents, and then have to keep them up to date as the docs change.",
     date: "2026-11-09",
-    body: resolveBench,
+    body: introducingC2A,
   },
 ];
 
