@@ -54,7 +54,7 @@ const VIEWERS: Record<string, { kicker: string; title: string; caption?: string;
   behaviours: {
     kicker: "The simulated customer",
     title: "Customer behaviors",
-    caption: "Each ticket gives the customer one of these behaviors. It changes how the facts come out, never the facts or the right answer. Each example is a real exchange from a run, trimmed.",
+    caption: "Each ticket gives the customer one of these behaviors. It changes how the customer shares the facts, never the facts themselves or the right answer. Each example is a real exchange from a run, trimmed.",
     href: "/#environments",
     link: "See the environments",
     View: BehaviourViewer,

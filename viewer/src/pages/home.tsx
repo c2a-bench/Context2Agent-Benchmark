@@ -506,7 +506,12 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
 /** What each change to the docs did: one panel per pack, a bar per builder for the points it gained or lost against its own
  *  R-complete score (so a weak complete-docs build does not skew the rest), and the mean of those changes on top. */
 function Packs({ packs, bare }: { packs: Builder[]; bare?: boolean }) {
-  const PANEL: [string, string][] = [["Rules split up", "R-fragmented"], ["Facts removed", "R-incomplete"], ["Contradictions added", "R-conflicting"], ["Noise added", "R-noisy"]];
+  const PANEL: [string, string, string][] = [
+    ["Rules split up", "R-fragmented", "The same docs, but some sections are moved word for word onto other pages, so the parts of a rule sit on separate pages. Nothing is added or reworded."],
+    ["Facts removed", "R-incomplete", "Some facts the tickets need are deleted from the docs. The agent can't know them, so it should leave those fields alone or hand the ticket to a person rather than guess."],
+    ["Contradictions added", "R-conflicting", "The complete docs plus older and draft pages that state some rules differently. The current pages are the ones to follow."],
+    ["Noise added", "R-noisy", "The complete docs plus look-alike pages from the same company that answer none of the tickets."],
+  ];
   const rows = packs.map((b) => ({
     label: b.model === CONFOUND ? `${b.model} *` : b.model,
     pass: CONDITIONS.map((_, i) => {
@@ -514,9 +519,9 @@ function Packs({ packs, bare }: { packs: Builder[]; bare?: boolean }) {
       return !s || crashed({ passed: s.passed ?? 0 }) ? null : (s.passed ?? 0) / (s.total || 1);
     }),
   }));
-  const panels = PANEL.map(([title, term], k) => {
+  const panels = PANEL.map(([title, term, about], k) => {
     const deltas = rows.map((r) => ({ label: r.label, base: r.pass[0], v: r.pass[k + 1], d: r.pass[0] == null || r.pass[k + 1] == null ? null : r.pass[k + 1]! - r.pass[0]! }));
-    return { title, term, rows: deltas };
+    return { title, term, about, rows: deltas };
   });
   return (
     <Sec bare={bare} id="packs" className="lp-sec lp-alt" head={

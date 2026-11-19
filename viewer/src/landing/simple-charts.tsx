@@ -273,7 +273,7 @@ const median = (xs: number[]) => {
 
 /** One small panel per change: the middle builder's change on top (the median, so one extreme build can't swing it) and a
  *  sorted bar per builder, left for a loss, right for a gain. Hover a row for its two scores. */
-export function ChangePanels({ panels }: { panels: { title: string; term?: string; rows: { label: string; d: number | null; base?: number | null; v?: number | null }[] }[] }) {
+export function ChangePanels({ panels }: { panels: { title: string; term?: string; about?: string; rows: { label: string; d: number | null; base?: number | null; v?: number | null }[] }[] }) {
   const max = Math.max(0.1, ...panels.flatMap((p) => p.rows.map((r) => Math.abs(r.d ?? 0))));
   const pts = (d: number) => (Math.abs(d) < 0.005 ? "0" : `${d > 0 ? "+" : "−"}${Math.abs(Math.round(100 * d))}`);
   return (
@@ -291,7 +291,13 @@ function Panel({ p, max, pts }: { p: Parameters<typeof ChangePanels>[0]["panels"
   return (
     <div>
       <div className="flex items-end justify-between gap-3 border-b pb-2" style={{ borderColor: "var(--ink)" }}>
-        <div><h3 className="text-[17px] font-medium leading-tight">{p.title}</h3>{p.term && <div className="label muted mt-0.5">{p.term}</div>}</div>
+        <div>
+          <h3 className="text-[17px] font-medium leading-tight">
+            {p.title}
+            {p.about && <span className="lp-tip lp-info" tabIndex={0} role="note" aria-label={p.about} data-tip={p.about}>i</span>}
+          </h3>
+          {p.term && <div className="label muted mt-0.5">{p.term}</div>}
+        </div>
         <div className="num shrink-0 text-[26px] font-semibold leading-none" style={{ color: tone(typ) }}>{pts(typ)}<span className="label muted"> pts</span></div>
       </div>
       <div ref={h.ref} className={h.on ? "relative sc-hov" : "relative"} onPointerLeave={h.hide}>
