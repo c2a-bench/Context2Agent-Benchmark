@@ -13,6 +13,7 @@ const NAV = [
 /**
  * The landing nav. On the home page it gets the refs for the travelling title (the slot it docks into, kept invisible,
  * and the divider that fades in); on other pages (the blog) the name shows in place and the section links go home.
+ * The blog is linked from the hero's Read the blog button, not from the nav.
  */
 export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpanElement | null>; dividerRef?: React.RefObject<HTMLSpanElement | null> }) {
   const home = !!slotRef;
@@ -36,14 +37,11 @@ export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpa
         </div>
         <nav className="mx-auto hidden gap-7 text-[15px] font-medium lg:flex" aria-label="Sections">
           {NAV.map(([label, href]) => <Link key={href} to={to(href)} className="link" style={{ textDecorationColor: "transparent" }}>{label}</Link>)}
-          <Link to="/blog" className="link" style={{ textDecorationColor: "transparent" }}>Blog</Link>
         </nav>
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
-          {/* below lg the section links are hidden, so Blog moves here to stay reachable (on the home page the hero's Read the blog button does that job) */}
-          {!home && <Link to="/blog" className="link px-2 text-[15px] font-medium lg:hidden" style={{ textDecorationColor: "transparent" }}>Blog</Link>}
           {/* Landing pages redefine --muted as a text grey, so the toggle's own hover:bg-muted would turn dark and hide its
               icon: here the hover is a light tint of the ink instead. */}
-          <ThemeToggle className="hover:bg-[color-mix(in_srgb,var(--ink)_8%,transparent)] hover:text-[var(--ink)]" />
+          <ThemeToggle className="text-[var(--ink)] hover:bg-[color-mix(in_srgb,var(--ink)_8%,transparent)] hover:text-[var(--ink)]" />
         </div>
       </div>
     </header>

@@ -11,7 +11,7 @@ import { Journey } from "@/landing/journey";
 import { ArchTradeoff, ArchTypes, RecallScatter, type ArchRun, type TicketType, type RecallPoint, type StageRow, type StagePoint } from "@/landing/charts";
 import { CONDITIONS, CONFOUND, ENV, SKYWAY_ARCH, catalog, crashed, harnessName, loadMetas, pooled, shortModel, stagesOf, style, type Builder, type FailureGroup } from "@/landing/data";
 import type { JobSummary } from "@/lib/data";
-import { BenchmarkBars, ChangePanels, Columns, CostScatter, SlopeChart, REASONS, ReasonBars, type ReasonKey, type ReasonRow } from "@/landing/simple-charts";
+import { BenchmarkBars, ChangePanels, Columns, CostScatter, SlopeChart, ReasonBars, type ReasonKey, type ReasonRow } from "@/landing/simple-charts";
 import "@/landing/landing.css";
 
 
@@ -125,9 +125,6 @@ function Zig({ rows }: { rows: ZigRow[] }) {
     </div>
   );
 }
-const P = (v: number) => `${Math.round(100 * v)}%`;
-const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : 0; };
-const signed = (d: number) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(100 * d))}`;
 
 function SkywayEmpty({ what }: { what: string }) {
   return (
@@ -231,19 +228,18 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
         {bare ? (
           <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />
         ) : (() => {
-          const first = rows[0], last = rows[rows.length - 1];
-          const cheap = [...costs].sort((x, y) => x.cost - y.cost)[0], dear = [...costs].sort((x, y) => y.cost - x.cost)[0];
           const zig: ZigRow[] = [{
             title: "Which builder makes the best agent",
             body: sky
               ? "Share of all Skyway tickets each builder's agents passed, pooled over the architectures it was given."
               : "Share of all Redwood tickets each builder's agent passed, over the six stages. Every agent runs on the same model; only the builder differs.",
-            points: rows.length > 1 ? [
-              <><b>{first.model}</b> leads with {P(first.rate)}.</>,
-              <><b>{last.model}</b> is last with {P(last.rate)}.</>,
-              <>A gap of {Math.round(100 * (first.rate - last.rate))} points between first and last.</>,
-            ] : [],
-            note: sky ? undefined : <>A stage where the agent never started counts all its tickets as failed. Every support agent and every simulated customer runs on {CONFOUND}; {CONFOUND} builds no agent here.</>,
+            points: sky ? [
+              <><b>Build reliability directly affects performance.</b> Gemini ranked second on completed stages but fell to fourth due to failed builds.</>,
+              <><b>Asking the right questions improves outcomes.</b> The weakest builder's agents asked no questions on half their tickets, compared to 30% for other builders.</>,
+            ] : [
+              <><b>The first build is not where builders separate; updates are.</b> One builder checked file dates instead of content, missed new pages, and fell to last place for three stages.</>,
+              <><b>Testing new constraints prevents failures.</b> When a prompt size limit was added, two builders missed it and lost 20% of their tickets.</>,
+            ],
             chart: <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />,
           }];
           if (costs.length > 1) zig.push({
@@ -251,12 +247,12 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
             body: sky
               ? "Each dot is one builder: Skyway tickets passed, pooled over its architectures, against what one build cost it on average."
               : "Each dot is one builder: tickets passed against what the builder spent on the whole run.",
-            points: [
-              <><b>{cheap.model}</b> spent the least, ${cheap.cost.toFixed(2)}{sky ? " a build" : ""}, and passed {P(cheap.rate)}.</>,
-              <><b>{dear.model}</b> spent the most, ${dear.cost.toFixed(2)}{sky ? " a build" : ""}, and passed {P(dear.rate)}.</>,
-              sky
-                ? <>{dear.model} spent {Math.round(dear.cost / cheap.cost)}× as much as {cheap.model} for {Math.abs(Math.round(100 * (dear.rate - cheap.rate)))} points {dear.rate >= cheap.rate ? "more" : "less"}.</>
-                : <>Spending more did not buy a better agent.</>,
+            points: sky ? [
+              <><b>A bigger budget doesn't guarantee a better agent.</b> Two builders with the same spend finish 17 points apart.</>,
+              <><b>At scale, spend starts to matter.</b> Unlike on Redwood, the top spender leads and the cheapest builder comes last.</>,
+            ] : [
+              <><b>A costlier build doesn't mean a better agent.</b> The cheapest builder ranks among the best.</>,
+              <><b>A cheap build can produce an expensive agent.</b> Two builders with nearly the same score built agents that differ threefold in model calls per ticket.</>,
             ],
             chart: (
               <CostScatter
@@ -335,14 +331,6 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact }:
   rows.sort((a, b) => b.rate - a.rate);
   const all = noReasons();
   for (const r of rows) for (const k of Object.keys(all) as ReasonKey[]) all[k] += r.parts[k];
-  const allSum = Object.values(all).reduce((a, b) => a + b, 0) || 1;
-  const top = REASONS.reduce((a, r) => (all[r.key] > all[a.key] ? r : a), REASONS[0]);
-  // Rule recall against pass rate, one row per model: the mean over its stages (points has one per stage that ran).
-  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  const gaps = [...new Set(points.map((p) => p.model))].map((model) => {
-    const mine = points.filter((p) => p.model === model);
-    return { label: model === CONFOUND ? `${model} *` : model, a: mean(mine.map((p) => p.recall)), b: mean(mine.map((p) => p.pass)), color: style(model).color };
-  }).sort((x, y) => y.b - x.b);
   return (
     <Sec bare={bare} id="failures" className="lp-sec lp-alt" head={
           <SectionHead
@@ -364,24 +352,28 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact }:
         {bare ? (
           <ReasonBars rows={[{ label: sky ? "All runs" : "All builders", parts: all, bold: true }, ...rows]} focus={focus ? FOCUS_REASON[focus] : null} />
         ) : (() => {
-          const builderShare = REASONS.filter((r) => r.side === "Builder").reduce((x, r) => x + all[r.key], 0) / allSum;
-          const byGap = [...gaps].sort((x, y) => (y.a - y.b) - (x.a - x.b));
           const zig: ZigRow[] = [{
             title: "Why tickets failed",
             body: "Every failed ticket is traced to a cause, and every cause to the builder or the agent.",
-            points: Object.values(all).some((v) => v > 0) ? [
-              <>The most common reason: <b>{top.name.toLowerCase()}</b>, {Math.round((100 * all[top.key]) / allSum)}% of all reasons.</>,
-              <>{P(builderShare)} of reasons trace to the builder, {P(1 - builderShare)} to the agent.</>,
-            ] : [],
+            points: !Object.values(all).some((v) => v > 0) ? [] : sky ? [
+              <><b>Scale shifts failures to the build.</b> With 10,000 pages, more rule details are lost before the agent ever sees a ticket.</>,
+              <><b>Agents act before they ask.</b> Missing customer information is a leading cause of failure.</>,
+            ] : [
+              <><b>Capturing knowledge is largely solved; applying it is not.</b> Most failures happen with the right rule already in the agent.</>,
+              <><b>Under ambiguity, agents guess rather than ask.</b> An unclear ticket gets a default setting, an early close or a handoff instead of a clarifying question.</>,
+            ],
             note: "A failed ticket can have more than one reason, so bars show each reason's share of all reasons found. A stage where the agent never started counts all its tickets as built wrong.",
             chart: <ReasonBars rows={[{ label: sky ? "All runs" : "All builders", parts: all, bold: true }, ...rows]} focus={focus ? FOCUS_REASON[focus] : null} />,
           }];
           if (points.length > 0) zig.push({
             title: "Rule recall vs pass rate",
             body: "An agent built with all the rules can still fail to apply them to a ticket. Each mark is one builder's agent at one stage: how many of the rules its tickets needed were in the agent's files, against the share of tickets it passed.",
-            points: [
-              <>Agents had {P(gaps.reduce((x, g) => x + g.a, 0) / gaps.length)} of the rules on average, but passed {P(gaps.reduce((x, g) => x + g.b, 0) / gaps.length)} of tickets.</>,
-              <><b>{byGap[0].label}</b> has the widest gap, {Math.round(100 * (byGap[0].a - byGap[0].b))} points.</>,
+            points: sky ? [
+              <><b>Retrieval, not storage, is the bottleneck.</b> Carrying every document gives full rule recall, not correct answers.</>,
+              <><b>The most complete agent is not the most accurate.</b> The builder whose agents held 99% of the rules passed fewer tickets than three builders holding 88%.</>,
+            ] : [
+              <><b>Having the rule is not applying it.</b> Near-complete rule recall still leaves a quarter of tickets failed.</>,
+              <><b>Knowledge no longer separates the builders.</b> Six of seven held every rule their tickets needed, yet their pass rates still range from 73% to 80%.</>,
             ],
             note: "The shaded band is rule recall below 0.9. Hover a mark for the builder and stage.",
             chart: <RecallScatter points={points} height={340} />,
@@ -463,9 +455,7 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                   tip: <div className="muted mt-0.5">{fmt(passed)} of {fmt(total)} tickets · built by {[...new Set(rs.map((r) => r.model))].join(", ")}</div>,
                 };
               });
-              const avgBar = bars.reduce((x, r) => x + r.value, 0) / (bars.length || 1);
-              const above = bars.filter((r) => r.value > avgBar).length;
-              // first and last stage per design, and each design's pass rate per ticket type
+              // first and last stage per design
               const slope = order.map((a) => {
                 const rs = arch.filter((r) => r.arch === a);
                 const first = rs.reduce((x, r) => x + (r.stages[0] ?? 0), 0) / rs.length;
@@ -473,25 +463,16 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                 return { label: a, sub: rs[0].name, a: first, b: last };
               });
               const lastStage = Math.max(...arch.map((r) => r.stages.length)) - 1;
-              const steadiest = [...slope].sort((p, q) => q.b - q.a - (p.b - p.a))[0];
-              const worst = [...slope].sort((p, q) => p.b - p.a - (q.b - q.a))[0];
-              const fell = slope.filter((s) => s.b - s.a < -0.05).length;
-              const typeRate = (a: string, k: TicketType) => { const c = arch.filter((r) => r.arch === a).flatMap((r) => (r.types[k] ? [r.types[k]!] : [])); const n = c.reduce((x, [, m]) => x + m, 0); return n ? c.reduce((x, [p]) => x + p, 0) / n : null; };
-              const bestChanged = [...order].sort((p, q) => (typeRate(q, "adaptability") ?? 0) - (typeRate(p, "adaptability") ?? 0))[0];
-              const bestSame = [...order].sort((p, q) => (typeRate(q, "regression") ?? 0) - (typeRate(p, "regression") ?? 0))[0];
-              const nameOf = (a: string) => arch.find((r) => r.arch === a)?.name ?? a;
-              const p = (v: number | null) => (v == null ? "–" : P(v));
               const barsChart = <BenchmarkBars rows={bars} />;
               if (bare) return barsChart;
               return (
                 <Zig rows={[
                   {
                     title: "Which design passes most",
-                    body: <>Share of all {arch[0]?.total} Skyway tickets passed by each design, all built by {builders.map((b) => b.model).join(", ")}. The dashed line is the average of the six.</>,
+                    body: <>The share of Skyway tickets each design passed, combined over the {builders.length} builders. The dashed line is the average.</>,
                     points: [
-                      <><b>{bars[0].sub}</b> passes most, {P(bars[0].value)}.</>,
-                      <><b>{bars[bars.length - 1].sub}</b> passes least, {P(bars[bars.length - 1].value)}.</>,
-                      <>{above} of {bars.length} designs beat the average of {P(avgBar)}.</>,
+                      <><b>Retrieval is optional when the rules are compact.</b> A prompt-only design matches the graph and wiki designs.</>,
+                      <><b>Index search over raw documents is the weakest approach.</b></>,
                     ],
                     chart: barsChart,
                   },
@@ -499,8 +480,8 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                     title: "What each design costs",
                     body: <>Pass rate against what a ticket costs the agent, or how long it takes: one mark per design, pooled over the {builders.length} builders that built it. The dashed line is the Pareto frontier.</>,
                     points: [
-                      <>A design in the shaded region costs more (or takes longer) and passes fewer tickets than one on the line.</>,
-                      <>Switch between cost per ticket and ticket time above the chart.</>,
+                      <><b>Agent cost scales with context size.</b> Concise wiki notes are the cheapest to answer from.</>,
+                      <><b>Stable prompts are cheap to reuse.</b> Prompt-only agents read the most per ticket yet stay mid-priced, thanks to caching.</>,
                     ],
                     note: "Cost is the agent's model spend per ticket; time is the median time to finish a ticket, over the stages where the agent ran. Hover a mark for each builder's own numbers.",
                     chart: <ArchTradeoff runs={pooledDesigns(arch, order)} order={order} />,
@@ -510,9 +491,8 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                     title: "Which designs hold up as the docs change",
                     body: <>Each line joins a design's pass rate at the first stage to the last, after {lastStage} rounds of doc changes. Blue held up or rose; red fell.</>,
                     points: [
-                      <><b>{nameOf(steadiest.label)}</b> {steadiest.b - steadiest.a > 0.005 ? "rose the most" : "held up best"}: {p(steadiest.a)} → {p(steadiest.b)}.</>,
-                      <><b>{nameOf(worst.label)}</b> fell the most: {p(worst.a)} → {p(worst.b)}.</>,
-                      <>{fell} of {slope.length} designs ended lower than they started.</>,
+                      <><b>Agents improve as the docs evolve.</b> Builders fill gaps as the docs change, so four of six designs end higher than they started.</>,
+                      <><b>One instruction can undo a design.</b> A single builder told its graph agent to "search once, then act"; the agent stopped asking customers and its score halved.</>,
                     ],
                     chart: <SlopeChart left="Stage 0" right={`Stage ${lastStage}`} rows={slope} />,
                   },
@@ -520,9 +500,8 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                     title: "Which tickets each design gets right",
                     body: "Tickets split by what they test: a rule that is new at that stage, a rule from before that didn't change, or one that changed.",
                     points: [
-                      <><b>{nameOf(bestChanged)}</b> is best at rules that changed ({p(typeRate(bestChanged, "adaptability"))}).</>,
-                      <><b>{nameOf(bestSame)}</b> is best at keeping rules that didn't change ({p(typeRate(bestSame, "regression"))}).</>,
-                      <>No design leads in every column.</>,
+                      <><b>Changed rules are the hardest tickets.</b> Five of six designs pass fewer of them than of new or unchanged rules.</>,
+                      <><b>Compiled knowledge absorbs change better than raw documents.</b> Designs that read the original docs lose 11 to 13 points on changed rules compared with new ones; graph, wiki and prompt designs lose 3 to 6.</>,
                     ],
                     chart: <ArchTypes runs={arch} order={order} />,
                   },
@@ -565,12 +544,14 @@ function Packs({ packs, bare }: { packs: Builder[]; bare?: boolean }) {
           />
         }>
         {bare ? <ChangePanels panels={panels} /> : (() => {
-          const mid = panels.map((p) => { const ds = p.rows.flatMap((r) => (r.d == null ? [] : [r.d])); return { title: p.title, m: median(ds), n: ds.length, lower: ds.filter((d) => d < -0.005).length, higher: ds.filter((d) => d > 0.005).length }; });
           return (
             <Zig rows={[{
               title: "How changed docs move the score",
-              body: "Each bar is one builder: points it gained (right) or lost (left) on a changed pack, against its own score with the complete docs. The big number on each panel is the typical change: half the builders did better than it, half did worse.",
-              points: mid.map((x) => <><b>{x.title}</b>: {x.lower} of {x.n} builders scored lower, {x.higher} higher. Typical change {signed(x.m)} points.</>),
+              body: "Each bar shows how one builder's score changed on that version of the docs, compared with its score on the complete docs. The large number is the typical change across builders.",
+              points: [
+                <><b>Missing information is the real risk.</b> When a fact the tickets need is removed, every builder scores lower: agents fill the gap with a guess instead of handing the ticket to a person.</>,
+                <><b>Messy docs are not.</b> Split, contradictory or noisy pages barely change the score: builders recognise outdated pages and agents skip irrelevant ones.</>,
+              ],
               note: "Same tickets in every pack; only the docs change.",
               chart: <ChangePanels panels={panels} />,
               wide: true,

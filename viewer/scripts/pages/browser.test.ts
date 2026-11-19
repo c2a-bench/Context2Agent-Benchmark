@@ -32,7 +32,7 @@ for (const base of ["/", "/Context2Agent-Benchmark/"]) {
       });
       await page.goto(server.pagesUrl);
       await expect(page.locator(".lp-nav")).toBeVisible();
-      await expect(page.getByRole("link", { name: "Blog", exact: true }).first()).toHaveJSProperty("href", `${server.pagesUrl}#/blog`);
+      await expect(page.getByRole("link", { name: "Read the blog", exact: true }).first()).toHaveJSProperty("href", `${server.pagesUrl}#/blog`);
       for (const image of await page.locator("img").all()) {
         await expect(image).toHaveJSProperty("complete", true);
         assert.ok(await image.evaluate((img: HTMLImageElement) => img.naturalWidth > 0), await image.getAttribute("src") || "image");
