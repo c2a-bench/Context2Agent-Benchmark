@@ -59,7 +59,7 @@ export default function TaskRuns() {
     if (groups.length) return <ArchitectureRuns name={info.name} groups={groups} />;
     return (
         <main className="mx-auto w-full max-w-6xl px-6 py-10">
-            <ThemeToggle className="fixed top-4 right-6" />
+            <ThemeToggle className="fixed top-4 right-6 z-30 border bg-background shadow-sm" />
             <Link href="/" className="link-text text-sm">← Companies</Link>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">{info.name}</h1>
             <p className="mt-1 text-sm text-muted-foreground">Runs in tasks/{task}/jobs, newest first. Click a run to replay its tickets and the agent’s code.</p>
@@ -118,7 +118,7 @@ function ArchitectureRuns({ name, groups }: { name: string; groups: ReturnType<t
     const costOf = (runs: typeof groups[number]["runs"]) => { const c = runs.map((r) => r.cost).filter((x): x is number => x != null); return c.length ? c.reduce((a, x) => a + x, 0) : null; };
     return (
         <main className="mx-auto w-full max-w-6xl px-6 py-10">
-            <ThemeToggle className="fixed top-4 right-6" />
+            <ThemeToggle className="fixed top-4 right-6 z-30 border bg-background shadow-sm" />
             <Link href="/" className="link-text text-sm">← Companies</Link>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">{name}</h1>
             <p className="mt-1 text-sm text-muted-foreground">Each row is one builder model's run of the whole environment: one agent per architecture. Choose an architecture to open its run; inside, the header switches between them.</p>

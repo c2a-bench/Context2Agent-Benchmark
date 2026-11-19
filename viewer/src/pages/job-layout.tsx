@@ -53,7 +53,7 @@ export default function JobLayout() {
   const short = (m: string | null) => (m ? m.split("/").pop() : "unknown");
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex flex-wrap items-center gap-x-8 gap-y-2 border-b px-4 pt-3.5 pb-3.5 sm:px-6">
+      <header className="relative flex flex-wrap items-center gap-x-8 gap-y-2 border-b pt-3.5 pr-14 pb-3.5 pl-4 sm:pr-16 sm:pl-6">
         <Link href="/" className="text-sm font-semibold">C2A</Link>
         <div className="min-w-0">
           <div className="truncate font-mono text-xs">{meta.job}</div>
@@ -63,7 +63,8 @@ export default function JobLayout() {
         </div>
         <Suspense fallback={null}><ArchSwitch job={job} /></Suspense>
         <JobNav job={job} meta={meta} />
-        <ThemeToggle className="max-xl:ml-auto" />
+        {/* always at the top right, even when the header wraps onto more lines */}
+        <ThemeToggle className="absolute top-3.5 right-4 sm:right-6" />
       </header>
       <BackBar job={job} />
       <div className="min-h-0 flex-1">

@@ -27,7 +27,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={flip}
       title={dark ? "Light mode" : "Dark mode"}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-      className={cn("flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground", className)}
+      className={cn("flex size-8 shrink-0 items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted hover:text-foreground", className)}
     >
       <Icon className="size-4" />
     </button>
