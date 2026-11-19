@@ -237,8 +237,8 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
               <><b>At enterprise scale, the builder matters more than the architecture.</b> Builders differ by more than twice as much as designs do.</>,
               <><b>The weakest results are failed builds, not weak designs.</b></>,
             ] : [
-              <><b>Maintenance decides the ranking.</b> Builders that tracked every doc change led; one that missed new pages fell behind for three stages.</>,
-              <><b>One failed build can sink a run.</b> Without its failed first stage, the last-placed builder would rank with the leaders.</>,
+              <><b>The first build is not where builders separate; updates are.</b> When the docs grew from 26 to 64 pages, one builder checked file dates instead of content, missed most of the new pages and fell to last for three stages.</>,
+              <><b>Builders that test against new constraints keep their score.</b> When the docs introduced a limit on the agent's prompt size, builders that tested against it lost no tickets; two that missed it lost a fifth of that stage.</>,
             ],
             note: sky ? undefined : <>A stage where the agent never started counts all its tickets as failed.</>,
             chart: <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />,
@@ -250,10 +250,10 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
               : "Each dot is one builder: tickets passed against what the builder spent on the whole run.",
             points: sky ? [
               <><b>A bigger budget doesn't guarantee a better agent.</b> Two builders with the same spend finish 17 points apart.</>,
-              <><b>Build cost reflects model pricing, not effort.</b> The cheapest builder used nearly as many tokens as the most expensive one.</>,
+              <><b>At scale, spend starts to matter.</b> Unlike on Redwood, the top spender leads and the cheapest builder comes last.</>,
             ] : [
               <><b>A costlier build doesn't mean a better agent.</b> The cheapest builder ranks among the best.</>,
-              <><b>Build cost reflects model pricing, not effort.</b> The cheapest builder used more tokens than the most expensive one.</>,
+              <><b>A cheap build can produce an expensive agent.</b> Two builders with nearly the same score built agents that differ threefold in model calls per ticket.</>,
             ],
             chart: (
               <CostScatter
@@ -361,6 +361,7 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact }:
               <><b>Agents act before they ask.</b> Missing customer information is a leading cause of failure.</>,
             ] : [
               <><b>Capturing knowledge is largely solved; applying it is not.</b> Most failures happen with the right rule already in the agent.</>,
+              <><b>Under ambiguity, agents guess rather than ask.</b> An unclear ticket gets a default setting, an early close or a handoff instead of a clarifying question.</>,
             ],
             note: "A failed ticket can have more than one reason, so bars show each reason's share of all reasons found. A stage where the agent never started counts all its tickets as built wrong.",
             chart: <ReasonBars rows={[{ label: sky ? "All runs" : "All builders", parts: all, bold: true }, ...rows]} focus={focus ? FOCUS_REASON[focus] : null} />,
@@ -370,8 +371,10 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact }:
             body: "An agent built with all the rules can still fail to apply them to a ticket. Each mark is one builder's agent at one stage: how many of the rules its tickets needed were in the agent's files, against the share of tickets it passed.",
             points: sky ? [
               <><b>Retrieval, not storage, is the bottleneck.</b> Carrying every document gives full rule recall, not correct answers.</>,
+              <><b>The most complete agent is not the most accurate.</b> The builder whose agents held 99% of the rules passed fewer tickets than three builders holding 88%.</>,
             ] : [
               <><b>Having the rule is not applying it.</b> Near-complete rule recall still leaves a quarter of tickets failed.</>,
+              <><b>Knowledge no longer separates the builders.</b> Six of seven held every rule their tickets needed, yet their pass rates still range from 73% to 80%.</>,
             ],
             note: "The shaded band is rule recall below 0.9. Hover a mark for the builder and stage.",
             chart: <RecallScatter points={points} height={340} />,
@@ -467,7 +470,7 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                 <Zig rows={[
                   {
                     title: "Which design passes most",
-                    body: <>Share of all {arch[0]?.total} Skyway tickets passed by each design, all built by {builders.map((b) => b.model).join(", ")}. The dashed line is the average of the six.</>,
+                    body: <>The share of Skyway tickets each design passed, combined over the {builders.length} builders. The dashed line is the average.</>,
                     points: [
                       <><b>Retrieval is optional when the rules are compact.</b> A prompt-only design matches the graph and wiki designs.</>,
                       <><b>Index search over raw documents is the weakest approach.</b></>,
@@ -489,8 +492,8 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                     title: "Which designs hold up as the docs change",
                     body: <>Each line joins a design's pass rate at the first stage to the last, after {lastStage} rounds of doc changes. Blue held up or rose; red fell.</>,
                     points: [
-                      <><b>Most designs absorb continuous doc changes without degrading.</b></>,
-                      <><b>Declines trace to individual builds, not to the architecture.</b></>,
+                      <><b>Agents improve as the docs evolve.</b> Builders fill gaps as the docs change, so four of six designs end higher than they started.</>,
+                      <><b>One instruction can undo a design.</b> A single builder told its graph agent to "search once, then act"; the agent stopped asking customers and its score halved.</>,
                     ],
                     chart: <SlopeChart left="Stage 0" right={`Stage ${lastStage}`} rows={slope} />,
                   },
@@ -498,7 +501,8 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                     title: "Which tickets each design gets right",
                     body: "Tickets split by what they test: a rule that is new at that stage, a rule from before that didn't change, or one that changed.",
                     points: [
-                      <><b>Changed rules are the hardest tickets because they carry the stakes</b> (refunds and compensation), not because agents keep the old version.</>,
+                      <><b>Changed rules are the hardest tickets because they carry the stakes:</b> refunds, compensation and reimbursements.</>,
+                      <><b>Agents rarely apply an outdated rule.</b> When they fail a changed rule, they usually skip the action altogether rather than use the old value.</>,
                     ],
                     chart: <ArchTypes runs={arch} order={order} />,
                   },
@@ -544,10 +548,10 @@ function Packs({ packs, bare }: { packs: Builder[]; bare?: boolean }) {
           return (
             <Zig rows={[{
               title: "How changed docs move the score",
-              body: "Each bar is one builder: points it gained (right) or lost (left) on a changed pack, against its own score with the complete docs. The big number on each panel is the typical change: half the builders did better than it, half did worse.",
+              body: "Each bar shows how one builder's score changed on that version of the docs, compared with its score on the complete docs. The large number is the typical change across builders.",
               points: [
-                <><b>Agents don't know what they don't know.</b> Missing facts cost every builder, because agents guess instead of escalating.</>,
-                <><b>Clutter is not the problem.</b> Fragmented, conflicting and noisy docs barely move results.</>,
+                <><b>Missing information is the real risk.</b> When a fact the tickets need is removed, every builder scores lower: agents fill the gap with a guess instead of handing the ticket to a person.</>,
+                <><b>Messy docs are not.</b> Split, contradictory or noisy pages barely change the score: builders recognise outdated pages and agents skip irrelevant ones.</>,
               ],
               note: "Same tickets in every pack; only the docs change.",
               chart: <ChangePanels panels={panels} />,
