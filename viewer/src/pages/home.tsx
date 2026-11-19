@@ -234,13 +234,12 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
               ? "Share of all Skyway tickets each builder's agents passed, pooled over the architectures it was given."
               : "Share of all Redwood tickets each builder's agent passed, over the six stages. Every agent runs on the same model; only the builder differs.",
             points: sky ? [
-              <><b>At enterprise scale, the builder matters more than the architecture.</b> Builders differ by more than twice as much as designs do.</>,
-              <><b>The weakest results are failed builds, not weak designs.</b></>,
+              <><b>Build reliability directly affects performance.</b> Gemini ranked second on completed stages but fell to fourth due to failed builds.</>,
+              <><b>Asking the right questions improves outcomes.</b> The weakest builder's agents asked no questions on half their tickets, compared to 30% for other builders.</>,
             ] : [
               <><b>The first build is not where builders separate; updates are.</b> One builder checked file dates instead of content, missed new pages, and fell to last place for three stages.</>,
-              <><b>Testing new constraints prevents failures.</b> When a prompt size limit was added, two builders missed it and lost 20% of that stage's tickets.</>,
+              <><b>Testing new constraints prevents failures.</b> When a prompt size limit was added, two builders missed it and lost 20% of their tickets.</>,
             ],
-            note: sky ? undefined : <>A stage where the agent never started counts all its tickets as failed.</>,
             chart: <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />,
           }];
           if (costs.length > 1) zig.push({
@@ -501,8 +500,8 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                     title: "Which tickets each design gets right",
                     body: "Tickets split by what they test: a rule that is new at that stage, a rule from before that didn't change, or one that changed.",
                     points: [
-                      <><b>Changed rules are the hardest tickets because they carry the stakes:</b> refunds, compensation and reimbursements.</>,
-                      <><b>Agents rarely apply an outdated rule.</b> When they fail a changed rule, they usually skip the action altogether rather than use the old value.</>,
+                      <><b>Changed rules are the hardest tickets.</b> Five of six designs pass fewer of them than of new or unchanged rules.</>,
+                      <><b>Compiled knowledge absorbs change better than raw documents.</b> Designs that read the original docs lose 11 to 13 points on changed rules compared with new ones; graph, wiki and prompt designs lose 3 to 6.</>,
                     ],
                     chart: <ArchTypes runs={arch} order={order} />,
                   },
