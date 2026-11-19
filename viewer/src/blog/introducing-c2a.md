@@ -15,7 +15,7 @@ hiding inside the first: *can an agent build, and then maintain, another agent?*
 understand how well these models handle the complexity of CX operations while creating and updating
 customer-facing AI Agents.
 
-Today it covers **[668 test cases](#tip "Redwood Inference 290 + Skyway Air 311 + knowledge packs 67 = 668. Of the 67 knowledge-pack tickets, 28 come from Redwood's first stage and 39 were written for the packs.") across three environments**, seven builder
+Today it covers [668 test cases](#tip "Redwood Inference 290 + Skyway Air 311 + knowledge packs 67 = 668. Of the 67 knowledge-pack tickets, 28 come from Redwood's first stage and 39 were written for the packs.") across three environments, seven builder
 models, and six agent architectures. All runs, tickets, and transcripts are public at
 [the results viewer](/). A test case is a customer support ticket. 
 
@@ -50,12 +50,12 @@ from [EnterpriseRAG-Bench](https://github.com/onyx-dot-app/EnterpriseRAG-Bench).
 The goal here is to test whether a builder can build a support agent and then keep it working. The builder is free to
 choose how the agent stores and finds its knowledge.
 
-The docs change over **six stages**. In each stage we add new pages and change some rules:, a team that owns leaked API keys changes, emergency credits are paused. Some new pages are traps, such as an old draft of a policy that looks current. After each change the builder updates the same agent, and we test it again. From stage 3 on, we also make some tickets go wrong on purpose (more on that below). In total there are **290 tickets**.
+The docs change over six stages. In each stage we add new pages and change some rules:, a team that owns leaked API keys changes, emergency credits are paused. Some new pages are traps, such as an old draft of a policy that looks current. After each change the builder updates the same agent, and we test it again. From stage 3 on, we also make some tickets go wrong on purpose (more on that below). In total there are 290 tickets.
 
 ### Skyway Air
 
-Skyway Air is an airline, and it is much bigger. The builder starts with **10,399 docs**. Only a small part of this is
-about the **21 rules** the tickets need. The rest is everyday company chatter, and some of it is wrong on purpose: an
+Skyway Air is an airline, and it is much bigger. The builder starts with 10,399 docs. Only a small part of this is
+about the 21 rules the tickets need. The rest is everyday company chatter, and some of it is wrong on purpose: an
 old version of a rule, or a Slack message that says the opposite of the policy.
 
 Here we want to find out which architecture works best. Left to choose, builders almost always pick the same one: short
@@ -71,10 +71,10 @@ across six of them:
 - **Prompts and workflows:** the policies rewritten as a system prompt and step-by-step workflows that the agent
   reads in full for every ticket. It has no search tool at all.
 
-Each of six builders builds all six. The agent can send at most **12,000 tokens** in any one call to its model, so it
+Each of six builders builds all six. The agent can send at most 12,000 tokens in any one call to its model, so it
 can't just read everything at once. Skyway also has six stages. In each one, 3 to 9 rules change, 90 to 190 new docs
 arrive and 40 old ones are retired. Some rules start on a set date, so the agent has to check when the ticket came in.
-In total there are **311 tickets**.
+In total there are 311 tickets.
 
 ### Knowledge perturbations
 
@@ -89,7 +89,7 @@ We take one set of Redwood Inference docs and write it five ways. We call each v
 - **Conflicting:** extra pages that disagree with the real policy.
 - **Noisy:** the same facts, buried among many pages that have nothing to do with the tickets.
 
-For each pack the builder starts from scratch, and the agent gets the same **67 tickets**. Because only the docs change,
+For each pack the builder starts from scratch, and the agent gets the same 67 tickets. Because only the docs change,
 any change in score comes from how the knowledge was organized.
 
 ## What a test run looks like
@@ -181,22 +181,22 @@ part.** How the agent stores its knowledge matters too, and **missing facts hurt
 <!-- figure:results -->
 
 - **The best builders resolve about 80% of tickets, and the spread is wide.** On Redwood Inference, `gpt-6.1-sol`
-(Codex) resolves **80%** of 290 tickets, `claude-opus-5-5` (Claude Code) and `deepseek-v4.1-flash-1017` (pi) **78%**, and
-`glm-5.3` (pi) **76%**. Six of the seven builders land between **70%** and **80%**.
+(Codex) resolves 80% of 290 tickets, `claude-opus-5-5` (Claude Code) and `deepseek-v4.1-flash-1017` (pi) 78%, and
+`glm-5.3` (pi) 76%. Six of the seven builders land between 70% and 80%.
 
-  At the bottom, `gemini-4-carbon` resolves **60%**, held back by its first build, which stopped before the agent could
+  At the bottom, `gemini-4-carbon` resolves 60%, held back by its first build, which stopped before the agent could
   run, so every ticket of that stage failed. Every builder
-  gives its agent the *same* runtime model, so the **20-point** gap is down to how well the builder turned the docs into an
+  gives its agent the *same* runtime model, so the 20-point gap is down to how well the builder turned the docs into an
   agent.
 
 <!-- figure:failures -->
 
 - **Strong builders capture the knowledge; their remaining failures come from how the agent uses it.** Five of the seven
-builders lost almost no checks on their own side (**0** to **10** each), while their agents still failed **98** to **131**
+builders lost almost no checks on their own side (0 to 10 each), while their agents still failed 98 to 131
 checks on wrong values, forbidden actions, or facts they never asked the customer for.
 
   Weaker builders fail on both fronts:
-  `claude-sonnet-5-5` lost **113** checks to missing knowledge on top of **104** agent-side failures. Once a builder gets the knowledge into the
+  `claude-sonnet-5-5` lost 113 checks to missing knowledge on top of 104 agent-side failures. Once a builder gets the knowledge into the
   agent's files, the bottleneck moves to whether the agent finds and *applies* it, and an agent built with every rule can still
   fail to use them on a live ticket.
 
@@ -204,30 +204,30 @@ checks on wrong values, forbidden actions, or facts they never asked the custome
 
 - **Architecture matters, but less than the builder.** Six builders each built all six assigned architectures. Pooled over
 the builders, three designs finish level: a knowledge graph queried at runtime, an LLM-compiled wiki browsed with terminal
-tools, and a no-retrieval prompts-and-workflows baseline each resolved **56%** of Skyway's 311 tickets. Raw docs with
-terminal tools reached **53%**, and the two index-search designs came last, at **48%** (wiki) and **43%** (raw docs).
+tools, and a no-retrieval prompts-and-workflows baseline each resolved 56% of Skyway's 311 tickets. Raw docs with
+terminal tools reached 53%, and the two index-search designs came last, at 48% (wiki) and 43% (raw docs).
 
   We compared two pairs of designs that each differ in one way: moving from raw docs to wiki notes
-  helps whether the agent uses terminal tools or index search **(raw → wiki: 53% → 56% with terminal tools, 43% → 48% with
-  index search)**, and terminal tools beat index search for both raw docs and wiki notes.
+  helps whether the agent uses terminal tools or index search (raw → wiki: 53% → 56% with terminal tools, 43% → 48% with
+  index search), and terminal tools beat index search for both raw docs and wiki notes.
 
-  The builder moves the score more than the design does. Pooled over the six designs, builders range from **40%**
-  (`deepseek-flash`) to **67%** (`claude-opus-5-5`), and the six builders' best designs are four different ones.
+  The builder moves the score more than the design does. Pooled over the six designs, builders range from 40%
+  (`deepseek-flash`) to 67% (`claude-opus-5-5`), and the six builders' best designs are four different ones.
 
   One run pulls a number down: `gemini-4-carbon`'s wiki-with-index-search agent never started in five of its six stages.
-  Without that run, wiki with index search would be at **56%**.
+  Without that run, wiki with index search would be at 56%.
 
 - **Different designs break in different ways when the docs change.** Splitting Skyway's tickets by type, the knowledge
-graph was the best at picking up *changed* facts (**55%** adaptability, with **59%** discovery and **53%** regression), while
-the LLM wiki with terminal tools was the best at holding on to the unchanged ones (**56%** regression) but weaker on the
-changed ones (**51%** adaptability). Raw-docs index search fell furthest on changed facts (**34%**). No design
+graph was the best at picking up *changed* facts (55% adaptability, with 59% discovery and 53% regression), while
+the LLM wiki with terminal tools was the best at holding on to the unchanged ones (56% regression) but weaker on the
+changed ones (51% adaptability). Raw-docs index search fell furthest on changed facts (34%). No design
 wins every column, which is exactly why a single-stage benchmark would miss this.
 
 <!-- figure:packs -->
 
 - **Facts missing from the docs hurt; messy docs, less than you'd expect.** Each builder is compared with its own score
-on the complete docs. Removing some facts the tickets need (R-incomplete) cost the typical builder **15 points**, and **all 7** builders
-scored lower. Fragmented, conflicting, and noisy docs moved the typical builder by **−1**, **+1**, and **+4** points: no clear
+on the complete docs. Removing some facts the tickets need (R-incomplete) cost the typical builder 15 points, and all 7 builders
+scored lower. Fragmented, conflicting, and noisy docs moved the typical builder by −1, +1, and +4 points: no clear
 change.
 
   Builder-to-builder variance is large here and the pack is small (67 tickets), so we read this cautiously, but the direction is consistent: today's builders are better at sorting through
@@ -245,8 +245,8 @@ So every difference below comes from how each builder works.
    they build it does.
 
 2. **Most agents stay steady as the docs change; a few swing widely.** `gpt-6.1-sol` and
-   `deepseek-v4.1-flash-1017` stayed between **74%** and **86%** at every stage. `claude-sonnet-5-5` swung between **55%**
-   and **95%**. Three builders' agents dropped to about **55%** at stage 4, where some tickets cap the agent's prompt.
+   `deepseek-v4.1-flash-1017` stayed between 74% and 86% at every stage. `claude-sonnet-5-5` swung between 55%
+   and 95%. Three builders' agents dropped to about 55% at stage 4, where some tickets cap the agent's prompt.
 
 3. **Spending more on the build doesn't give a better agent.** `gpt-6-astra` spent far more than `gpt-6.1-sol` on its builds, and
    built a weaker agent. `deepseek-v4.1-flash-1017` spent the least of all and built one of the best.
