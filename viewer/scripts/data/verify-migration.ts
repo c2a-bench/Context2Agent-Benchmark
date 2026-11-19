@@ -1,3 +1,4 @@
+import { TEXT_SHARD } from "../../src/lib/dataset-v2";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createDatasetLoader, type DatasetRelease, type StageCode, type BuilderRecord } from "../../src/lib/dataset-v2";
@@ -11,11 +12,12 @@ export async function verifyMigration(out: string) {
   const report = JSON.parse(await readFile(path.join(out, "conversion-report.json"), "utf8"));
   if (report.sourceCatalogSha256 !== benchmark.sourceCatalogSha256) throw new Error("Conversion report provenance mismatch");
   const refs = new Set<string>();
-  const contentFiles = runs.files.filter((file) => /^content\/texts\/[a-f0-9]{2}\.json$/.test(file.path));
+  const shardFile = new RegExp(`^content/texts/[a-f0-9]{${TEXT_SHARD}}\\.json$`);
+  const contentFiles = runs.files.filter((file) => shardFile.test(file.path));
   for (const file of contentFiles) {
     const shard = JSON.parse(await readFile(path.join(out, "runs", file.path), "utf8"));
     for (const [hash, text] of Object.entries(shard)) {
-      if (typeof text !== "string" || sha256(text) !== hash || !file.path.endsWith(`/${hash.slice(0, 2)}.json`)) throw new Error(`Invalid content-addressed text in ${file.path}`);
+      if (typeof text !== "string" || sha256(text) !== hash || !file.path.endsWith(`/${hash.slice(0, TEXT_SHARD)}.json`)) throw new Error(`Invalid content-addressed text in ${file.path}`);
       refs.add(hash);
     }
   }

@@ -1,3 +1,4 @@
+import { TEXT_SHARD } from "../../src/lib/dataset-v2";
 import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, readFile, readdir, rename, rm, stat, statfs, writeFile } from "node:fs/promises";
@@ -129,6 +130,9 @@ export function redact(text: string) {
   return text.replace(/\b(?:hf_[A-Za-z0-9]{24,}|gh[pousr]_[A-Za-z0-9]{30,}|AKIA[A-Z0-9]{16}|vercel_blob_rw_[A-Za-z0-9_]{20,}|sk-(?:ant-|proj-|or-v1-)?[A-Za-z0-9_-]{20,})\b/g, "[secret removed]")
     .replace(/\bBearer\s+[A-Za-z0-9._-]{16,}/gi, "Bearer [secret removed]");
 }
+/** Converted texts: content/texts/<first TEXT_SHARD characters of their SHA-256>.json (what the viewer reads). */
+const SHARD_FILE = new RegExp(`^[a-f0-9]{${TEXT_SHARD}}\\.json$`), SHARD_PART = new RegExp(`^[a-f0-9]{${TEXT_SHARD}}\\.json\\.part$`);
+
 export class ContentStore {
   private buckets = new Map<string, Record<string, string>>();
   private sourceRefs = new Map<string, string>();
@@ -139,14 +143,14 @@ export class ContentStore {
   async restore() {
     const dir = path.join(this.root, "content/texts"); if (!await exists(dir)) return;
     for (const file of await readdir(dir)) {
-      if (/^[a-f0-9]{2}\.json\.part$/.test(file)) { await rm(path.join(dir, file)); continue; }
-      if (!/^[a-f0-9]{2}\.json$/.test(file)) throw new Error("Unexpected content-store file");
+      if (SHARD_PART.test(file)) { await rm(path.join(dir, file)); continue; }
+      if (!SHARD_FILE.test(file)) throw new Error("Unexpected content-store file");
       const values = JSON.parse(await readFile(path.join(dir, file), "utf8"));
       for (const [ref, text] of Object.entries(values)) {
         if (typeof text !== "string" || sha256(text) !== ref) throw new Error("Content-store checksum mismatch");
         this.remember(ref, text);
       }
-      this.buckets.set(file.slice(0, 2), values);
+      this.buckets.set(file.slice(0, TEXT_SHARD), values);
     }
   }
   private remember(hash: string, text: string) {
@@ -154,14 +158,14 @@ export class ContentStore {
     this.sourceRefs.set(`logtexts:${createHash("sha1").update(text).digest("hex").slice(0, 20)}`, hash);
   }
   put(text: string, used = true) {
-    const hash = sha256(text), bucket = hash.slice(0, 2);
+    const hash = sha256(text), bucket = hash.slice(0, TEXT_SHARD);
     if (used) this.used.add(hash);
     if (!this.buckets.has(bucket)) this.buckets.set(bucket, {});
     if (!(hash in this.buckets.get(bucket)!)) { this.buckets.get(bucket)![hash] = text; this.dirty.add(bucket); }
     this.remember(hash, text); return hash;
   }
   get(hash: string) {
-    const text = this.buckets.get(hash.slice(0, 2))?.[hash]; if (typeof text !== "string") throw new Error(`Missing converted text ${hash}`); return text;
+    const text = this.buckets.get(hash.slice(0, TEXT_SHARD))?.[hash]; if (typeof text !== "string") throw new Error(`Missing converted text ${hash}`); return text;
   }
   async resolve(prefix: string, kind: "texts" | "logtexts", ref: string) {
     if (!/^[a-f0-9]{20}$/.test(ref)) throw new Error(`Invalid source reference ${ref}`);
