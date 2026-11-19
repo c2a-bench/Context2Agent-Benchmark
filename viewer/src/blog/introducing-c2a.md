@@ -204,14 +204,45 @@ right one.
 
 <!-- figure:failures -->
 
-- **Strong builders capture the knowledge; their remaining failures come from how the agent uses it.** Five of the seven
-builders lost almost no checks on their own side (0 to 10 each), while their agents still failed 98 to 131
-checks on wrong values, forbidden actions, or facts they never asked the customer for.
+### The customer support agent has the rule but does not use it
 
-  Weaker builders fail on both fronts:
-  `claude-sonnet-5-5` lost 113 checks to missing knowledge on top of 104 agent-side failures. Once a builder gets the knowledge into the
-  agent's files, the bottleneck moves to whether the agent finds and *applies* it, and an agent built with every rule can still
-  fail to use them on a live ticket.
+In both Redwood Inference and Skyway Air, most failed tickets are caused by the customer support agent. The rule it
+needs is already in its files, but it does not apply it. We found three common causes.
+
+On Skyway Air, the agent often reads only the page about the ticket's topic. For example, a customer's first flight
+lands late and they miss their connecting flight. The agent opens the page about missed connections, but not the page
+about compensation, so it does not pay the compensation the customer is owed.
+
+Also on Skyway Air, the agent reads a rule and then does not follow it when the customer pushes. The rules say that a
+customer asking for a manager is not a reason to hand the ticket to a person. On most of these tickets, the agent opens
+the page with this rule and then hands the ticket over anyway. This depends on the builder. Agents built by GLM,
+DeepSeek and 6.1 Sol hand the ticket over most of the time. Agents built by Opus 5.5 and Carbon rarely do.
+
+In both companies, the agent also guesses instead of asking. Many Skyway Air tickets depend on a detail that only the
+customer knows, such as whether both passengers on a booking flew. In half of these tickets the agent does not ask, and
+uses the booking instead. A booking with two passengers then gets compensation for two, even when one of them did not
+fly. On Redwood Inference, the agent guesses the ticket's priority. It sets it one level too high or too low. The reply
+deadline and the escalation labels depend on the priority, so they are wrong as well.
+
+### Mistakes made by the builder
+
+The other failures are caused by the builder, and each builder makes a different mistake.
+
+Sonnet 5.5 is the only builder that loses rules on Redwood Inference. It loses them when it updates the agent, not when
+it first builds it. At each new stage it checks which doc files have changed since its last build. This finds the pages
+that were edited, but not the pages that were added, so the rules on the new pages never reach the agent.
+
+Carbon reads the docs in detail before it writes anything. On Skyway Air this often takes the whole build time. In
+several stages the build ends before Carbon writes its notes, so the agent does not start, or starts without the rules.
+Its first build on Redwood Inference also ends early, because its reply reaches the length limit.
+
+DeepSeek and GLM write prompts that are too long. The agent can send at most 12,000 tokens to its model in one call.
+When DeepSeek rewrites the agent's instructions at a new stage, it adds the new rules but does not check the length.
+The prompt goes over the limit, and almost every ticket in that stage fails. GLM does the same in some of its Skyway Air
+builds.
+
+6.1 Sol rarely loses a rule in either company, because it keeps every doc. Its failures are caused by the agent
+instead. The agent has both the current and the old versions of each rule, and it often uses an old one.
 
 <!-- figure:architecture -->
 

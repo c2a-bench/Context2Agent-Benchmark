@@ -157,7 +157,7 @@ const stagePoints = (meta: Awaited<ReturnType<typeof loadMetas>>[number]): Stage
   }));
 const sum = (j: JobSummary, k: "passed" | "total") => j.scores.reduce((a, s) => a + (s[k] ?? 0), 0);
 
-function Seg<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
+export function Seg<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
   return (
     <div className="seg" role="group">
       {options.map(([v, label]) => (
@@ -169,8 +169,9 @@ function Seg<T extends string>({ value, options, onChange }: { value: T; options
 
 /** Pass rate by stage, comparing builder models and harnesses. Redwood: one line per builder.
  *  Skyway: one line per model, pooled over the prescribed architectures; hover draws those architectures. */
-function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compact?: boolean; redwood: Builder[]; metas: Awaited<ReturnType<typeof loadMetas>>; skyway?: JobSummary[]; skywayMetas?: Awaited<ReturnType<typeof loadMetas>>; bare?: boolean }) {
-  const [env, setEnvRaw] = useState<"redwood" | "skyway">("redwood");
+function Results({ redwood, metas, skyway, skywayMetas, bare, compact, env: fixedEnv }: { compact?: boolean; redwood: Builder[]; metas: Awaited<ReturnType<typeof loadMetas>>; skyway?: JobSummary[]; skywayMetas?: Awaited<ReturnType<typeof loadMetas>>; bare?: boolean; env?: FigureEnv }) {
+  const [ownEnv, setEnvRaw] = useState<FigureEnv>("redwood");
+  const env = fixedEnv ?? ownEnv;
   const setEnv = (e: "redwood" | "skyway") => setEnvRaw(e);
   const sky = env === "skyway" && skyway?.length && skywayMetas;
   const rows: StageRow[] = sky
@@ -226,7 +227,8 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
         }>
         {!bare && <div className="lp-figure-note mb-6"><span aria-hidden="true">★</span> All runs at high reasoning effort</div>}
         {bare ? (
-          <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />
+          // The blog's column is narrow: under each Skyway column, just the harness (the caption says it pools six architectures).
+          <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: compact ? r.harness.split(" · ")[0] : r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />
         ) : (() => {
           const zig: ZigRow[] = [{
             title: "Which builder makes the best agent",
@@ -304,8 +306,9 @@ function runReasons(meta: Metas[number], into = noReasons()) {
 
 /** Why tickets failed. Redwood: one row per builder. Skyway: one row per builder too, either pooled over its runs with
  *  the prescribed architectures ("Overall") or for one architecture. An "All builders" row on top. */
-function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact }: { compact?: boolean; redwood: Builder[]; metas: Metas; skyway?: JobSummary[]; skywayMetas?: Metas; bare?: boolean } & Focus) {
-  const [env, setEnv] = useState<"redwood" | "skyway">("redwood");
+function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact, env: fixedEnv }: { compact?: boolean; redwood: Builder[]; metas: Metas; skyway?: JobSummary[]; skywayMetas?: Metas; bare?: boolean; env?: FigureEnv } & Focus) {
+  const [ownEnv, setEnv] = useState<FigureEnv>("redwood");
+  const env = fixedEnv ?? ownEnv;
   const [arch, setArch] = useState("overall");
   const sky = env === "skyway" && !!skyway?.length && !!skywayMetas;
   const rows: (ReasonRow & { rate: number })[] = [];
@@ -709,14 +712,16 @@ function Closing({ last, skywayTask }: { last: string | null; skywayTask: string
 
 /** One landing figure on its own, from live data, for the blog post. */
 export type FigureName = "results" | "failures" | "architecture" | "packs";
+/** Which environment a figure that has both shows; the blog's figure frame holds the toggle. */
+export type FigureEnv = "redwood" | "skyway";
 /** compact (the blog): shorter versions of the same charts, for its narrow column. */
-export function LandingFigure({ name, compact }: { name: FigureName; compact?: boolean }) {
+export function LandingFigure({ name, compact, env = "redwood" }: { name: FigureName; compact?: boolean; env?: FigureEnv }) {
   const c = use(catalog());
   const metas = use(loadMetas(c.redwood.map((b) => b.job.key)));
   const archMetas = use(loadMetas(c.skywayArch.map((j) => j.key)));
   const [focus, setFocus] = useState<FailureGroup | null>(null);
-  if (name === "results") return <Results bare compact={compact} redwood={c.redwood} metas={metas} />;
-  if (name === "failures") return <Failures bare compact={compact} redwood={c.redwood} metas={metas} focus={focus} onFocus={setFocus} />;
+  if (name === "results") return <Results bare compact={compact} env={env} redwood={c.redwood} metas={metas} skyway={c.skywayArch} skywayMetas={archMetas} />;
+  if (name === "failures") return <Failures bare compact={compact} env={env} redwood={c.redwood} metas={metas} skyway={c.skywayArch} skywayMetas={archMetas} focus={focus} onFocus={setFocus} />;
   if (name === "architecture") return <Architecture bare runs={c.skywayArch} metas={archMetas} />;
   return <Packs bare packs={c.packs} />;
 }
