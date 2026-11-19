@@ -17,10 +17,13 @@ export function RuleStatusBadge({ status }: { status: RuleStatus }) {
   return <span className={cn("rounded px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide", statusClass[status])}>{STATUS_LABEL[status]}</span>;
 }
 
+/** Some doc-change snippets were cut from the raw JSON files, so characters like ’ appear as "\u2019": show the character. */
+export const unescapeJson = (text: string) => text.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)));
+
 export function WordDiff({ diff }: { diff: Diff }) {
   return (
     <>
-      {diff.map(([op, text], i) =>
+      {diff.map(([op, raw]) => [op, unescapeJson(raw)] as const).map(([op, text], i) =>
         op === "=" ? <span key={i}>{text} </span>
         : op === "-" ? <del key={i} className="rounded bg-red-500/12 px-0.5 text-red-700 decoration-red-500/60 dark:text-red-300">{text}</del>
         : <ins key={i} className="rounded bg-emerald-500/12 px-0.5 font-medium text-emerald-700 no-underline dark:text-emerald-300">{text} </ins>,

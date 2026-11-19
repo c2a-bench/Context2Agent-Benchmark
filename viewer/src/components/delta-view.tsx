@@ -2,7 +2,7 @@ import { Suspense, use, useState } from "react";
 import { ChevronDown, Columns2, LayoutList, ListChecks, Library } from "lucide-react";
 import { DiffViewer } from "@/components/monaco";
 import { DocLink } from "@/components/doc-sheet";
-import { RuleStatusBadge, WordDiff } from "@/components/conversation";
+import { RuleStatusBadge, WordDiff, unescapeJson } from "@/components/conversation";
 import { ROLE_ICON, ROLE_LABEL, ROLE_ORDER, mb } from "@/components/stage-view";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -42,13 +42,15 @@ function Overview({ t, after, before }: { t: Transition; after: CodeStage; befor
             <div className="mt-3 flex flex-col gap-2">
               {t.docChanges.map((c) => (
                 <div key={c.id} className="rounded-lg border p-3 text-[13px]">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={cn("rounded px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide", TYPE_CLASS[c.type] ?? "bg-violet-500/12 text-violet-700 dark:text-violet-300")}>{c.type}</span>
-                    <span>{c.what}</span>
-                  </div>
+                  {(c.type || c.what) && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {c.type && <span className={cn("rounded px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide", TYPE_CLASS[c.type] ?? "bg-violet-500/12 text-violet-700 dark:text-violet-300")}>{c.type}</span>}
+                      {c.what && <span>{c.what}</span>}
+                    </div>
+                  )}
                   {c.patches.map((p, i) => (
                     <p key={i} className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">
-                      In <DocLink doc={{ path: p.doc, title: p.title }} stage={t.to} quote={p.replace.split("\n")[0]} kind="real" />: <WordDiff diff={p.diff} />
+                      In <DocLink doc={{ path: p.doc, title: p.title }} stage={t.to} quote={unescapeJson(p.replace.split("\n")[0])} kind="real" />: <WordDiff diff={p.diff} />
                     </p>
                   ))}
                 </div>
