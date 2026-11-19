@@ -384,7 +384,7 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact }:
               <><b>{byGap[0].label}</b> has the widest gap, {Math.round(100 * (byGap[0].a - byGap[0].b))} points.</>,
             ],
             note: "The shaded band is rule recall below 0.9. Hover a mark for the builder and stage.",
-            chart: <div style={{ maxWidth: 480 }}><RecallScatter points={points} /></div>,
+            chart: <RecallScatter points={points} height={340} />,
           });
           return <Zig rows={zig} />;
         })()}
