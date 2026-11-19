@@ -69,6 +69,13 @@ export class MigrationReader {
   private inflight = new Map<string, Promise<unknown>>();
   constructor(private source: Source, objects: SourceObject[], private dir: string, private seed?: { root: string; mappings: Record<string, string>; objects: Map<string, SourceObject> }, private log: (message: string) => void = () => {}) { this.objects = new Map(objects.map((o) => [o.path, o])); }
   has(name: string) { return this.objects.has(name); }
+  /** Download many objects into the checksummed source cache, `concurrency` at a time (the conversion then reads them
+   *  from the cache one run at a time). Each download keeps the same version and size checks as a normal read. */
+  async prefetch(names: string[], concurrency: number, report: (done: number, total: number) => void = () => {}) {
+    const queue = names.filter((n) => this.objects.has(n)); let next = 0, done = 0;
+    const worker = async () => { while (next < queue.length) { const object = this.objects.get(queue[next++])!; await this.download(object); if (++done % 500 === 0 || done === queue.length) report(done, queue.length); } };
+    await Promise.all(Array.from({ length: Math.max(1, Math.min(concurrency, queue.length)) }, worker));
+  }
   async json<T>(name: string): Promise<T> {
     const object = this.objects.get(safePath(name)); if (!object) throw new Error(`Missing source object ${name}`);
     if (name.endsWith("/docs.json")) {

@@ -6,7 +6,7 @@ import { canonicalDomain, caseTicketBase, makeLeaderboardRow, type BenchmarkCase
 import { fingerprint, pool, safePath, snapshotId, type Source, type SourceObject } from "./inventory";
 import { canonical, ContentStore, digest, exists, inventoryDirectory, MigrationReader, redact, verifyDirectory, writeJson } from "./migration-io";
 
-export type MigrationOptions = { source: Source; out: string; id: string; benchmarkRepository: string; runsRepository: string; expectedRuns?: number; license?: string; seed?: { root: string; mappings: Record<string, string>; objects: Map<string, SourceObject> }; log?: (message: string) => void };
+export type MigrationOptions = { source: Source; out: string; id: string; benchmarkRepository: string; runsRepository: string; expectedRuns?: number; license?: string; concurrency?: number; seed?: { root: string; mappings: Record<string, string>; objects: Map<string, SourceObject> }; log?: (message: string) => void };
 const without = (value: Record<string, unknown>, keys: string[]) => Object.fromEntries(Object.entries(value).filter(([key]) => !keys.includes(key)));
 const redacted = <T>(value: T): T => typeof value === "string" ? redact(value) as T : Array.isArray(value) ? value.map(redacted) as T : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redacted(item)])) as T : value;
 function caseStages(cases: CasesData, meta: Meta) {
@@ -91,6 +91,12 @@ export async function migrate(options: MigrationOptions) {
   if (await exists(path.join(out, "conversion-report.json"))) { await verifyDirectory(path.join(out, "benchmark")); await verifyDirectory(path.join(out, "runs")); return JSON.parse(await readFile(path.join(out, "conversion-report.json"), "utf8")); }
   const benchmarkRoot = path.join(out, "benchmark"), runsRoot = path.join(out, "runs");
   await mkdir(benchmarkRoot, { recursive: true }); await mkdir(runsRoot, { recursive: true });
+  if (options.concurrency && options.concurrency > 1) {
+    // docs.json is shared by a domain's runs and read once per version (MigrationReader.json), so it is not prefetched
+    const names = scoped(allObjects).map((o) => o.path).filter((name) => name !== "index.json" && !name.endsWith("/docs.json"));
+    log(`prefetch ${names.length} files, ${options.concurrency} at a time`);
+    await reader.prefetch(names, options.concurrency, (done, total) => log(`prefetch ${done}/${total}`));
+  }
   const store = new ContentStore(runsRoot, reader); await store.restore();
   const domains: string[] = [], summaries = new Map<string, { run: RunRecord; stages: StageRecord[]; original: JobSummary }[]>();
   const validation: { domain: string; job: string; stages: number; results: number; passed: number; docsHashes: Record<string, string>; codeHashes: Record<string, string> }[] = [];

@@ -125,6 +125,9 @@ export function makeLeaderboardRow(run: RunRecord, stages: StageRecord[]): Leade
     benchmark_revision: run.benchmark.revision, benchmark_inventory_sha256: run.benchmark.inventorySha256 };
 }
 
+/** Long texts are grouped into content/texts/<first TEXT_SHARD characters of their SHA-256>.json (4,096 small files). */
+export const TEXT_SHARD = 3;
+
 type Reader = <T>(side: "benchmark" | "runs", file: string) => Promise<T>;
 export function createDatasetLoader(options: { release: DatasetRelease; read: Reader; text: (side: "runs", file: string) => Promise<string>; allowPending?: boolean }) {
   const { release, read } = options;
@@ -247,7 +250,7 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
   };
   const text = (ref: string) => memo(`text:${ref}`, async () => {
     if (!/^[a-f0-9]{64}$/.test(ref)) throw new Error("Invalid content reference");
-    const shard = await read<Record<string, string>>("runs", `content/texts/${ref.slice(0, 2)}.json`);
+    const shard = await read<Record<string, string>>("runs", `content/texts/${ref.slice(0, TEXT_SHARD)}.json`);
     if (typeof shard[ref] !== "string") throw new Error(`Missing content ${ref}`);
     return shard[ref];
   });

@@ -10,9 +10,9 @@ const { values } = parseArgs({ options: {
   "benchmark-repo": { type: "string", default: process.env.HF_BENCHMARK_REPO },
   "runs-repo": { type: "string", default: process.env.HF_RUNS_REPO },
   "expected-runs": { type: "string" }, license: { type: "string" },
-  "seed-audit": { type: "string" }, "seed-inventory": { type: "string" }, help: { type: "boolean" },
+  "seed-audit": { type: "string" }, concurrency: { type: "string", default: "12" }, "seed-inventory": { type: "string" }, help: { type: "boolean" },
 } });
-if (values.help) console.log("Usage: npm run migrate:blob -- --id RELEASE --benchmark-repo OWNER/DATASET --runs-repo OWNER/DATASET --expected-runs COUNT [--out .migration/RELEASE] [--license bsd]\nRead-only Blob migration: selects only cataloged runs, deduplicates benchmark definitions, creates benchmark/ and runs/ locally. No HF upload or Pages deployment. Optional --seed-audit DIR --seed-inventory FILE reuse a previously version-checked audit.");
+if (values.help) console.log("Usage: npm run migrate:blob -- --id RELEASE --benchmark-repo OWNER/DATASET --runs-repo OWNER/DATASET --expected-runs COUNT [--out .migration/RELEASE] [--license bsd] [--concurrency 12]\nRead-only Blob migration: selects only cataloged runs, deduplicates benchmark definitions, creates benchmark/ and runs/ locally. No HF upload or Pages deployment. Optional --seed-audit DIR --seed-inventory FILE reuse a previously version-checked audit.");
 else {
   try {
     if (!values.id) throw new Error("--id is required");
@@ -28,7 +28,7 @@ else {
       const inventory = JSON.parse(await readFile(values["seed-inventory"], "utf8"));
       seed = { root: values["seed-audit"], mappings: JSON.parse(await readFile(`${values["seed-audit"]}/_files.json`, "utf8")), objects: new Map<string, SourceObject>(inventory.objects.map((o: SourceObject) => [o.path, o])) };
     }
-    const report = await migrate({ source: blobSource(values.prefix), out: values.out || `.migration/${values.id}`, id: values.id, benchmarkRepository, runsRepository, expectedRuns, license: values.license, seed, log: console.log });
+    const report = await migrate({ source: blobSource(values.prefix), out: values.out || `.migration/${values.id}`, id: values.id, benchmarkRepository, runsRepository, expectedRuns, license: values.license, concurrency: Number(values.concurrency), seed, log: console.log });
     const { validation: _validation, ...summary } = report;
     console.log(JSON.stringify(summary, null, 2));
   } catch (error) { console.error(error instanceof Error ? error.stack : error); process.exitCode = 1; }
