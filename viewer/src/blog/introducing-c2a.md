@@ -246,26 +246,43 @@ instead. The agent has both the current and the old versions of each rule, and i
 
 <!-- figure:architecture -->
 
-- **Architecture matters, but less than the builder.** Six builders each built all six assigned architectures. Pooled over
-the builders, three designs finish level: a knowledge graph queried at runtime, an LLM-compiled wiki browsed with terminal
-tools, and a no-retrieval prompts-and-workflows baseline each resolved 56% of Skyway's 311 tickets. Raw docs with
-terminal tools reached 53%, and the two index-search designs came last, at 48% (wiki) and 43% (raw docs).
+### The same design gives a different agent with each builder
 
-  We compared two pairs of designs that each differ in one way: moving from raw docs to wiki notes
-  helps whether the agent uses terminal tools or index search (raw → wiki: 53% → 56% with terminal tools, 43% → 48% with
-  index search), and terminal tools beat index search for both raw docs and wiki notes.
+On Skyway Air, each builder is told which design to build, but the builder still decides how to build it. Two agents
+with the same design can work in very different ways. For example, the knowledge graphs built by Opus 5.5 and Carbon
+get most changed-rule tickets right, while the knowledge graphs built by the other four builders get far fewer of them
+right. So the knowledge graph does best on changed rules overall, but this comes from two builders, not from the design
+itself.
 
-  The builder moves the score more than the design does. Pooled over the six designs, builders range from 40%
-  (`deepseek-flash`) to 67% (`claude-opus-5-5`), and the six builders' best designs are four different ones.
+The cause is one rule that did not change. Many of these tickets also need the agent to pay compensation for a delay,
+even though the customer did not ask for it. Opus 5.5 and Carbon keep this rule in their graphs, and their agents pay.
+Sonnet 5.5 and DeepSeek leave it out, so their agents pay only what the customer asks for.
 
-  One run pulls a number down: `gemini-4-carbon`'s wiki-with-index-search agent never started in five of its six stages.
-  Without that run, wiki with index search would be at 56%.
+GLM and 6.1 Sol keep the rule, but their agents often do not use it, for different reasons. GLM's agent searches the
+graph using the words in the customer's request, such as "hotel" and "receipt", so it never finds the compensation
+rule. The agents built by Opus 5.5 and Carbon ask the graph for a whole topic, such as everything about disruptions, so
+they get the compensation rule without looking for it. 6.1 Sol's agent does find the rule, but it only works on what
+the customer asked for. When that cannot be finished, for example because the customer lost the hotel receipt, it stops
+and does not pay the compensation either.
 
-- **Different designs break in different ways when the docs change.** Splitting Skyway's tickets by type, the knowledge
-graph was the best at picking up *changed* facts (55% adaptability, with 59% discovery and 53% regression), while
-the LLM wiki with terminal tools was the best at holding on to the unchanged ones (56% regression) but weaker on the
-changed ones (51% adaptability). Raw-docs index search fell furthest on changed facts (34%). No design
-wins every column, which is exactly why a single-stage benchmark would miss this.
+### Builders change the design when it does not work
+
+Some designs are hard to build as written, and builders change them without saying so. In the prompts-and-workflows
+design, the agent reads all the rules for every ticket and has no search tool. But the agent can send at most 12,000
+tokens to its model in one call, and that is not enough for all of Skyway Air's rules. Opus 5.5, Carbon and 6.1 Sol add
+extra model calls that read the long pages, such as the airport handbooks, and pass only the useful lines to the agent.
+Sonnet 5.5 and GLM rewrite the rules into one short handbook that fits. DeepSeek writes a handbook that is too long, so
+most tickets in those stages fail.
+
+In the design with raw docs and index search, the search often does not find the page with the rule the agent needs.
+Four of the six builders respond by copying the rules into the agent's prompt, stage by stage, until most of the rules
+come from the prompt and not from the search.
+
+### Index search costs more and does worse
+
+On Skyway Air, the two designs with index search take the longest to build and get the lowest scores. The wiki with
+terminal tools does the opposite. Its agent opens notes by name and reads whole pages. It scores as well as any other
+design and costs about half as much per ticket as the knowledge graph.
 
 <!-- figure:packs -->
 
