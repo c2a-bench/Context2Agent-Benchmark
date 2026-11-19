@@ -1,10 +1,7 @@
 Most agent benchmarks assume the world is static, with knowledge clearly defined, processes documented, and all edge
 cases identified. But as any CX operator knows – real support operations don't work that way.
 
-A new offer launches on
-Tuesday, a refund policy gets an exception, a deprecated policy lingers in an old knowledge base article, and the human
-agents answering customers need to work out the most current, accurate information to keep things flowing. For an AI
-agent, the changing conditions make the complexities of CX even harder to navigate.
+A new offer launches, a new exception is added to the refund policy, a deprecated policy still stays in an old knowledge base article, and the human agents answering customers need to work out the most current, accurate information. For an AI agent, the changing conditions make the complexities of CX even harder to navigate.
 
 So the question we care about isn't only *whether an agent resolves an issue.*
 
@@ -14,28 +11,27 @@ customer's issue?*
 Since more and more support agents are now written by coding agents rather than by hand, there is a second question
 hiding inside the first: *can an agent build, and then maintain, another agent?*
 
-**C2A, the Context to Agent Benchmark**, is our attempt to measure that. We have measured top models, compared performance, and scored them to
-understand how well these different models handle the complexity of CX operations while creating and updating
+**C2A, the Context to Agent Benchmark**, is our attempt to measure that. We have measured top models to
+understand how well these models handle the complexity of CX operations while creating and updating
 customer-facing AI Agents.
 
 Today it covers **[668 test cases](#tip "Redwood Inference 290 + Skyway Air 311 + knowledge packs 67 = 668. Of the 67 knowledge-pack tickets, 28 come from Redwood's first stage and 39 were written for the packs.") across three environments**, seven builder
 models, and six agent architectures. All runs, tickets, and transcripts are public at
-[the results viewer](/).
+[the results viewer](/). A test case is a customer support ticket. 
 
 ## Inside the benchmark
 
-Each test run mirrors how a support agent is built and deployed in practice:
+In this benchmark we ask a builder to build a customer support agent for a company and score the builder based on the performance of the customer support agent. Our goal is to evaluate differnt LLMs for the builder job.
 
 1. **Business context.** A company's knowledge is spread across knowledge management systems, CRMs, LMS, email, and
-   UCaaS systems. Any one ticket needs several facts that live in different places.
+   UCaaS systems. Any one ticket needs several facts that live in different places. This is the builder's starting point. 
 2. **Builder.** A coding agent (Codex, Claude Code, Gemini CLI, or pi) reads the docs and writes a support agent:
    its prompts, its code, and however it chooses to store the company's knowledge. It must describe what it built in an `ARCHITECTURE.json` that we later check against what the agent actually does.
 3. **Support agent.** At test time, the agent no longer has access to the source docs. It runs on a fixed model inside a
    ticket system and relies only on what the builder gave it (its prompts, code and stored knowledge). Its tools are real
-   API calls to the ticket system. The decisions are made by the model, not by hard-coded logic.
+   API calls to the ticket system. 
 4. **Customer.** A simulated customer contacts support. Each customer follows one of 14 behaviors,
-   from vague or self-correcting to pushy, urgent, or switching goals mid-conversation, and some facts are known only to
-   the customer, so the agent has to ask.
+   from vague or self-correcting to pushy, urgent, or switching goals mid-conversation. This is handled by an LLM and a prompt. 
 5. **Judge.** The judge reads everything the builder gave the agent and checks, rule by rule, whether the facts each
    ticket needs are there, quoting the agent's own lines as proof. It also reads each conversation and marks which facts
    the customer actually gave. It never decides pass or fail; it tells us why a ticket failed.
@@ -43,12 +39,58 @@ Each test run mirrors how a support agent is built and deployed in practice:
    right labels, no forbidden writes, protected records untouched).
 
 ## The three test environments
+  
+Redwood Inference and Skyway Air represent fictious companies. A stage is a particular point in time when the builder is dropped in to build a customer support agent. Between stages the documents get updated and the rules get changed. A test case is a customer support ticket. 
 
-| Environment | What it tests | Test cases |
-|---|---|---|
-| **Redwood Inference** | An AI inference company. The builder chooses the architecture. Six stages of changing docs. | 290 |
-| **Skyway Air** | An airline with ~10,000 docs. The architecture is *fixed* per run, one of six, so we can compare designs directly. | 311 |
-| **Knowledge perturbations** | A separate set of Redwood Inference tickets, with the docs rewritten five ways: complete, fragmented, incomplete, conflicting, noisy. We call each version of the docs a *pack*. The same tickets in every pack. | 67 |
+### Redwood Inference
+
+Redwood Inference is a company that sells LLM inference.  Its docs come
+from [EnterpriseRAG-Bench](https://github.com/onyx-dot-app/EnterpriseRAG-Bench). 
+
+The goal here is to test whether a builder can build a support agent and then keep it working. The builder is free to
+choose how the agent stores and finds its knowledge.
+
+The docs change over **six stages**. In each stage we add new pages and change some rules:, a team that owns leaked API keys changes, emergency credits are paused. Some new pages are traps, such as an old draft of a policy that looks current. After each change the builder updates the same agent, and we test it again. From stage 3 on, we also make some tickets go wrong on purpose (more on that below). In total there are **290 tickets**.
+
+### Skyway Air
+
+Skyway Air is an airline, and it is much bigger. The builder starts with **10,399 docs**. Only a small part of this is
+about the **21 rules** the tickets need. The rest is everyday company chatter, and some of it is wrong on purpose: an
+old version of a rule, or a Slack message that says the opposite of the policy.
+
+Here we want to find out which architecture works best. Left to choose, builders almost always pick the same one: short
+notes searched by keyword. So in Skyway we **tell the builder which architecture to build**, and compare the scores
+across six of them:
+
+- **Knowledge graph:** facts from the docs and the links between them, which the agent queries.
+- **LLM wiki with terminal tools:** the docs rewritten as linked notes, which the agent reads with commands like
+  `ls`, `rg` and `cat`.
+- **LLM wiki with index search:** the same notes, found through a search index.
+- **Raw docs with terminal tools:** the docs kept as they are, read with the same commands.
+- **Raw docs with index search:** the docs kept as they are, cut into chunks and found through a search index.
+- **Prompts and workflows:** the policies rewritten as a system prompt and step-by-step workflows that the agent
+  reads in full for every ticket. It has no search tool at all.
+
+Each of six builders builds all six. The agent can send at most **12,000 tokens** in any one call to its model, so it
+can't just read everything at once. Skyway also has six stages. In each one, 3 to 9 rules change, 90 to 190 new docs
+arrive and 40 old ones are retired. Some rules start on a set date, so the agent has to check when the ticket came in.
+In total there are **311 tickets**.
+
+### Knowledge perturbations
+
+Real companies rarely keep their docs tidy. This environment tests how a builder copes when the knowledge is badly
+organized.
+
+We take one set of Redwood Inference docs and write it five ways. We call each version a *pack*:
+
+- **Complete:** every fact the tickets need, written clearly.
+- **Fragmented:** the same facts, but each rule is split across several pages.
+- **Incomplete:** some facts the tickets need are removed.
+- **Conflicting:** extra pages that disagree with the real policy.
+- **Noisy:** the same facts, buried among many pages that have nothing to do with the tickets.
+
+For each pack the builder starts from scratch, and the agent gets the same **67 tickets**. Because only the docs change,
+any change in score comes from how the knowledge was organized.
 
 ## What a test run looks like
 
