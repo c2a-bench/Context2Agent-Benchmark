@@ -436,6 +436,7 @@ a.lp-pick:hover .lp-pick-arrow { color: var(--ink); }
 .lp .lp-zig-row--flip { grid-template-columns: minmax(0, 1fr) minmax(0, 400px); }
 .lp .lp-zig-row--flip > .lp-zig-text { order: 2; }
 .lp .lp-zig-row--wide { grid-template-columns: minmax(0, 340px) minmax(0, 1fr); }
+.lp .lp-zig-row--flip.lp-zig-row--wide { grid-template-columns: minmax(0, 1fr) minmax(0, 340px); }
 .lp .lp-zig-chart { min-width: 0; }
 .lp .lp-zig-text h3 { font-size: 24px; }
 .lp .lp-zig-points { margin-top: 22px; display: grid; gap: 12px; font-size: 15px; }
@@ -443,7 +444,7 @@ a.lp-pick:hover .lp-pick-arrow { color: var(--ink); }
 .lp .lp-zig-points li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 6px; height: 6px; border-radius: 999px; background: var(--action); box-shadow: 0 0 0 1px var(--action-ink); }
 @media (max-width: 1100px) {
   .lp .lp-zig { padding: 0; gap: 72px; }
-  .lp .lp-zig-row, .lp .lp-zig-row--flip { grid-template-columns: 1fr; gap: 28px; }
+  .lp .lp-zig-row, .lp .lp-zig-row--flip, .lp .lp-zig-row--wide, .lp .lp-zig-row--flip.lp-zig-row--wide { grid-template-columns: 1fr; gap: 28px; }
   .lp .lp-zig-row--flip .lp-zig-text { order: -1; }
 }
 
@@ -454,3 +455,6 @@ a.lp-pick:hover .lp-pick-arrow { color: var(--ink); }
 .lp .sc-cl-bar { height: 100%; min-width: 2px; border-radius: 0 4px 4px 0; }
 .lp .sc-cl-track .num { font-size: 13px; }
 .lp .sc-swipe { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+
+.lp .tip--smooth { transition: opacity 140ms ease, left 110ms ease-out, top 110ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .lp .tip--smooth { transition: none; } }

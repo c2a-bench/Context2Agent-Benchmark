@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { CONFOUND, type Shape } from "./data";
 
 // ---------------- shared ----------------
@@ -148,3 +148,208 @@ export function ArchTypes({ runs, order }: { runs: ArchRun[]; order: string[] })
 
 export type PackBuilder = { model: string; color: string; shape: Shape; pass: (number | null)[] };
 
+// ---------------- restored: rule recall scatter, architecture cost/time tradeoff ----------------
+
+type TipState = { x: number; y: number; body: ReactNode } | null;
+
+/** A chart frame that owns one tooltip; hover on desktop, tap on a phone. The tooltip stays mounted with the last thing it
+ *  showed, so it fades out instead of vanishing and glides from item to item instead of jumping. */
+function TipFrame({ tip, w, children }: { tip: TipState; w: number; children: ReactNode }) {
+  const last = useRef<TipState>(null);
+  if (tip) last.current = tip;
+  const t = tip ?? last.current;
+  return (
+    <div className="relative">
+      {children}
+      {t && (
+        <div className="tip tip--smooth" aria-hidden={!tip} style={{ left: Math.max(0, Math.min(t.x + 14, w - 250)), top: Math.max(0, t.y + 14), opacity: tip ? 1 : 0 }}>
+          {t.body}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function RecallScatter({ points, height = 300 }: { points: RecallPoint[]; height?: number }) {
+  const [ref, w] = useWidth<HTMLDivElement>();
+  const [tip, setTip] = useState<TipState>(null);
+  const h = height;
+  const m = { l: 40, r: 12, t: 10, b: 40 };
+  const lo = Math.min(0.4, ...points.map((p) => p.recall)) - 0.02;
+  const x = (v: number) => m.l + ((v - lo) / (1.02 - lo)) * (w - m.l - m.r);
+  const y = (v: number) => m.t + (1 - v) * (h - m.t - m.b);
+  const near = (ev: React.PointerEvent<SVGSVGElement>) => {
+    const b = ev.currentTarget.getBoundingClientRect();
+    const mx = ev.clientX - b.left, my = ev.clientY - b.top;
+    let best: RecallPoint | null = null, d = 24 * 24;
+    for (const p of points) {
+      const dd = (x(p.recall) - mx) ** 2 + (y(p.pass) - my) ** 2;
+      if (dd < d) (d = dd), (best = p);
+    }
+    setTip(best && { x: x(best.recall), y: y(best.pass), body: <><div className="font-medium">{star(best.model)} · stage {best.stage}</div><div className="num">Rule recall {best.recall.toFixed(2)} · passed {pct(best.pass)}</div></> });
+  };
+  const ticks = [0.4, 0.6, 0.8, 1].filter((t) => t >= lo);
+  return (
+    <div ref={ref}>
+      {w > 0 && (
+        <TipFrame tip={tip} w={w}>
+          <svg width={w} height={h} onPointerMove={near} onPointerDown={near} onPointerLeave={() => setTip(null)} role="img" aria-label="Rule recall against stage pass rate">
+            <rect x={x(lo)} y={m.t} width={x(0.9) - x(lo)} height={h - m.t - m.b} fill="color-mix(in srgb, var(--ink) 5%, transparent)" />
+            {[0, 0.25, 0.5, 0.75, 1].map((v) => (
+              <g key={v}>
+                <line x1={m.l} x2={w - m.r} y1={y(v)} y2={y(v)} stroke="var(--line)" />
+                <text x={m.l - 6} y={y(v) + 4} textAnchor="end" fontSize={12} fill="var(--muted)">{v * 100}%</text>
+              </g>
+            ))}
+            {ticks.map((t) => (
+              <text key={t} x={x(t)} y={h - 22} textAnchor="middle" fontSize={12} fill="var(--muted)">{t.toFixed(1)}</text>
+            ))}
+            <text x={(m.l + w - m.r) / 2} y={h - 4} textAnchor="middle" fontSize={12} fill="var(--muted)">Rule recall: needed facts in the agent's files</text>
+            {points.map((p, i) => (
+              <Mark key={i} shape={p.shape} x={x(p.recall)} y={y(p.pass)} r={4.2} color={p.color} />
+            ))}
+          </svg>
+        </TipFrame>
+      )}
+    </div>
+  );
+}
+
+/** Wilson 95% interval for a pass rate of p/n. */
+export function wilson(p: number, n: number): [number, number] {
+  if (!n) return [0, 1];
+  const z = 1.96;
+  const f = p / n;
+  const d = 1 + (z * z) / n;
+  const c = (f + (z * z) / (2 * n)) / d;
+  const h = (z * Math.sqrt((f * (1 - f)) / n + (z * z) / (4 * n * n))) / d;
+  return [c - h, c + h];
+}
+const rate = (r: ArchRun) => r.passed / r.total;
+/** Pass-rate axis shared by the dot plot and the scatter: whole tens around every interval. */
+function passDomain(runs: ArchRun[]): [number, number] {
+  const ci = runs.map((r) => wilson(r.passed, r.total));
+  return [Math.max(0, Math.floor(Math.min(...ci.map((c) => c[0])) * 10) / 10), Math.min(1, Math.ceil(Math.max(...ci.map((c) => c[1])) * 10) / 10)];
+}
+function runTip(r: ArchRun) {
+  const [lo, hi] = wilson(r.passed, r.total);
+  return (
+    <>
+      <div className="font-medium">{r.name}</div>
+      <div className="muted">{r.model} · {r.harness}</div>
+      <div className="mt-1 num">Passed {r.passed}/{r.total} = {pct(rate(r))} <span className="muted">(95% interval {pct(lo)} to {pct(hi)})</span></div>
+      <div className="num muted">By stage: {r.stages.map((x) => pct(x)).join(" · ")}</div>
+      <div className="num muted">${r.usd.toFixed(2)} a ticket · {Math.round(r.time)} s median · {Math.round(r.tok)}k input tokens</div>
+    </>
+  );
+}
+
+/** The price of a pass rate: pass rate against cost per ticket or ticket time, one point per builder and architecture. */
+export function ArchTradeoff({ runs, order }: { runs: ArchRun[]; order: string[] }) {
+  const [ref, w] = useWidth<HTMLDivElement>();
+  const [tip, setTip] = useState<TipState>(null);
+  const [axis, setAxis] = useState<"usd" | "time">("usd");
+  const h = 320;
+  const m = { l: 44, r: 16, t: 16, b: 40 };
+  const [lo, hi] = passDomain(runs);
+  const xs = runs.map((r) => r[axis]);
+  const xmax = Math.max(...xs) * 1.15;
+  const xmin = axis === "time" ? Math.max(0, Math.min(...xs) * 0.8) : 0;
+  const X = (v: number) => m.l + ((v - xmin) / (xmax - xmin)) * (w - m.l - m.r);
+  const Y = (v: number) => m.t + (1 - (v - lo) / (hi - lo)) * (h - m.t - m.b);
+  const yt = Array.from({ length: Math.round((hi - lo) * 10) + 1 }, (_, i) => lo + i / 10);
+  const narrow = w < 560;
+  const step = axis === "usd" ? (xmax > 1 || narrow ? 0.2 : 0.1) : narrow ? 20 : 10;
+  const xt = Array.from({ length: Math.floor((xmax - xmin) / step) + 1 }, (_, i) => Math.ceil(xmin / step) * step + i * step).filter((v) => v <= xmax);
+  const fmt = (v: number) => (axis === "usd" ? `$${v.toFixed(2)}` : `${Math.round(v)} s`);
+  const frontPts = frontier(order.map((a) => { const rs = runs.filter((r) => r.arch === a); return [avg(rs.map((r) => r[axis])), avg(rs.map(rate))] as [number, number]; }));
+  return (
+    <div ref={ref}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="label muted">Pass rate vs {axis === "usd" ? "cost per ticket" : "ticket time"}</div>
+        <div className="seg" role="group">
+          {(["usd", "time"] as const).map((k) => (
+            <button key={k} type="button" aria-pressed={axis === k} onClick={() => setAxis(k)}>{k === "usd" ? "Cost per ticket" : "Ticket time"}</button>
+          ))}
+        </div>
+      </div>
+      <TipFrame tip={tip} w={w}>
+        {w > 0 && (
+          <svg width={w} height={h} onPointerLeave={() => setTip(null)} role="img" aria-label="Pass rate against cost per ticket by architecture">
+            {yt.map((t) => (
+              <g key={t}>
+                <line x1={m.l} x2={w - m.r} y1={Y(t)} y2={Y(t)} stroke="var(--line)" />
+                <text x={m.l - 8} y={Y(t) + 4} textAnchor="end" fontSize={12} className="num" fill="var(--muted)">{pct(t)}</text>
+              </g>
+            ))}
+            {xt.map((t) => <text key={t} x={X(t)} y={h - m.b + 18} textAnchor="middle" fontSize={12} className="num" fill="var(--muted)">{fmt(t)}</text>)}
+            <text x={m.l + 4} y={m.t + 12} fontSize={11} fill="var(--muted)">↖ better: more passed and {axis === "usd" ? "cheaper" : "faster"}</text>
+            <path d={worseRegion(frontPts, X, Y, w - m.r, h - m.b)} fill="var(--ink)" opacity={0.12} />
+            <path d={frontPts.map(([cx, cy], i) => `${i ? "L" : "M"}${X(cx)},${Y(cy)}`).join("")} fill="none" stroke="var(--ink)" strokeWidth={1.2} strokeDasharray="4 4" opacity={0.6} />
+            {placeLabels(
+              order.map((arch) => {
+                const rs = runs.filter((r) => r.arch === arch);
+                const cx = X(avg(rs.map((r) => r[axis])));
+                return { arch, rs, cx, cy: Y(avg(rs.map(rate))), left: cx > w * 0.7 };
+              }),
+            ).map(({ arch, rs, cx, cy, left, ly }) => (
+              <g key={arch}>
+                {rs.length > 1 && <circle cx={cx} cy={cy} r={11} fill="none" stroke="var(--ink)" strokeWidth={1} opacity={0.5} />}
+                {rs.map((r) => (
+                  <g key={r.model} onPointerEnter={() => setTip({ x: X(r[axis]), y: Y(rate(r)), body: runTip(r) })} onClick={() => setTip({ x: X(r[axis]), y: Y(rate(r)), body: runTip(r) })}>
+                    <Mark shape={r.shape} x={X(r[axis])} y={Y(rate(r))} r={6} color={r.color} />
+                  </g>
+                ))}
+                {!narrow && Math.abs(ly - (cy + 4)) > 2 && <line x1={cx + (left ? -7 : 7)} y1={cy} x2={cx + (left ? -11 : 11)} y2={ly - 4} stroke="var(--muted)" strokeWidth={0.75} />}
+                {narrow ? (
+                  <text x={cx} y={cy - 10} textAnchor="middle" fontSize={11} fontWeight={600} className="num" fill="var(--ink)">{order.indexOf(arch) + 1}</text>
+                ) : (
+                  <text x={cx + (left ? -12 : 12)} y={ly} textAnchor={left ? "end" : "start"} fontSize={12} className="mono" fill="var(--ink)">{arch}</text>
+                )}
+              </g>
+            ))}
+          </svg>
+        )}
+      </TipFrame>
+      {narrow && (
+        <ol className="mt-2 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[12px]">
+          {order.map((a, i) => <li key={a}><span className="num font-semibold">{i + 1}</span> <span className="mono">{a}</span></li>)}
+        </ol>
+      )}
+      <p className="label muted mt-2">The tint is the feasible region under the frontier: a design there {axis === "usd" ? "costs more" : "takes longer"} and passes fewer tickets than one on the line.</p>
+    </div>
+  );
+}
+
+/** Push labels apart vertically where their boxes would overlap (labels are short ids, about 7 px a character). */
+function placeLabels<T extends { arch: string; cx: number; cy: number; left: boolean }>(items: T[]): (T & { ly: number })[] {
+  const box = (t: T) => (t.left ? [t.cx - 12 - t.arch.length * 7.2, t.cx - 12] : [t.cx + 12, t.cx + 12 + t.arch.length * 7.2]);
+  const placed: (T & { ly: number })[] = [];
+  for (const t of [...items].sort((a, b) => a.cy - b.cy)) {
+    let ly = t.cy + 4;
+    const [a, b] = box(t);
+    for (const p of placed) {
+      const [c, d] = box(p);
+      if (a < d && c < b && Math.abs(ly - p.ly) < 15) ly = p.ly + 15;
+    }
+    placed.push({ ...t, ly });
+  }
+  return placed;
+}
+
+/** The Pareto frontier of [cost, score] points: cheapest first, each one passing more than every cheaper point. */
+export function frontier(points: [number, number][]): [number, number][] {
+  const out: [number, number][] = [];
+  for (const p of [...points].sort((a, b) => a[0] - b[0] || b[1] - a[1])) if (!out.length || p[1] > out[out.length - 1][1]) out.push(p);
+  return out;
+}
+
+/** The region a frontier point already beats: higher cost, lower pass rate. Dominated on a builder chart; the feasible-but-worse set on a tradeoff chart. */
+function worseRegion(front: [number, number][], X: (v: number) => number, Y: (v: number) => number, right: number, bottom: number) {
+  if (!front.length) return "";
+  const d = [`M${X(front[0][0])},${bottom}`, `L${X(front[0][0])},${Y(front[0][1])}`];
+  for (let i = 1; i < front.length; i++) d.push(`L${X(front[i][0])},${Y(front[i - 1][1])}`, `L${X(front[i][0])},${Y(front[i][1])}`);
+  const last = front[front.length - 1];
+  d.push(`L${right},${Y(last[1])}`, `L${right},${bottom}`, "Z");
+  return d.join("");
+}

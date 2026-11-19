@@ -8,10 +8,10 @@ import { publicAsset } from "@/lib/assets";
 import { ArrowRight } from "lucide-react";
 import { Nav } from "@/landing/nav";
 import { Journey } from "@/landing/journey";
-import { ArchTypes, type ArchRun, type TicketType, type RecallPoint, type StageRow, type StagePoint } from "@/landing/charts";
+import { ArchTradeoff, ArchTypes, RecallScatter, type ArchRun, type TicketType, type RecallPoint, type StageRow, type StagePoint } from "@/landing/charts";
 import { CONDITIONS, CONFOUND, ENV, SKYWAY_ARCH, catalog, crashed, harnessName, loadMetas, pooled, shortModel, stagesOf, style, type Builder, type FailureGroup } from "@/landing/data";
 import type { JobSummary } from "@/lib/data";
-import { BenchmarkBars, ChangePanels, Columns, CostScatter, SlopeChart, Dumbbell, REASONS, ReasonBars, type ReasonKey, type ReasonRow } from "@/landing/simple-charts";
+import { BenchmarkBars, ChangePanels, Columns, CostScatter, SlopeChart, REASONS, ReasonBars, type ReasonKey, type ReasonRow } from "@/landing/simple-charts";
 import "@/landing/landing.css";
 
 
@@ -361,21 +361,24 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact }:
             note: "A failed ticket can have more than one reason, so bars show each reason's share of all reasons found. A stage where the agent never started counts all its tickets as built wrong.",
             chart: <ReasonBars rows={[{ label: sky ? "All runs" : "All builders", parts: all, bold: true }, ...rows]} focus={focus ? FOCUS_REASON[focus] : null} />,
           }];
-          if (gaps.length > 0) zig.push({
-            title: "Knowing the rules is not enough",
-            body: "For each builder: how many of the rules its tickets needed were in the agent it built, next to how many tickets the agent passed.",
+          if (points.length > 0) zig.push({
+            title: "Rule recall vs pass rate",
+            body: "An agent built with all the rules can still fail to apply them to a ticket. Each mark is one builder's agent at one stage: how many of the rules its tickets needed were in the agent's files, against the share of tickets it passed.",
             points: [
               <>Agents had {P(gaps.reduce((x, g) => x + g.a, 0) / gaps.length)} of the rules on average, but passed {P(gaps.reduce((x, g) => x + g.b, 0) / gaps.length)} of tickets.</>,
               <><b>{byGap[0].label}</b> has the widest gap, {Math.round(100 * (byGap[0].a - byGap[0].b))} points.</>,
             ],
-            note: "Averages over the stages where the agent ran.",
-            chart: <Dumbbell rows={gaps} names={["Rules the agent had", "Tickets it passed"]} />,
+            note: "The shaded band is rule recall below 0.9. Hover a mark for the builder and stage.",
+            chart: <div style={{ maxWidth: 480 }}><RecallScatter points={points} /></div>,
           });
           return <Zig rows={zig} />;
         })()}
     </Sec>
   );
 }
+
+/** The cost/time tradeoff compares designs with the builder held fixed: one run per design, all by this builder. */
+const TRADEOFF_BUILDER = "gpt-6.1-sol";
 
 function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; metas: Awaited<ReturnType<typeof loadMetas>>; bare?: boolean; compact?: boolean }) {
   const arch: ArchRun[] = runs.map((j, i) => {
@@ -457,6 +460,17 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                       <>{above} of {bars.length} designs beat the average of {P(avgBar)}.</>,
                     ],
                     chart: barsChart,
+                  },
+                  {
+                    title: "What each design costs",
+                    body: <>Pass rate against what a ticket costs the agent, or how long it takes, for the six designs all built by {TRADEOFF_BUILDER}. The dashed line is the Pareto frontier.</>,
+                    points: [
+                      <>A design in the shaded region costs more (or takes longer) and passes fewer tickets than one on the line.</>,
+                      <>Switch between cost per ticket and ticket time above the chart.</>,
+                    ],
+                    note: "Cost is the agent's model spend per ticket; time is the median time to finish a ticket, over the stages where the agent ran.",
+                    chart: <ArchTradeoff runs={arch.filter((r) => r.model === TRADEOFF_BUILDER)} order={order.filter((a) => arch.some((r) => r.arch === a && r.model === TRADEOFF_BUILDER))} />,
+                    wide: true,
                   },
                   {
                     title: "Which designs hold up as the docs change",
