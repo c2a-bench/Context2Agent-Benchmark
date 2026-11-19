@@ -27,7 +27,7 @@ agent did. A **fact judge** then explains every failure.
 The tasks here hold only code. Fill them with the benchmark data from Hugging Face, pinned to a commit:
 
 ```bash
-uv run --with huggingface_hub python3 scripts/fetch_bench.py --revision <observeai/c2a-bench commit>
+uv run --with huggingface_hub python3 scripts/fetch_bench.py --revision 76e9806cbd77860265fab7c3473e94860c5014bb
 ```
 
 This writes, per task, what the builder gets (the docs, API reference, practice tickets, instructions, each stage's
