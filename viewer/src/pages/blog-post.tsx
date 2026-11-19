@@ -31,7 +31,7 @@ const FIGURES: Record<FigureName, { title: string; from: string; caption: string
   architecture: {
     title: "Pass rate by architecture",
     from: "Skyway Air",
-    caption: "One builder (high reasoning effort), six assigned architectures; the dashed line is their average. Hover a row for its numbers.",
+    caption: "Six builders (high reasoning effort), each building all six assigned architectures; each bar pools their runs, and the dashed line is the average. Hover a row for its numbers.",
     href: "/#architecture",
   },
   packs: {

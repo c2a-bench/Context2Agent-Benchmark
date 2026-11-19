@@ -160,16 +160,25 @@ checks on wrong values, forbidden actions, or facts they never asked the custome
 
 <!-- figure:architecture -->
 
-- **Architecture matters.** With the builder held fixed (`gpt-6.1-sol`), and the architecture assigned, a knowledge graph queried at runtime resolved **70%** of Skyway's 311 tickets, an LLM-compiled wiki browsed with terminal tools **66%**, a no-retrieval prompts-and-workflows baseline **57%**, and
-plain raw-docs index search came last at **49%**.
+- **Architecture matters, but less than the builder.** Six builders each built all six assigned architectures. Pooled over
+the builders, three designs finish level: a knowledge graph queried at runtime, an LLM-compiled wiki browsed with terminal
+tools, and a no-retrieval prompts-and-workflows baseline each resolved **56%** of Skyway's 311 tickets. Raw docs with
+terminal tools reached **53%**, and the two index-search designs came last, at **48%** (wiki) and **43%** (raw docs).
 
   We compared two pairs of designs that each differ in one way: moving from raw docs to wiki notes
-  helps whether the agent uses terminal tools or index search **(raw → wiki: 56% → 66% with terminal tools, 49% → 54% with index search)**, and terminal
-  access beats index search for both kinds of knowledge.
+  helps whether the agent uses terminal tools or index search **(raw → wiki: 53% → 56% with terminal tools, 43% → 48% with
+  index search)**, and terminal tools beat index search for both raw docs and wiki notes.
+
+  The builder moves the score more than the design does. Pooled over the six designs, builders range from **40%**
+  (`deepseek-flash`) to **67%** (`claude-opus-5-5`), and the six builders' best designs are four different ones.
+
+  One run pulls a number down: `gemini-4-carbon`'s wiki-with-index-search agent never started in five of its six stages.
+  Without that run, wiki with index search would be at **56%**.
 
 - **Different designs break in different ways when the docs change.** Splitting Skyway's tickets by type, the knowledge
-graph was the most consistent across the three ticket types (**71%** discovery, **69%** regression, **66%** adaptability), while the LLM wiki was the best of all six at
-picking up *changed* facts (**76%** adaptability) but weaker at holding on to the unchanged ones (**57%** regression). No design
+graph was the best at picking up *changed* facts (**55%** adaptability, with **59%** discovery and **53%** regression), while
+the LLM wiki with terminal tools was the best at holding on to the unchanged ones (**56%** regression) but weaker on the
+changed ones (**51%** adaptability). Raw-docs index search fell furthest on changed facts (**34%**). No design
 wins every column, which is exactly why a single-stage benchmark would miss this.
 
 <!-- figure:packs -->
