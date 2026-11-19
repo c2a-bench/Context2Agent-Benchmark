@@ -243,7 +243,7 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
               <><b>{last.model}</b> is last with {P(last.rate)}.</>,
               <>A gap of {Math.round(100 * (first.rate - last.rate))} points between first and last.</>,
             ] : [],
-            note: sky ? undefined : <>A stage where the agent never started counts all its tickets as failed. Every support agent and every simulated customer runs on {CONFOUND}; {CONFOUND} builds no agent here.</>,
+            note: sky ? undefined : <>A stage where the agent never started counts all its tickets as failed.</>,
             chart: <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />,
           }];
           if (costs.length > 1) zig.push({
