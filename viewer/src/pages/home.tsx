@@ -237,8 +237,8 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
               <><b>At enterprise scale, the builder matters more than the architecture.</b> Builders differ by more than twice as much as designs do.</>,
               <><b>The weakest results are failed builds, not weak designs.</b></>,
             ] : [
-              <><b>The first build is not where builders separate; updates are.</b> When the docs grew from 26 to 64 pages, one builder checked file dates instead of content, missed most of the new pages and fell to last for three stages.</>,
-              <><b>Builders that test against new constraints keep their score.</b> When the docs introduced a limit on the agent's prompt size, builders that tested against it lost no tickets; two that missed it lost a fifth of that stage.</>,
+              <><b>The first build is not where builders separate; updates are.</b> One builder checked file dates instead of content, missed new pages, and fell to last place for three stages.</>,
+              <><b>Testing new constraints prevents failures.</b> When a prompt size limit was added, two builders missed it and lost 20% of that stage's tickets.</>,
             ],
             note: sky ? undefined : <>A stage where the agent never started counts all its tickets as failed.</>,
             chart: <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />,
