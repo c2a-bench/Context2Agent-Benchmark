@@ -94,6 +94,8 @@ export type ArchRun = {
   time: number;
   tok: number;
   types: Partial<Record<TicketType, [number, number]>>;
+  /** A pooled mark's builders, one line each in its hover card. */
+  parts?: { model: string; passed: number; total: number; usd: number; time: number }[];
 };
 
 const avg = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
@@ -240,6 +242,13 @@ function runTip(r: ArchRun) {
       <div className="mt-1 num">Passed {r.passed}/{r.total} = {pct(rate(r))} <span className="muted">(95% interval {pct(lo)} to {pct(hi)})</span></div>
       <div className="num muted">By stage: {r.stages.map((x) => pct(x)).join(" · ")}</div>
       <div className="num muted">${r.usd.toFixed(2)} a ticket · {Math.round(r.time)} s median · {Math.round(r.tok)}k input tokens</div>
+      {r.parts && (
+        <div className="mt-1.5 border-t pt-1.5" style={{ borderColor: "var(--line)" }}>
+          {r.parts.map((b) => (
+            <div key={b.model} className="num muted">{b.model}: {pct(b.passed / b.total)} · ${b.usd.toFixed(2)} · {Math.round(b.time)} s</div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

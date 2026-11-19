@@ -392,8 +392,27 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact }:
   );
 }
 
-/** The cost/time tradeoff compares designs with the builder held fixed: one run per design, all by this builder. */
-const TRADEOFF_BUILDER = "gpt-6.1-sol";
+/** The cost/time tradeoff: one mark per design, pooled over every builder's run of it (tickets passed over tickets,
+ *  cost per ticket weighted by tickets, each run's median ticket time averaged); the hover lists each builder. */
+function pooledDesigns(arch: ArchRun[], order: string[]): ArchRun[] {
+  return order.map((a) => {
+    const rs = arch.filter((r) => r.arch === a);
+    const total = rs.reduce((x, r) => x + r.total, 0);
+    const types: ArchRun["types"] = {};
+    for (const r of rs) for (const [k, v] of Object.entries(r.types) as [TicketType, [number, number]][]) { const t = (types[k] ??= [0, 0]); t[0] += v[0]; t[1] += v[1]; }
+    const n = Math.max(...rs.map((r) => r.stages.length));
+    return {
+      arch: a, name: rs[0].name, model: `${rs.length} builders`, harness: "pooled", color: "#8fa3bf", shape: "square",
+      passed: rs.reduce((x, r) => x + r.passed, 0), total,
+      stages: Array.from({ length: n }, (_, i) => rs.reduce((x, r) => x + (r.stages[i] ?? 0), 0) / rs.length),
+      usd: rs.reduce((x, r) => x + r.usd * r.total, 0) / total,
+      time: rs.reduce((x, r) => x + r.time, 0) / rs.length,
+      tok: rs.reduce((x, r) => x + r.tok * r.total, 0) / total,
+      types,
+      parts: rs.map((r) => ({ model: r.model, passed: r.passed, total: r.total, usd: r.usd, time: r.time })).sort((p, q) => q.passed / q.total - p.passed / p.total),
+    };
+  });
+}
 
 function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; metas: Awaited<ReturnType<typeof loadMetas>>; bare?: boolean; compact?: boolean }) {
   const arch: ArchRun[] = runs.map((j, i) => {
@@ -478,13 +497,13 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                   },
                   {
                     title: "What each design costs",
-                    body: <>Pass rate against what a ticket costs the agent, or how long it takes, for the six designs all built by {TRADEOFF_BUILDER}. The dashed line is the Pareto frontier.</>,
+                    body: <>Pass rate against what a ticket costs the agent, or how long it takes: one mark per design, pooled over the {builders.length} builders that built it. The dashed line is the Pareto frontier.</>,
                     points: [
                       <>A design in the shaded region costs more (or takes longer) and passes fewer tickets than one on the line.</>,
                       <>Switch between cost per ticket and ticket time above the chart.</>,
                     ],
-                    note: "Cost is the agent's model spend per ticket; time is the median time to finish a ticket, over the stages where the agent ran.",
-                    chart: <ArchTradeoff runs={arch.filter((r) => r.model === TRADEOFF_BUILDER)} order={order.filter((a) => arch.some((r) => r.arch === a && r.model === TRADEOFF_BUILDER))} />,
+                    note: "Cost is the agent's model spend per ticket; time is the median time to finish a ticket, over the stages where the agent ran. Hover a mark for each builder's own numbers.",
+                    chart: <ArchTradeoff runs={pooledDesigns(arch, order)} order={order} />,
                     wide: true,
                   },
                   {
