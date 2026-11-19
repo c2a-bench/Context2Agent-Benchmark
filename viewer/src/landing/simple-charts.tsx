@@ -359,7 +359,7 @@ export type CostDot = { label: string; sub?: string; cost: number; rate: number;
 export function CostScatter({ dots, height = 340, title = "Tickets passed vs what the builder spent on the whole run", axis = "builder cost, log scale", spent = "Builder spent" }: { dots: CostDot[]; height?: number; title?: string; axis?: string; spent?: string }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const h = useHover();
-  const m = { l: 44, r: 16, t: 14, b: 40 };
+  const m = { l: 44, r: 16, t: 30, b: 40 }; // the top band holds the "better" hint
   const pos = dots.map((d) => d.cost).filter((c) => c > 0);
   const lo = Math.log10(Math.min(...pos) / 1.5), hi = Math.log10(Math.max(...pos) * 1.5);
   // on a phone the chart keeps a readable width (names beside the dots) and scrolls sideways in its frame
@@ -385,7 +385,7 @@ export function CostScatter({ dots, height = 340, title = "Tickets passed vs wha
   });
   return (
     <div>
-      <div className="label muted mb-3">{title} · ↖ better: more passed for less</div>
+      <div className="label muted mb-3">{title}</div>
       <div ref={h.ref} className={h.on ? "relative sc-hov" : "relative"} onPointerLeave={h.hide}>
         <div ref={ref} className={narrow ? "sc-swipe" : undefined}>
           {w > 0 && (
@@ -400,6 +400,7 @@ export function CostScatter({ dots, height = 340, title = "Tickets passed vs wha
                 <text key={t} x={x(t)} y={height - m.b + 18} textAnchor="middle" fontSize={11} fill="var(--muted)">${t < 1 ? t.toFixed(2) : t}</text>
               ))}
               <text x={(m.l + cw - m.r) / 2} y={height - 4} textAnchor="middle" fontSize={11} fill="var(--muted)">{axis}</text>
+              <text x={m.l} y={14} fontSize={11} fill="var(--muted)">↖ better: more passed for less</text>
               {named.map(({ d, cx, cy, ly, right }) => {
                 const body = (
                   <>
