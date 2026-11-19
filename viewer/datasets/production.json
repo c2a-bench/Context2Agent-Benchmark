@@ -1,17 +1,21 @@
 {
   "schemaVersion": 2,
   "provider": "huggingface",
-  "domains": ["redwood-inference", "support-agent-knowledge", "skyway-air"],
+  "domains": [
+    "redwood-inference",
+    "support-agent-knowledge",
+    "skyway-air"
+  ],
   "benchmark": {
     "repository": "observeai/c2a-bench",
-    "revision": null,
+    "revision": "76e9806cbd77860265fab7c3473e94860c5014bb",
     "path": "",
-    "inventorySha256": null
+    "inventorySha256": "b0b72207838eaacb9d33a70f4f43db478f814033e5fd1b609e2e825a9e5242ca"
   },
   "runs": {
     "repository": "observeai/c2a-bench-runs",
-    "revision": null,
+    "revision": "78e3930b8a7bbb4e0328a6a047063441e70265bc",
     "path": "",
-    "inventorySha256": null
+    "inventorySha256": "eb8f6d496c2fc2d1889ba2b620fb32d7624b518bb16777a6cc1c466d0d78a628"
   }
 }
