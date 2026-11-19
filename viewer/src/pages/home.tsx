@@ -208,7 +208,13 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
     : redwood
         .map((b, i) => ({ model: b.model, harness: b.harness, ...style(b.model), rate: pooled(b.job), passed: sum(b.job, "passed"), total: sum(b.job, "total"), stages: stagePoints(metas[i]) }))
         .sort((a, b) => b.rate - a.rate);
-  const costs = redwood.filter((b) => b.job.cost != null).map((b) => ({ model: b.model, harness: b.harness, ...style(b.model), rate: pooled(b.job), cost: b.job.cost! }));
+  // Skyway: one dot per builder, its pooled pass rate against what one build cost it, averaged over its architectures.
+  const costs = sky
+    ? rows.flatMap((r) => {
+        const c = skyway.filter((j) => shortModel(j.builder.model) === r.model && j.cost != null).map((j) => j.cost!);
+        return c.length ? [{ model: r.model, harness: r.harness, color: r.color, shape: r.shape, rate: r.rate, cost: c.reduce((a, x) => a + x, 0) / c.length }] : [];
+      })
+    : redwood.filter((b) => b.job.cost != null).map((b) => ({ model: b.model, harness: b.harness, ...style(b.model), rate: pooled(b.job), cost: b.job.cost! }));
   const toggle = skyway?.length ? <Seg value={env} onChange={setEnv} options={[["redwood", "Redwood Inference"], ["skyway", "Skyway Air"]]} /> : undefined;
   return (
     <Sec bare={bare} id="results" className="lp-sec" head={
@@ -240,15 +246,24 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
             note: sky ? undefined : <>A stage where the agent never started counts all its tickets as failed. Every support agent and every simulated customer runs on {CONFOUND}; {CONFOUND} builds no agent here.</>,
             chart: <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />,
           }];
-          if (!sky && costs.length > 1) zig.push({
+          if (costs.length > 1) zig.push({
             title: "What it cost to build",
-            body: "Each dot is one builder: tickets passed against what the builder spent on the whole run.",
+            body: sky
+              ? "Each dot is one builder: Skyway tickets passed, pooled over its architectures, against what one build cost it on average."
+              : "Each dot is one builder: tickets passed against what the builder spent on the whole run.",
             points: [
-              <><b>{cheap.model}</b> spent the least, ${cheap.cost.toFixed(2)}, and passed {P(cheap.rate)}.</>,
-              <><b>{dear.model}</b> spent the most, ${dear.cost.toFixed(2)}, and passed {P(dear.rate)}.</>,
-              <>Spending more did not buy a better agent.</>,
+              <><b>{cheap.model}</b> spent the least, ${cheap.cost.toFixed(2)}{sky ? " a build" : ""}, and passed {P(cheap.rate)}.</>,
+              <><b>{dear.model}</b> spent the most, ${dear.cost.toFixed(2)}{sky ? " a build" : ""}, and passed {P(dear.rate)}.</>,
+              sky
+                ? <>{dear.model} spent {Math.round(dear.cost / cheap.cost)}× as much as {cheap.model} for {Math.abs(Math.round(100 * (dear.rate - cheap.rate)))} points {dear.rate >= cheap.rate ? "more" : "less"}.</>
+                : <>Spending more did not buy a better agent.</>,
             ],
-            chart: <CostScatter dots={costs.map((c) => ({ label: c.model === CONFOUND ? `${c.model} *` : c.model, sub: c.harness, cost: c.cost, rate: c.rate, color: c.color }))} />,
+            chart: (
+              <CostScatter
+                dots={costs.map((c) => ({ label: c.model === CONFOUND ? `${c.model} *` : c.model, sub: c.harness, cost: c.cost, rate: c.rate, color: c.color }))}
+                {...(sky ? { title: "Tickets passed vs what the builder spent per build", axis: "builder cost per architecture, log scale", spent: "Builder spent per build" } : {})}
+              />
+            ),
           });
           return <Zig rows={zig} />;
         })()}
