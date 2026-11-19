@@ -241,7 +241,7 @@ export function PartsBar({ label, segments, legend = true }: { label?: ReactNode
 
 export type BarRow = { key: string; label: ReactNode; parts: Segment[]; value: ReactNode; tip?: ReactNode; group?: string; groupDef?: string; labelDef?: string };
 
-function BarListRow({ r, max, grouped, showGroup, divider }: { r: BarRow; max: number; grouped: boolean; showGroup: boolean; divider: boolean }) {
+function BarListRow({ r, max, grouped, showGroup, divider, labelWidth }: { r: BarRow; max: number; grouped: boolean; showGroup: boolean; divider: boolean; labelWidth: string }) {
   const sum = r.parts.reduce((a, p) => a + p.value, 0);
   const shown = r.parts.filter((p) => p.value > 0);
   const tip = useTip(
@@ -259,9 +259,10 @@ function BarListRow({ r, max, grouped, showGroup, divider }: { r: BarRow; max: n
       {...tip}
       className={cn(
         "group grid items-center gap-3 rounded py-1.5 outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring",
-        grouped ? "grid-cols-[minmax(0,14rem)_minmax(0,15rem)_minmax(0,1fr)_auto]" : "grid-cols-[minmax(0,20rem)_minmax(0,1fr)_auto]",
+        grouped && "grid-cols-[minmax(0,14rem)_minmax(0,15rem)_minmax(0,1fr)_auto]",
         divider && "mt-1 rounded-none border-t border-border/60 pt-2",
       )}
+      style={grouped ? undefined : { gridTemplateColumns: `minmax(0, ${labelWidth}) minmax(0, 1fr) auto` }}
     >
       {grouped && <div className="truncate font-sans text-xs text-muted-foreground">{showGroup ? <Defined def={r.groupDef}>{r.group}</Defined> : ""}</div>}
       <div className="truncate font-sans text-xs" title={typeof r.label === "string" ? r.label : undefined}>
@@ -287,11 +288,16 @@ export function BarList({ rows, limit }: { rows: BarRow[]; limit?: number }) {
   const max = Math.max(0, ...rows.map((r) => r.parts.reduce((a, p) => a + p.value, 0)));
   const shown = limit && !all ? rows.slice(0, limit) : rows;
   const grouped = rows.some((r) => r.group);
+  // The label column fits the longest label (at most 20rem), so short labels like "stage 0" don't leave a wide gap.
+  // Every row uses the same width, so the bars still start in one line.
+  const labelWidth = rows.every((r) => typeof r.label === "string")
+    ? `min(20rem, ${Math.max(...rows.map((r) => (r.label as string).length)) + 2}ch)`
+    : "20rem";
   return (
     <div>
       {shown.map((r, i) => {
         const newGroup = i === 0 || shown[i - 1].group !== r.group;
-        return <BarListRow key={r.key} r={r} max={max} grouped={grouped} showGroup={grouped && newGroup} divider={grouped && newGroup && i > 0} />;
+        return <BarListRow key={r.key} r={r} max={max} grouped={grouped} showGroup={grouped && newGroup} divider={grouped && newGroup && i > 0} labelWidth={labelWidth} />;
       })}
       {limit && rows.length > limit && (
         <button
