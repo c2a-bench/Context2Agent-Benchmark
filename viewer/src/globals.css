@@ -36,6 +36,7 @@
   --sidebar-border: oklch(0.9271 0.0101 238.5177);
   --sidebar-ring: #8e8e8e;
   --link: #0c1016;
+  --link-line: #c4b800; /* the Observe.AI yellow, deepened to show on white */
   /* Chart series, checked for colour-blind separation on this surface (dataviz validate_palette.js). */
   --viz-1: #d9692f;
   --viz-2: #00968c;
@@ -99,6 +100,7 @@
   --sidebar-border: #252525;
   --sidebar-ring: #8e8e8e;
   --link: #f2f2f1;
+  --link-line: #f2f536;
   --viz-1: #d95926;
   --viz-2: #199e90;
   --viz-3: #9085e9;
@@ -186,15 +188,18 @@
   --tracking-widest: calc(var(--tracking-normal) + 0.1em);
 }
 
-/* Text links: in the text colour, underlined (as on the main site), so they read as links without a hover. */
+/* Text links: the text colour with the Observe.AI yellow underline, so a link reads as a link in both themes
+   (yellow text would be unreadable on white); a light yellow wash on hover. */
 @utility link-text {
   color: var(--link);
   text-decoration-line: underline;
-  text-decoration-thickness: 1px;
-  text-decoration-color: color-mix(in oklab, var(--link) 45%, transparent);
-  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--link-line);
+  text-underline-offset: 4px;
+  border-radius: 2px;
+  transition: background-color 120ms;
   &:hover {
-    text-decoration-color: var(--link);
+    background-color: color-mix(in srgb, var(--link-line) 22%, transparent);
   }
 }
 
