@@ -1,5 +1,6 @@
 import { Suspense, use, useMemo, useState } from "react";
-import { AlertTriangle, Brain, ChevronRight, MessageSquare, Search, Terminal } from "lucide-react";
+import { Bot, Brain, ChevronRight, Clock, FilePen, FileText, Search, Terminal, Wrench } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import Link from "@/components/link";
 import { useJob, useQuery } from "@/lib/route";
 import { getBuildEvents, getBuilds, getLogText } from "@/lib/data";
@@ -95,40 +96,97 @@ function LastMessage({ text }: { text: string }) {
   );
 }
 
-type Filter = "all" | "say" | "tool" | "think" | "failed";
-const FILTERS: [Filter, string][] = [["all", "All"], ["say", "Messages"], ["tool", "Commands"], ["think", "Thinking"], ["failed", "Failed"]];
+/** The log as the builder's story: each message it wrote starts a step, and the actions it took after it (commands,
+ *  file reads and writes, helpers, thinking) sit folded under that message, like an agent's transcript. */
+type Step = { say: BuildEvent | null; acts: BuildEvent[] };
+function stepsOf(events: BuildEvent[]): Step[] {
+  const out: Step[] = [];
+  for (const e of events) {
+    if (e.k === "say" || !out.length) out.push({ say: e.k === "say" ? e : null, acts: [] });
+    if (e.k !== "say") out[out.length - 1].acts.push(e);
+  }
+  return out;
+}
 
 function Timeline({ job, stage }: { job: string; stage: BuildStage }) {
   const events = use(getBuildEvents(job, stage.index));
-  const [filter, setFilter] = useState<Filter>("all");
+  const steps = useMemo(() => stepsOf(events), [events]);
+  const [onlyFailed, setOnlyFailed] = useState(false);
+  const [all, setAll] = useState<boolean | null>(null); // Expand all / Collapse all (null: each step as the reader left it)
   const [term, setTerm] = useState("");
-  const shown = useMemo(() => {
-    const t = term.trim().toLowerCase();
-    return events.filter((e) => {
-      if (filter === "failed" ? !e.e : filter !== "all" && e.k !== filter) return false;
-      return !t || [e.x, e.o, e.n].some((v) => v?.toLowerCase().includes(t));
-    });
-  }, [events, filter, term]);
-  const count = (f: Filter) => (f === "all" ? events.length : f === "failed" ? events.filter((e) => e.e).length : events.filter((e) => e.k === f).length);
+  const q = term.trim().toLowerCase();
+  const hit = (e: BuildEvent) => !q || [e.x, e.o, e.n].some((v) => v?.toLowerCase().includes(q));
+  const shown = steps.filter((s) => (!onlyFailed || s.acts.some((a) => a.e)) && (!q || (s.say && hit(s.say)) || s.acts.some(hit)));
+  const failed = steps.filter((s) => s.acts.some((a) => a.e)).length;
   return (
     <section className="mt-8">
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b bg-background/95 py-2 backdrop-blur">
-        {FILTERS.map(([f, name]) => (
-          <button key={f} type="button" onClick={() => setFilter(f)}
-            className={cn("rounded-full border px-2.5 py-1 text-xs", filter === f ? "border-foreground bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}>
-            {name} <span className="tabular-nums opacity-70">{count(f)}</span>
-          </button>
-        ))}
+        <button type="button" onClick={() => setOnlyFailed(false)} className={cn("rounded-full border px-2.5 py-1 text-xs", !onlyFailed ? "border-foreground bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}>
+          All steps <span className="tabular-nums opacity-70">{steps.length}</span>
+        </button>
+        <button type="button" onClick={() => setOnlyFailed(true)} disabled={!failed} className={cn("rounded-full border px-2.5 py-1 text-xs disabled:opacity-40", onlyFailed ? "border-foreground bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}>
+          Steps with a failure <span className="tabular-nums opacity-70">{failed}</span>
+        </button>
+        <button type="button" onClick={() => setAll(all ? false : true)} className="text-xs text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground">
+          {all ? "Collapse all" : "Expand all"}
+        </button>
         <label className="ml-auto flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs">
           <Search className="size-3.5 text-muted-foreground" />
           <input value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Search commands and output" className="w-48 bg-transparent outline-none" />
         </label>
       </div>
-      <ol className="mt-2 divide-y">
-        {shown.map((e, n) => <Event key={n} job={job} e={e} />)}
+      <ol className="mt-4 space-y-5">
+        {shown.map((s, n) => <StepView key={`${n}-${all}-${onlyFailed}-${q}`} job={job} step={s} open={all ?? (onlyFailed || !!q)} />)}
         {!shown.length && <li className="py-6 text-sm text-muted-foreground">Nothing matches.</li>}
       </ol>
     </section>
+  );
+}
+
+/** What a step's actions did, in a few words: "9 actions · 1 failed · wrote agent.py, kg.py". */
+function stepSummary(acts: BuildEvent[]): string {
+  const tools = acts.filter((a) => a.k === "tool");
+  const failed = tools.filter((a) => a.e).length;
+  const wrote = [...new Set(tools.map(describe).filter((d) => d.verb === "Write" || d.verb === "Edit").map((d) => d.target.split("/").pop()!))];
+  const thinking = acts.filter((a) => a.k === "think").length;
+  return [
+    tools.length && `${tools.length} action${tools.length === 1 ? "" : "s"}`,
+    failed && `${failed} failed`,
+    wrote.length && `changed ${wrote.slice(0, 3).join(", ")}${wrote.length > 3 ? ` +${wrote.length - 3}` : ""}`,
+    !tools.length && thinking && "thinking",
+  ].filter(Boolean).join(" · ");
+}
+
+function StepView({ job, step, open: startOpen }: { job: string; step: Step; open: boolean }) {
+  const [open, setOpen] = useState(startOpen);
+  const failed = step.acts.some((a) => a.e);
+  return (
+    <li className="flex gap-3">
+      <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", failed ? "bg-red-500" : "bg-foreground/40")} aria-hidden />
+      <div className="min-w-0 flex-1">
+        {step.say ? (
+          <div className="prose-sm max-w-none text-sm leading-relaxed [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:font-mono [&_code]:text-[12.5px] [&_li]:ml-4 [&_li]:list-disc [&_p+p]:mt-2 [&_strong]:font-semibold [&_ul]:mt-1">
+            <ReactMarkdown>{step.say.x ?? ""}</ReactMarkdown>
+            {step.say.r && <Full job={job} refId={step.say.r} what="message" />}
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">Started</div>
+        )}
+        {step.acts.length > 0 && (
+          <div className="mt-1.5">
+            <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              <ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />
+              <span className={cn(failed && "text-red-600 dark:text-red-400")}>{stepSummary(step.acts)}</span>
+            </button>
+            {open && (
+              <ol className="mt-2 space-y-1 border-l pl-3">
+                {step.acts.map((a, i) => <Action key={i} job={job} e={a} />)}
+              </ol>
+            )}
+          </div>
+        )}
+      </div>
+    </li>
   );
 }
 
@@ -175,79 +233,52 @@ function describe(e: BuildEvent): Said {
   return { verb: name, target: path || str("description") || str("query") || "" };
 }
 
-function Event({ job, e }: { job: string; e: BuildEvent }) {
-  if (e.k === "say") {
-    return (
-      <li className="flex gap-3 py-3">
-        <MessageSquare className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 flex-1">
-          <p className="whitespace-pre-wrap break-words text-sm">{e.x}</p>
-          {e.r && <Full job={job} refId={e.r} what="message" />}
-        </div>
-      </li>
-    );
-  }
+const ICON = { "$": Terminal, Read: FileText, Write: FilePen, Edit: FilePen, "Sub-agent": Bot, Wait: Clock } as const;
+
+/** One action in a step: an icon, what it did in one line, and (on click) the whole command or file and its output. */
+function Action({ job, e }: { job: string; e: BuildEvent }) {
+  const [open, setOpen] = useState(false);
   if (e.k === "think") {
     return (
-      <li className="flex gap-3 py-2">
-        <Brain className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-        <details className="min-w-0 flex-1 text-sm text-muted-foreground">
-          <summary className="cursor-pointer select-none italic">Thinking: {(e.x ?? "").slice(0, 120)}{(e.x ?? "").length > 120 ? "…" : ""}</summary>
-          <p className="mt-1 whitespace-pre-wrap break-words italic">{e.x}</p>
-          {e.r && <Full job={job} refId={e.r} what="thinking" />}
-        </details>
+      <li>
+        <button type="button" onClick={() => setOpen(!open)} className="flex w-full min-w-0 items-start gap-2 rounded px-1.5 py-1 text-left text-xs text-muted-foreground italic hover:bg-muted/50">
+          <Brain className="mt-0.5 size-3.5 shrink-0" />
+          <span className={cn("min-w-0", !open && "truncate")}>{open ? e.x : `Thinking: ${e.x ?? ""}`}</span>
+        </button>
+        {open && e.r && <div className="pl-7"><Full job={job} refId={e.r} what="thinking" /></div>}
       </li>
     );
   }
   const d = describe(e);
-  const lines = (e.o ?? "").split("\n").length;
-  const more = !!d.body && d.body.trim() !== d.target.trim();
+  const Icon = ICON[d.verb as keyof typeof ICON] ?? Wrench;
+  const body = d.body && d.body.trim() !== d.target.trim() ? d.body : null;
   return (
-    <li className="flex gap-3 py-2.5">
-      {e.e ? <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" /> : <Terminal className="mt-0.5 size-4 shrink-0 text-muted-foreground" />}
-      <div className="min-w-0 flex-1">
-        {/* one line: what it did */}
-        <div className="flex min-w-0 items-baseline gap-2">
-          <span className={cn("shrink-0 font-mono text-xs", d.shell ? "text-muted-foreground" : "rounded bg-muted px-1.5 py-0.5")}>{d.verb}</span>
-          <span className="min-w-0 truncate font-mono text-[12.5px]" title={d.target}>{d.target || "—"}</span>
-          {e.e && <span className="shrink-0 text-xs font-medium text-red-600 dark:text-red-400">failed</span>}
+    <li>
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
+        className={cn("flex w-full min-w-0 items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-muted/50", open && "bg-muted/50")}>
+        <Icon className={cn("size-3.5 shrink-0", e.e ? "text-red-500" : "text-muted-foreground")} />
+        <span className="shrink-0 text-xs font-medium">{d.verb === "$" ? "Shell" : d.verb}</span>
+        <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground" title={d.target}>{d.target}</span>
+        {e.e && <span className="shrink-0 text-[11px] font-medium text-red-600 dark:text-red-400">failed</span>}
+        <ChevronRight className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform", open && "rotate-90")} />
+      </button>
+      {open && (
+        <div className="mt-1 mb-2 ml-6 overflow-hidden rounded-md border border-neutral-800 bg-neutral-950 font-mono text-[12px] text-neutral-200 [--link-line:#f2f536] [--link:#f2f2f1]">
+          <pre className="max-h-72 overflow-auto px-3 py-2 whitespace-pre-wrap break-words">
+            {d.shell ? <span className="text-neutral-500">$ </span> : null}{body ?? d.target}
+          </pre>
+          {e.o != null && (
+            <pre className={cn("max-h-80 overflow-auto border-t border-neutral-800 px-3 py-2 whitespace-pre-wrap break-words", e.e ? "text-red-300" : "text-neutral-400")}>{e.o || "(no output)"}</pre>
+          )}
+          {(e.r || e.ri) && (
+            <div className="flex gap-4 border-t border-neutral-800 px-3 py-1.5 font-sans">
+              {e.r && <Full job={job} refId={e.r} what="output" />}
+              {e.ri && <Full job={job} refId={e.ri} what="raw call" />}
+            </div>
+          )}
         </div>
-        {/* folded: the whole command or file text, the output, the raw call */}
-        <Folds
-          job={job}
-          parts={[
-            ...(more ? [{ key: "body", label: d.shell ? `whole command · ${d.body!.split("\n").length} lines` : `content · ${d.body!.split("\n").length} lines`, text: d.body! }] : []),
-            ...(e.o != null ? [{ key: "out", label: `output · ${lines} line${lines === 1 ? "" : "s"}`, text: e.o || "(no output)", fullRef: e.r }] : []),
-          ]}
-          raw={e.ri}
-        />
-      </div>
+      )}
     </li>
   );
 }
 
-/** The folded parts of a call (its whole command or file text, its output): toggles on one line, the open one below. */
-function Folds({ job, parts, raw }: { job: string; parts: { key: string; label: string; text: string; fullRef?: string }[]; raw?: string }) {
-  const [open, setOpen] = useState<string | null>(null);
-  if (!parts.length && !raw) return null;
-  const shown = parts.find((p) => p.key === open);
-  return (
-    <div className="mt-1">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        {parts.map((p) => (
-          <button key={p.key} type="button" onClick={() => setOpen(open === p.key ? null : p.key)} aria-expanded={open === p.key}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-            <ChevronRight className={cn("size-3.5 transition-transform", open === p.key && "rotate-90")} /> {p.label}
-          </button>
-        ))}
-        {raw && <Full job={job} refId={raw} what="raw call" />}
-      </div>
-      {shown && (
-        <>
-          <pre className="mt-1 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-md border bg-muted/30 p-2 font-mono text-[12px]">{shown.text}</pre>
-          {shown.fullRef && <Full job={job} refId={shown.fullRef} what="output" />}
-        </>
-      )}
-    </div>
-  );
-}
