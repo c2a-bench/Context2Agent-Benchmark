@@ -36,12 +36,11 @@
   --sidebar-border: oklch(0.9271 0.0101 238.5177);
   --sidebar-ring: #8e8e8e;
   --link: #0c1016;
-  /* Chart series: the main site's data colours (landing.css): ink first, then its blue, gold, orange and magenta (red
-     stays for builder failures, as on the main site). */
-  --viz-1: #0c1016;
-  --viz-2: #2166ac;
-  --viz-3: #b8860b;
-  --viz-4: #ef8a62;
+  /* Chart series, checked for colour-blind separation on this surface (dataviz validate_palette.js). */
+  --viz-1: #d9692f;
+  --viz-2: #00968c;
+  --viz-3: #6250d6;
+  --viz-4: #b8860b;
   --viz-5: #c2417b;
   --font-sans: Geist, sans-serif;
   --font-serif: serif;
@@ -100,10 +99,10 @@
   --sidebar-border: #252525;
   --sidebar-ring: #8e8e8e;
   --link: #f2f2f1;
-  --viz-1: #f2f2f1;
-  --viz-2: #5b9bd5;
-  --viz-3: #d4a72c;
-  --viz-4: #ef8a62;
+  --viz-1: #d95926;
+  --viz-2: #199e90;
+  --viz-3: #9085e9;
+  --viz-4: #c98500;
   --viz-5: #d55181;
   --font-sans: Geist, sans-serif;
   --font-serif: serif;
