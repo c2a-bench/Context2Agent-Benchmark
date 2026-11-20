@@ -220,3 +220,14 @@
 .top-loader-bar {
   width: 100%;
 }
+
+/* Scrollbars: thin, in the theme's greys, no track or arrows (the browser default is a wide white bar in dark mode). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--foreground) 22%, transparent) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--foreground) 22%, transparent); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--foreground) 40%, transparent); }
+*::-webkit-scrollbar-button { display: none; }
