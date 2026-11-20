@@ -322,13 +322,6 @@ rule names.
 Builders almost always test on single-turn examples and design for eager first-turn triage. When a customer's real issue
 only emerges on turn two, that habit causes two opposite irreversible mistakes.
 
-On Redwood Inference and the knowledge packs, handoff tickets must be handed to a person untouched. Yet on the four
-vague-opener handoff tickets in the knowledge packs, 92.1% of agent runs edit the ticket on turn one, and in 55% of
-runs, changing the status from New to Waiting on Customer while asking a clarifying question is the *only* change
-that fails the ticket (pass rate: 6.4%). On Redwood, all seven builders cause 74 of these premature-edit failures.
-Only 5.7% of knowledge-pack builds avoid turn-one edits completely (DeepSeek on Conflicting and Carbon on Noisy), and
-those two immediately finish first (89.6%) and second (85.1%) in the entire environment.
-
 Over-hardening prompts to escalate anything out of policy fails in the opposite way. On Skyway Air, Opus 5.5 ranks first
 on 85.7% of the customer behaviors (including resisting manager requests at 68.3%, versus GLM's 6.3%), yet finishes
 last on goal changes at 33.3%, less than half of 6.1 Sol (69.0%) and Carbon (66.7%). When a customer opens with a
