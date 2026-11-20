@@ -3,7 +3,7 @@
  * `<!-- figure:<name> -->` draws that landing chart from live data, and
  * `<!-- shot:<file> | <caption> | <link> -->` shows a run-page screenshot from public/blog (light and dark versions).
  */
-import { Suspense, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -11,21 +11,24 @@ import { ArrowRight } from "lucide-react";
 import { Nav, RepoLinks } from "@/landing/nav";
 import { publicAsset } from "@/lib/assets";
 import { POSTS, postDate } from "@/blog/posts";
-import { LandingFigure, type FigureName } from "@/pages/home";
+import { LandingFigure, Seg, type FigureEnv, type FigureName } from "@/pages/home";
 import { TicketViewer, BehaviourViewer } from "@/blog/viewers";
 import "@/landing/landing.css";
 
-const FIGURES: Record<FigureName, { title: string; from: string; caption: string; href: string }> = {
+/** `skyway` (with its own caption) gives the figure a Redwood / Skyway toggle; the figure opens on Redwood. */
+const FIGURES: Record<FigureName, { title: string; from: string; caption: string; href: string; skyway?: string }> = {
   results: {
     title: "Pass rate by builder",
     from: "Redwood Inference",
     caption: "Each column is one builder, every one run with high reasoning effort.",
+    skyway: "Each column is one builder, pooled over the six architectures it was assigned, every one run with high reasoning effort.",
     href: "/#results",
   },
   failures: {
     title: "Why tickets failed",
     from: "Redwood Inference",
     caption: "Each bar splits a builder's failure reasons: warm colours are the builder's fault, blue ones the agent's. Every builder ran with high reasoning effort. Hover a segment for its share.",
+    skyway: "Each bar splits a builder's failure reasons over all six architectures it built: warm colours are the builder's fault, blue ones the agent's. Every builder ran with high reasoning effort. Hover a segment for its share.",
     href: "/#failures",
   },
   architecture: {
@@ -61,11 +64,18 @@ const VIEWERS: Record<string, { kicker: string; title: string; caption?: string;
   },
 };
 
-function Frame({ kicker, title, note, caption, href, link, children }: { kicker: string; title?: string; note?: string; caption?: string; href?: string; link?: string; children: ReactNode }) {
+function Frame({ kicker, title, note, caption, href, link, right, children }: { kicker: string; title?: string; note?: string; caption?: string; href?: string; link?: string; right?: ReactNode; children: ReactNode }) {
   const inner = !href ? null : <Link to={href}>{link} <ArrowRight className="inline size-3.5" /></Link>;
   return (
     <figure className="lp-figure">
-      <div className="caps muted">{kicker}</div>
+      {right ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="caps muted">{kicker}</div>
+          {right}
+        </div>
+      ) : (
+        <div className="caps muted">{kicker}</div>
+      )}
       {title && <div className="lp-figure-title">{title}</div>}
       {note && <div className="lp-figure-note"><span aria-hidden="true">★</span> {note}</div>}
       <div className="lp-figure-body">{children}</div>
@@ -90,6 +100,21 @@ const MD: Components = {
     ),
 };
 
+/** A landing chart in the post; one that has Skyway Air data too gets a Redwood / Skyway toggle above it. */
+function ChartFigure({ name }: { name: FigureName }) {
+  const f = FIGURES[name];
+  const [env, setEnv] = useState<FigureEnv>("redwood");
+  const sky = env === "skyway" && !!f.skyway;
+  const toggle = f.skyway ? <Seg value={env} onChange={setEnv} options={[["redwood", "Redwood Inference"], ["skyway", "Skyway Air"]]} /> : undefined;
+  return (
+    <Frame kicker={`From: ${sky ? "Skyway Air" : f.from}`} title={f.title} note="All runs at high reasoning effort" caption={sky ? f.skyway : f.caption} href={f.href} link="See it on the results page" right={toggle}>
+      <Suspense fallback={<div className="lp-figure-wait muted">Loading the latest runs…</div>}>
+        <LandingFigure name={name} env={sky ? "skyway" : "redwood"} compact />
+      </Suspense>
+    </Frame>
+  );
+}
+
 const PART = /<!--\s*(figure|shot):\s*([\w-]+)\s*(?:\|\s*([\s\S]*?)\s*\|\s*(\S+)\s*)?-->/g;
 
 function Body({ md }: { md: string }) {
@@ -107,14 +132,7 @@ function Body({ md }: { md: string }) {
         </Frame>,
       );
     } else if (kind === "figure" && name in FIGURES) {
-      const f = FIGURES[name as FigureName];
-      out.push(
-        <Frame key={name} kicker={`From: ${f.from}`} title={f.title} note="All runs at high reasoning effort" caption={f.caption} href={f.href} link="See it on the results page">
-          <Suspense fallback={<div className="lp-figure-wait muted">Loading the latest runs…</div>}>
-            <LandingFigure name={name as FigureName} compact />
-          </Suspense>
-        </Frame>,
-      );
+      out.push(<ChartFigure key={name} name={name as FigureName} />);
     } else if (kind === "shot") {
       out.push(
         <Frame key={name} kicker="From a run page" caption={caption} href={href} link="Open this run">

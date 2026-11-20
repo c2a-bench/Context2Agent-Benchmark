@@ -14,6 +14,7 @@ const NAV = [
 /**
  * The landing nav. On the home page it gets the refs for the travelling title (the slot it docks into, kept invisible,
  * and the divider that fades in); on other pages (the blog) the name shows in place and the section links go home.
+ * The blog is linked from the hero's Read the blog button, not from the nav.
  */
 export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpanElement | null>; dividerRef?: React.RefObject<HTMLSpanElement | null> }) {
   const home = !!slotRef;

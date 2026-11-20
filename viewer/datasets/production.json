@@ -14,8 +14,8 @@
   },
   "runs": {
     "repository": "observeai/c2a-bench-runs",
-    "revision": "b06ed8a87a84b7676c9b9f55e30a0fd745c836c0",
+    "revision": "711e8295bfcde7b35e2cf38855f7df098c71f880",
     "path": "",
-    "inventorySha256": "7266de739afe447b080e5f28d749a6db57e3c27c0c5707a739123b4f92948c35"
+    "inventorySha256": "d0cc0d68cc757949c229e482a0566ca6bc624f536de728410ab439ca895583d3"
   }
 }

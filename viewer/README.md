@@ -60,7 +60,7 @@ and cover Pages base paths, queries, anchors, Monaco, workers and empty-code sta
 Keep `BLOB_READ_WRITE_TOKEN` in `.env.local` or the shell. Pause publishing while converting.
 
 ```bash
-npm run migrate:blob -- --id RELEASE_ID --expected-runs 50 --license bsd \
+npm run migrate:blob -- --id RELEASE_ID --expected-runs 50 --license mit \
   --benchmark-repo observeai/c2a-bench --runs-repo observeai/c2a-bench-runs
 npm run verify:migration -- --dir .migration/RELEASE_ID --report .reports/validation.json
 ```
@@ -76,8 +76,8 @@ They are gitignored and never included in Pages. Full validation checks file inv
 reference, reconstructed document snapshots, stage scores, all case results, interaction projections,
 and code snapshots. Review warnings and any credential-like content before public upload.
 
-`--license` must match the approved existing HF dataset cards. The example `bsd` preserves the current
-cards; do not invent/change a license for a different team's dataset.
+`--license` must match the approved existing HF dataset cards. The example `mit` matches the
+cards (both HF datasets are MIT, like the code).
 
 ## Publish only after validation
 
