@@ -2,7 +2,6 @@
 /dist
 .env*
 !.env.example
-.vercel
 *.tsbuildinfo
 # replay data generated from jobs/
 /.data

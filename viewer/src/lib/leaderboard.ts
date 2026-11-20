@@ -2,7 +2,7 @@ import type { JobSummary } from "@/lib/data";
 
 // The environments the current results come from, in display order, and when their tickets were last reworked:
 // runs started before that date are on an older ticket version and are marked so.
-// architectures: the environment fixes one architecture per run (skyway-arch), so a model's runs of different
+// architectures: the environment fixes one architecture per run (Skyway), so a model's runs of different
 // architectures are one entry; the viewer asks which architecture to show.
 /** A run started before `current` (an older version of the tickets). The published datasets carry no start dates and
  *  hold only current runs, so a run without a date is current. */
@@ -26,16 +26,6 @@ export const FOCUS: { id: string; short: string; current: string; blurb: string;
     short: "Skyway architectures",
     current: "2026-11-06",
     blurb: "Skyway Air with the architecture fixed per run: the same builder model builds six agents, one per way of storing and finding the docs (raw docs, an LLM wiki or a knowledge graph; index search, terminal tools, graph queries or no retrieval).",
-    architectures: true,
-  },
-  {
-    // The same six runs, graded again after the run review (2026-11-08): fixed tickets and customer, practice
-    // examples for the hidden conditions (stages 3-5 built again), knowledge-graph label, every stage fact-judged
-    // in folder mode. Published with publish-run.ts --task skyway-arch --as skyway-arch-regraded.
-    id: "skyway-arch-regraded",
-    short: "Skyway architectures (regraded)",
-    current: "2026-11-06",
-    blurb: "The six Skyway architecture runs graded again after the run review: ticket and customer fixes, practice examples for the prompt limit and unreadable notes (stages 3-5 built again), and the knowledge-graph label.",
     architectures: true,
   },
 ];

@@ -2,10 +2,10 @@ import type { BuildEvent, BuildsData, CasesData, CodeData, Doc, DocsData, Meta, 
 import type { JobSummary, PublishedIndex, TaskSummary } from "./data-types";
 import { parseRunKey } from "./data-types";
 import { track } from "./loading";
-import { canonicalDomain, createDatasetLoader, type DatasetRelease } from "./dataset-v2";
+import { createDatasetLoader, type DatasetRelease } from "./dataset-v2";
 
 export type { JobSummary, TaskSummary, PublishedIndex } from "./data-types";
-export { runKey, parseRunKey, DEFAULT_TASK, OLD_NAMES, JOB_FILES } from "./data-types";
+export { runKey, parseRunKey, DEFAULT_TASK, JOB_FILES } from "./data-types";
 
 /** Published mode reads a public, commit-pinned Hugging Face dataset; local dev reads jobs via /api. */
 export function isPublishedMode() {
@@ -154,14 +154,14 @@ export const listTasks = (): Promise<TaskSummary[]> =>
  *  time and sorts first ("…-relabel" > "…"), so it stands for that run. */
 export const listJobs = (task: string): Promise<JobSummary[]> =>
   fromIndex(`jobs:${task}`, (index) =>
-    [...(index.tasks.find((t) => t.id === (isPublishedMode() ? canonicalDomain(task) : task))?.jobs ?? [])].sort(
+    [...(index.tasks.find((t) => t.id === task)?.jobs ?? [])].sort(
       (a, b) => (b.started ?? "").localeCompare(a.started ?? "") || b.id.localeCompare(a.id),
     ));
 
 /** Published URLs already contain the immutable HF commit. No moving branch or cache-busting query is needed. */
 function runFile<T>(key: string, file: string): Promise<T> {
   const parsed = parseRunKey(key), job = parsed.job;
-  const task = isPublishedMode() ? canonicalDomain(parsed.task) : parsed.task;
+  const task = parsed.task;
   if (!isPublishedMode()) return remoteJson<T>(`${task}/${job}/${file}`);
   const loader = publishedDataset();
   const read = (): Promise<unknown> => {

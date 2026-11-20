@@ -10,7 +10,7 @@ import { getMeta, listJobs, listTasks, type JobSummary } from "@/lib/data";
 
 export const ENV = { redwood: "redwood-inference", packs: "support-agent-knowledge", skyway: "skyway-air", skywayArch: "skyway-air" } as const;
 
-/** Skyway with the architecture fixed per run: tasks/skyway-arch/architectures/<id>.md, by its heading. */
+/** Skyway with the architecture fixed per run: tasks/skyway-air/architectures/<id>.md, by its heading. */
 export const SKYWAY_ARCH: Record<string, string> = {
   "graph-query": "Knowledge graph + graph queries",
   "prompt-workflows": "Prompts and workflows, no retrieval",
@@ -110,7 +110,7 @@ export type MetaStage = {
   latency?: { ticket?: { median?: number | null } | null } | null;
   cost?: { bot?: { in?: number | null; usd?: number | null } | null } | null;
 };
-/** Failed tickets by who was to blame (lib/failure-types.ts failureSummary). publish-run adds it to meta.json; absent on runs published before it. */
+/** Failed tickets by who was to blame (lib/failure-types.ts failureSummary). The runs dataset has it on every run. */
 export type FailureSummary = { failed: number; total: number; parties: Record<string, number>; groups: Record<string, number> };
 type LooseMeta = { scores: Record<string, MetaStage>; failure_summary?: FailureSummary };
 

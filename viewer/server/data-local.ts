@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { CodeData, DocsData, Meta, Ticket } from "../src/lib/types";
 import type { JobSummary, TaskSummary } from "../src/lib/data-types";
-import { DEFAULT_TASK, OLD_NAMES, runKey } from "../src/lib/data-types";
+import { DEFAULT_TASK, runKey } from "../src/lib/data-types";
 
 /** Repo root (parent of viewer/). Override with REPO_ROOT when cwd is not viewer/. */
 export function repoRoot() {
@@ -34,7 +34,7 @@ export function resolve(key: string): RunPaths {
   if (!/^[\w.-]+$/.test(key)) throw new Error(`bad run ${key}`);
   const dot = key.indexOf(".");
   const named = dot > 0 ? key.slice(0, dot) : DEFAULT_TASK;
-  const task = OLD_NAMES[named] ?? named;
+  const task = named;
   const job = dot > 0 ? key.slice(dot + 1) : key;
   // Neither part may climb out of the jobs folders.
   if ([task, job].some((x) => !x || x.startsWith(".") || x.includes(".."))) throw new Error(`bad run ${key}`);
@@ -111,7 +111,7 @@ export function ensure(key: string): string {
   return r.cache;
 }
 
-/** Build a run's logs (if needed) and return its cache dir: publish-run.ts uploads them. */
+/** Build a run's logs (if needed) and return its cache dir. */
 export function buildLogs(key: string): string {
   const cache = ensure(key);
   ensureBuildLogs(resolve(key));
@@ -236,7 +236,7 @@ function builderThinking(trialDir: string): string | null {
 }
 type JobConfig = {
   agents?: { name?: string; model_name?: string; kwargs?: { reasoning_effort?: unknown } }[];
-  /** skyway-arch: the architecture file added to every stage's instructions (tasks/skyway-arch/architectures/<name>.md). */
+  /** Skyway: the architecture file added to every stage's instructions (tasks/skyway-air/architectures/<name>.md). */
   extra_instruction_paths?: string[];
 };
 

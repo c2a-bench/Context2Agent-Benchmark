@@ -7,7 +7,7 @@ import { architectureForStage, type ArchRow } from "@/lib/runtime-architecture";
 
 const stageLabel = (r: ArchRow) => r.step.replace(/^stage(\d+)$/, "stage $1");
 
-/** skyway-arch: the architecture each run was given (tasks/skyway-arch/architectures/<name>.md), in plain words. */
+/** Skyway: the architecture each run was given (tasks/skyway-air/architectures/<name>.md), in plain words. */
 const ASSIGNED: Record<string, string> = {
   "raw-index": "The raw docs, searched with an index (keyword and embedding search).",
   "raw-terminal": "The raw docs, read with terminal tools (grep, opening files).",
@@ -20,7 +20,7 @@ const ASSIGNED: Record<string, string> = {
 export default function ArchitecturePage() {
   const job = useJob();
   const meta = use(getMeta(job));
-  // A run with a fixed architecture (skyway-arch) shows that architecture; the grader's class is shown as what it saw.
+  // A run with a fixed architecture (Skyway) shows that architecture; the grader's class is shown as what it saw.
   const assigned = use(listJobs(parseRunKey(job).task)).find((j) => j.key === job)?.architecture ?? null;
   const rows = meta.stages.map((s) => architectureForStage(s, meta.scores[String(s)]));
   const hasData = rows.some((r) => r.qTotal || Object.keys(r.stated).length || Object.keys(r.observed).length);

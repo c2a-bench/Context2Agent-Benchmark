@@ -10,7 +10,7 @@ import { BackBar, JobNav } from "@/components/job-nav";
 import { DocProvider } from "@/components/doc-sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-/** For a run with a fixed architecture (skyway-arch): which one it is, and a switch to this model's other ones. */
+/** For a run with a fixed architecture (Skyway): which one it is, and a switch to this model's other ones. */
 function ArchSwitch({ job }: { job: string }) {
   const { task } = parseRunKey(job);
   const jobs = use(listJobs(task));

@@ -110,7 +110,7 @@ python3 tasks/redwood-inference/steps/stage1/check/check.py
 
 ## Viewer
 
-Static replay viewer: **GitHub Pages frontend + the two public, commit-pinned Hugging Face datasets**.
+Static viewer: **GitHub Pages frontend + the two public, commit-pinned Hugging Face datasets**.
 No hosted server, AWS infrastructure, or runtime credentials are required.
 
 Intended Pages URL: `https://c2a-bench.github.io/Context2Agent-Benchmark/`.
