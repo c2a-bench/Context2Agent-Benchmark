@@ -102,13 +102,6 @@ ticket passed.
 
 <!-- figure:ticket -->
 
-### How customers behave
-
-In every ticket, the customer follows one of 14 behaviors, the way real customers make support harder. Pick a behavior to
-see a real exchange from a run, and what it tests.
-
-<!-- figure:behaviours -->
-
 ## How we grade
 
 The grader answers two questions about every ticket: did it pass, and if not, why. Plain code answers the first
@@ -223,6 +216,19 @@ customer knows, such as whether both passengers on a booking flew. In half of th
 uses the booking instead. A booking with two passengers then gets compensation for two, even when one of them did not
 fly. On Redwood Inference, the agent guesses the ticket's priority. It sets it one level too high or too low. The reply
 deadline and the escalation labels depend on the priority, so they are wrong as well.
+
+### How customers behave
+
+What the agent has to ask for depends on the customer. In every ticket, the customer follows one of 14 behaviors, the way
+real customers make support harder. Pick a behavior to see a real exchange from a run, and what it tests.
+
+<!-- figure:behaviours -->
+
+Some behaviors are harder than others. Averaged over every run, tickets where the customer corrects themselves pass 29% of
+the time and those where the customer asks for a person pass 41%, against 66% for a plain customer, and the agent also
+gets fewer of these customers' facts (49% and 58% against 75%).
+
+<!-- figure:customer-types -->
 
 ### Where the builders fail
 
