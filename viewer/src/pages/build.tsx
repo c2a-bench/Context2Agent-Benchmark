@@ -79,14 +79,35 @@ function Summary({ job, stage, harness }: { job: string; stage: BuildStage; harn
   );
 }
 
-/** The builder's closing message: three lines, with a toggle to read it all. */
+/** The builder's own text (its messages, its last message) as formatted text: headings, bold, lists, code. A
+ *  "… N characters …" mark (where the saved log was shortened) becomes a note on its own line. */
+function BuilderText({ text, className }: { text: string; className?: string }) {
+  const md = text.replace(/\s*… ?([\d,]+) characters ?…\s*/g, "\n\n*($1 characters not kept in the log)*\n\n");
+  return (
+    <div className={cn(
+      "text-sm leading-relaxed break-words",
+      "[&_h1]:mt-3 [&_h1]:text-base [&_h1]:font-semibold [&_h2]:mt-3 [&_h2]:text-[15px] [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:font-semibold [&_h4]:mt-2 [&_h4]:font-semibold",
+      "[&_p]:mt-2 [&>*:first-child]:mt-0 [&_ul]:mt-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mt-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mt-0.5",
+      "[&_strong]:font-semibold [&_em]:text-muted-foreground [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:font-mono [&_code]:text-[12.5px]",
+      "[&_pre]:mt-2 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-muted [&_pre]:p-2 [&_pre_code]:bg-transparent [&_pre_code]:p-0",
+      className,
+    )}>
+      <ReactMarkdown>{md}</ReactMarkdown>
+    </div>
+  );
+}
+
+/** The builder's closing message: a few lines, with a toggle to read it all. */
 function LastMessage({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   const long = text.split("\n").length > 3 || text.length > 300;
   return (
-    <div className="mt-4 rounded-lg border bg-muted/30 px-4 py-3">
+    <div className="mt-4 rounded-lg border bg-card px-4 py-3">
       <div className="text-xs text-muted-foreground">The builder&apos;s last message</div>
-      <p className={cn("mt-1 whitespace-pre-wrap break-words text-sm", !open && "line-clamp-3")}>{text}</p>
+      <div className={cn("relative mt-1", !open && "max-h-24 overflow-hidden")}>
+        <BuilderText text={text} />
+        {!open && long && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[var(--card)] to-transparent" />}
+      </div>
       {long && (
         <button type="button" onClick={() => setOpen(!open)} className="mt-1 text-xs underline decoration-border underline-offset-4 hover:decoration-current">
           {open ? "Show less" : "Show all"}
@@ -165,8 +186,8 @@ function StepView({ job, step, open: startOpen }: { job: string; step: Step; ope
       <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", failed ? "bg-red-500" : "bg-foreground/40")} aria-hidden />
       <div className="min-w-0 flex-1">
         {step.say ? (
-          <div className="prose-sm max-w-none text-sm leading-relaxed [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:font-mono [&_code]:text-[12.5px] [&_li]:ml-4 [&_li]:list-disc [&_p+p]:mt-2 [&_strong]:font-semibold [&_ul]:mt-1">
-            <ReactMarkdown>{step.say.x ?? ""}</ReactMarkdown>
+          <div>
+            <BuilderText text={step.say.x ?? ""} />
             {step.say.r && <Full job={job} refId={step.say.r} what="message" />}
           </div>
         ) : (
