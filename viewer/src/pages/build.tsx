@@ -121,10 +121,15 @@ function LastMessage({ text }: { text: string }) {
  *  file reads and writes, helpers, thinking) sit folded under that message, like an agent's transcript. */
 type Step = { say: BuildEvent | null; acts: BuildEvent[] };
 function stepsOf(events: BuildEvent[]): Step[] {
+  // Some builders (Gemini, DeepSeek through pi) write one message at the very end and narrate in thinking notes
+  // instead: for them a thinking note starts a step, or every action would sit under the first one.
+  const says = events.filter((e) => e.k === "say").length, tools = events.filter((e) => e.k === "tool").length;
+  const thinkLed = says * 10 < tools;
   const out: Step[] = [];
   for (const e of events) {
-    if (e.k === "say" || !out.length) out.push({ say: e.k === "say" ? e : null, acts: [] });
-    if (e.k !== "say") out[out.length - 1].acts.push(e);
+    const starts = e.k === "say" || (thinkLed && e.k === "think" && (out[out.length - 1]?.acts.some((a) => a.k === "tool") ?? true));
+    if (starts || !out.length) out.push({ say: starts ? e : null, acts: [] });
+    else out[out.length - 1].acts.push(e);
   }
   return out;
 }
@@ -178,6 +183,26 @@ function stepSummary(acts: BuildEvent[]): string {
   ].filter(Boolean).join(" · ");
 }
 
+/** A thinking note that starts a step: three lines, with Show all for a longer one. */
+function ThinkingText({ job, e }: { job: string; e: BuildEvent }) {
+  const [open, setOpen] = useState(false);
+  const text = e.x ?? "";
+  const long = text.length > 280 || text.split("\n").length > 3;
+  return (
+    <div className="min-w-0 flex-1">
+      <div className={cn("[&_p]:italic", !open && long && "line-clamp-3")}>
+        <BuilderText text={text} />
+      </div>
+      {long && (
+        <button type="button" onClick={() => setOpen(!open)} className="mt-0.5 text-xs underline decoration-border underline-offset-4 hover:text-foreground">
+          {open ? "Show less" : "Show all"}
+        </button>
+      )}
+      {open && e.r && <Full job={job} refId={e.r} what="thinking" />}
+    </div>
+  );
+}
+
 function StepView({ job, step, open: startOpen }: { job: string; step: Step; open: boolean }) {
   const [open, setOpen] = useState(startOpen);
   const failed = step.acts.some((a) => a.e);
@@ -185,7 +210,12 @@ function StepView({ job, step, open: startOpen }: { job: string; step: Step; ope
     <li className="flex gap-3">
       <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", failed ? "bg-red-500" : "bg-foreground/40")} aria-hidden />
       <div className="min-w-0 flex-1">
-        {step.say ? (
+        {step.say?.k === "think" ? (
+          <div className="flex gap-2 text-muted-foreground">
+            <Brain className="mt-1 size-3.5 shrink-0" aria-label="Thinking" />
+            <ThinkingText job={job} e={step.say} />
+          </div>
+        ) : step.say ? (
           <div>
             <BuilderText text={step.say.x ?? ""} />
             {step.say.r && <Full job={job} refId={step.say.r} what="message" />}
