@@ -442,6 +442,7 @@ a.lp-pick:hover .lp-pick-arrow { color: var(--ink); }
 .lp .lp-zig-row--flip > .lp-zig-text { order: 2; }
 .lp .lp-zig-row--wide { grid-template-columns: minmax(0, 340px) minmax(0, 1fr); }
 .lp .lp-zig-row--flip.lp-zig-row--wide { grid-template-columns: minmax(0, 1fr) minmax(0, 340px); }
+.lp .lp-top .lp-zig-row { align-items: start; } /* text stays put when the chart beside it changes height */
 .lp .lp-zig-chart { min-width: 0; }
 .lp .lp-zig-text h3 { font-size: 24px; }
 .lp .lp-zig-points { margin-top: 22px; display: grid; gap: 12px; font-size: 15px; }

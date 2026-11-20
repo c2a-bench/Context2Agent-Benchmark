@@ -275,7 +275,7 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact }: { compa
               />
             ),
           });
-          return <Zig rows={zig} />;
+          return <div className="lp-top"><Zig rows={zig} /></div>;
         })()}
     </Sec>
   );
@@ -362,9 +362,9 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact }:
           />
         }>
         {/* The architecture picker sits here, not in the header, so the header (and its Redwood/Skyway toggle) is the same
-            in both views; its row keeps its height on Redwood too, so nothing below moves when switching. */}
+            in both views; it is always rendered (hidden on Redwood) so its row, even when it wraps, keeps its height and nothing below moves. */}
         {!bare && skyway?.length ? (
-          <div className="mb-6 min-h-[40px]" style={{ visibility: sky ? "visible" : "hidden" }} aria-hidden={!sky}>
+          <div className="mb-6" style={{ visibility: sky ? "visible" : "hidden" }} aria-hidden={!sky}>
             <Seg value={arch} onChange={setArch} options={[["overall", "Overall"], ...Object.keys(SKYWAY_ARCH).filter((a) => skyway.some((j) => j.architecture === a)).map((a) => [a, a] as [string, string])]} />
           </div>
         ) : null}
@@ -396,7 +396,7 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact }:
             note: "The shaded band is rule recall below 0.9.",
             chart: <RecallScatter points={points} height={340} />,
           });
-          return <Zig rows={zig} />;
+          return <div className="lp-top"><Zig rows={zig} /></div>;
         })()}
     </Sec>
   );
