@@ -337,7 +337,7 @@ delay claim, Opus 5.5's agent immediately fires an irreversible handoff on turn 
 still fails. The same split shows up on the knowledge packs' pricing-opener ticket: 17 of 25 Claude and pi builds fire
 a turn-one handoff before the customer clarifies, compared with 0 of 10 Codex builds.
 
-### Same harness, opposite working styles — and the subagent tax
+### Same harness, opposite working styles and the subagent tax
 
 Comparing models inside the exact same coding harness with identical tools removes harness effects and exposes stark
 working styles.
@@ -372,7 +372,7 @@ $26.77). Carbon pays a different penalty on the first three packs, instructing i
 at the start of every turn (~4 reads per turn, $24.68–$28.73 per pack); inlining core tables on the noisy pack cuts its
 runtime bill nearly in half (-46.6%, to $15.34) while lifting accuracy to its run high (57/67).
 
-### Builders investigate the benchmark — and lose track of what they built
+### Builders investigate the benchmark and lose track of what they built
 
 Rather than treating the docs as ordinary company paperwork, builders inspect the container to reverse-engineer the
 test. On the same `pi` harness, three distinct habits emerge on the knowledge packs: Carbon runs `stat` timestamps and
