@@ -131,7 +131,7 @@ function PerTicketTables({
           title="Did the agent get the customer's facts?"
           scope={scopeTag}
           how="A model read each conversation and marked which of the ticket's customer facts the customer told the agent (the opening counts). Each bar: decisive facts the agent got ÷ decisive facts, over the tickets with that behavior. The line is the plain (baseline) customer's rate."
-          subtitle="For each customer behavior, the share of the facts only the customer knows (and the ticket needs) that the agent got out of the conversation. A bar left of the line means that behavior made the agent miss more facts than with a plain customer. Replaces the behavior replay: nothing is run again. Hover a behavior for what it is."
+          subtitle="Some facts are known only to the customer, such as their booking details or what went wrong. Each bar shows how many of these facts the agent uncovered for each customer type. Left of the line means the agent uncovered fewer facts than with a plain customer."
           table={
             <table className="w-full text-sm">
               <thead className="border-b text-left text-xs text-muted-foreground">
@@ -183,17 +183,12 @@ function PerTicketTables({
       {factsBy && factRows.some((b) => (factsBy[b].questions ?? 0) > 0) && (() => {
         const rows = factRows.filter((b) => (factsBy[b].questions ?? 0) > 0);
         const base = baseKey && factsBy[baseKey]?.questions ? (factsBy[baseKey].relevant ?? 0) / factsBy[baseKey].questions! : null;
-        // The plain customer gives its facts up front, so the agent asks it little: a few requests that are not for a
-        // fact (e.g. "please send the receipt") move its rate a lot. Say so when its row rests on few questions.
-        const baseQ = baseKey ? factsBy[baseKey]?.questions ?? 0 : 0;
-        const otherQ = rows.filter((b) => b !== baseKey).reduce((a, b) => a + (factsBy[b].questions ?? 0), 0);
-        const fewBase = baseKey != null && baseQ > 0 && baseQ < 40;
         return (
           <ChartCard
             title="Were the agent's questions relevant?"
           scope={scopeTag}
             how="A model read each conversation and, for every support turn that asks the customer for something, named the customer facts it asks for (its quote is checked against the turn). Each bar: turns asking for at least one decisive customer fact ÷ turns that ask for anything, over the tickets with that behavior. The line is the plain (baseline) customer's rate."
-            subtitle="Customer precision: of the agent's questions to the customer, the share that ask for a fact the ticket actually needs. Low means the agent asks for things that do not decide the ticket. Hover a behavior for what it is."
+            subtitle="Of the questions the agent asked the customer, how many asked for something the ticket actually needs. Low = it asks about things that don't matter."
           >
             <RateBars
               color={VIZ[1]}
@@ -216,14 +211,6 @@ function PerTicketTables({
                 };
               })}
             />
-            {fewBase && (
-              <p className="mt-3 max-w-3xl font-sans text-xs text-muted-foreground">
-                Read the baseline with care: it rests on {baseQ} questions over {factsBy[baseKey!].tickets} tickets, against{" "}
-                {otherQ} for the other behaviors. A plain customer gives the facts up front, so the agent has little to ask,
-                and a few requests that are not for a fact (such as &ldquo;please send the receipt&rdquo;) pull the rate
-                down. Customers who hold facts back get mostly needed questions, so their rates sit higher.
-              </p>
-            )}
           </ChartCard>
         );
       })()}
@@ -284,7 +271,7 @@ function PerTicketTables({
           title="Pass rate by behavior"
           scope={scopeTag}
           how="Each bar: tickets passed ÷ tickets with that customer behavior. The number next to a family: its behaviors' tickets added up, passed ÷ tickets. The line is the baseline (plain customer) rate."
-          subtitle="Each ticket has one way the customer behaves; the correct handling is the same as for a plain customer. A bar left of the line means that behavior made the agent worse than with a plain customer. Different behaviors are on different tickets, so small gaps mostly reflect which tickets they got. The number next to each family is that family's pass rate. Hover a behavior for what it is."
+          subtitle="Pass rate for each customer type. Left of the line means the agent performed worse than with a plain customer. Since each type appears on different tickets, small differences may reflect ticket difficulty. The number beside each group shows its pass rate."
           table={
             <table className="w-full text-sm">
               <thead className="border-b text-left text-xs text-muted-foreground">
