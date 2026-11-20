@@ -2,8 +2,8 @@ import { use, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router";
 import { currentSearchParams, useJob } from "@/lib/route";
 import { getMeta, getTickets } from "@/lib/data";
-import { ALL, ScopeChip, StageBar, stageName, useStage } from "@/components/stage-select";
-import { TextLink } from "@/components/link";
+import { ALL, StageBar, stageName, useStage } from "@/components/stage-select";
+import Link, { TextLink } from "@/components/link";
 import { ChartCard, Defined, Legend, StageColumns, TipRow, type Segment, type StageColumn } from "@/components/charts";
 import { PARTY_COLOR, PARTY_HINT, PARTY_LABEL } from "@/lib/parties";
 import { defOf, groupDef, NONE, PARTIES, rollup, specRank, under, withGap, type Rollup } from "@/lib/failure-types";
@@ -233,29 +233,32 @@ function TicketList({ meta, tickets, job, stage, pick, pickLabel, counted }: { m
         </h2>
         <TextLink href={link} className="font-sans text-xs">Open in Trajectories</TextLink>
       </div>
-      {!rows.length && <p className="mt-3 font-sans text-sm text-muted-foreground">No tickets here.</p>}
       {unlisted > 0 && (
         <p className="mt-3 font-sans text-xs text-muted-foreground">
           {unlisted} failed {unlisted === 1 ? "ticket" : "tickets"} counted in the scores {unlisted === 1 ? "has" : "have"} no ticket record in this publication, so {unlisted === 1 ? "it is" : "they are"} not listed.
         </p>
       )}
-      <ul className="mt-3 divide-y divide-border/60 overflow-y-auto rounded-lg border lg:max-h-[min(70vh,640px)]">
+      {/* a fixed height, so picking another row never moves the page */}
+      <ul className="mt-3 divide-y divide-border/60 overflow-y-auto rounded-lg border max-lg:max-h-[70vh] lg:h-[min(70vh,560px)]">
         {rows.map(({ t, leaves }) => (
-          <li key={t.key} className="px-3 py-2 font-sans text-sm">
-            <div className="flex flex-wrap items-center gap-2">
-              <TextLink href={`/runs/${job}/tickets?stage=${t.stage}&t=${encodeURIComponent(t.id)}`}>{t.id}</TextLink>
-              {stage === ALL && <ScopeChip>{stageName(meta, t.stage)}</ScopeChip>}
-              {/* the failure types only when listing every type; under a picked type they would repeat it */}
-              {!pick && Object.values(leaves).map((l) => (
-                <span key={l.key} className="inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px]">
-                  <span className="size-2 rounded-sm" style={{ background: colorOf(l.party) }} />
-                  {l.type}
-                </span>
-              ))}
-            </div>
-            <div className="mt-0.5 truncate text-xs text-muted-foreground" title={t.title}>{t.title}</div>
+          <li key={t.key}>
+            <Link href={`/runs/${job}/tickets?stage=${t.stage}&t=${encodeURIComponent(t.id)}`} className="block px-3 py-2 font-sans outline-none hover:bg-muted/60 focus-visible:bg-muted/60">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="font-mono text-[13px] font-medium">{t.id}</span>
+                {stage === ALL && <span className="text-xs text-muted-foreground">{stageName(meta, t.stage)}</span>}
+                {/* the failure types only when listing every type; under a picked type they would repeat it */}
+                {!pick && Object.values(leaves).map((l) => (
+                  <span key={l.key} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <span className="size-2 rounded-sm" style={{ background: colorOf(l.party) }} />
+                    {l.type}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-0.5 truncate text-xs text-muted-foreground" title={t.title}>{t.title}</div>
+            </Link>
           </li>
         ))}
+        {!rows.length && <li className="px-3 py-2 font-sans text-sm text-muted-foreground">No tickets here.</li>}
       </ul>
     </section>
   );
