@@ -1,21 +1,74 @@
-import { use } from "react";
+import { use, useState } from "react";
 import { useJob } from "@/lib/route";
 import { TextLink } from "@/components/link";
 import { getMeta, listJobs, parseRunKey } from "@/lib/data";
-import { ChartCard, GroupedBarsLine, How, Legend, LineChart, VIZ, type LineSeries } from "@/components/charts";
+import { ChartCard, GroupedBarsLine, VIZ, type LineSeries } from "@/components/charts";
 import { architectureForStage, type ArchRow } from "@/lib/runtime-architecture";
 
 const stageLabel = (r: ArchRow) => r.step.replace(/^stage(\d+)$/, "stage $1");
 
 /** Skyway: the architecture each run was given (tasks/skyway-air/architectures/<name>.md), in plain words. */
 const ASSIGNED: Record<string, string> = {
-  "raw-index": "The raw docs, searched with an index (keyword and embedding search).",
-  "raw-terminal": "The raw docs, read with terminal tools (grep, opening files).",
-  "wiki-index": "A wiki the builder wrote from the docs, searched with an index.",
-  "wiki-terminal": "A wiki the builder wrote from the docs, read with terminal tools.",
-  "graph-query": "A knowledge graph built from the docs, queried while handling tickets.",
-  "prompt-workflows": "No search: the knowledge is written into the agent's prompts and workflows.",
+  "raw-index": "Searches the original docs with keyword and embedding search.",
+  "raw-terminal": "Reads the original docs directly, with tools like grep.",
+  "wiki-index": "Searches a wiki the builder wrote from the docs.",
+  "wiki-terminal": "Reads a wiki the builder wrote from the docs, with tools like grep.",
+  "graph-query": "Looks things up in a knowledge graph built from the docs.",
+  "prompt-workflows": "No search: the rules are written into the agent's prompts.",
 };
+
+/** What the grader saw the agent use at a stage (its knowledge_access categories), in plain words. */
+const SEEN: Record<string, string> = {
+  llm_wiki: "a wiki",
+  sparse_retrieval: "keyword search",
+  dense_retrieval: "embedding search",
+  knowledge_graph: "a knowledge graph",
+};
+const SEEN_ORDER = ["llm_wiki", "sparse_retrieval", "dense_retrieval", "knowledge_graph"];
+const OLD_CLASS: Record<string, string> = {
+  Retrieval: "a search over the docs",
+  "Multi-prompt": "several prompts, no search",
+  "Tool loop": "tools, no search",
+  "Single call": "one prompt, no search",
+};
+function seenAt(r: ArchRow): string | null {
+  const ka = r.raw?.observed?.knowledge_access;
+  if (!Array.isArray(ka)) return r.archClass ? OLD_CLASS[r.archClass] ?? r.archClass : null;
+  if (!ka.length) return "nothing we can detect (it reads files directly or keeps the rules in its prompt)";
+  return [...ka].sort((a, b) => SEEN_ORDER.indexOf(a) - SEEN_ORDER.indexOf(b)).map((c) => SEEN[c] ?? c).join(" + ");
+}
+
+/** The same as one line when every stage saw the same; else runs of stages ("stages 0–2: …; stages 3–5: …"). */
+function seenLine(rows: ArchRow[]): string | null {
+  const parts: { from: number; to: number; seen: string }[] = [];
+  for (const r of rows) {
+    const s = seenAt(r);
+    if (s == null) continue;
+    const last = parts[parts.length - 1];
+    if (last && last.seen === s && last.to === r.stage - 1) last.to = r.stage;
+    else parts.push({ from: r.stage, to: r.stage, seen: s });
+  }
+  if (!parts.length) return null;
+  const seens = new Set(parts.map((p) => p.seen));
+  if (seens.size === 1) return parts[0].seen;
+  return parts.map((p) => `${p.from === p.to ? `stage ${p.from}` : `stages ${p.from}–${p.to}`}: ${p.seen}`).join("; ");
+}
+
+/** The builder's own name for its design: two lines, with a toggle to read all of it when it is longer. */
+function BuilderSays({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > 110;
+  return (
+    <div className="mt-1 font-sans text-sm text-muted-foreground">
+      <p className={open ? "" : "line-clamp-2"}>The builder calls it: &ldquo;{text}&rdquo;</p>
+      {long && (
+        <button type="button" onClick={() => setOpen(!open)} className="mt-0.5 text-xs text-foreground underline decoration-border underline-offset-4 hover:decoration-current">
+          {open ? "Show less" : "Show all"}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function ArchitecturePage() {
   const job = useJob();
@@ -40,16 +93,8 @@ export default function ArchitecturePage() {
     );
   }
 
-  // F2: one line per architecture class; a class only has points at the stages whose bot had it.
-  const classes = [...new Set(rows.map((r) => r.archClass ?? "unknown"))];
-  const rate = (r: ArchRow) => (r.qTotal ? { value: (r.qPassed ?? 0) / r.qTotal, note: `${r.qPassed}/${r.qTotal}` } : { value: null });
-  const classSeries: LineSeries[] = classes.map((c, i) => ({
-    key: c,
-    label: c,
-    color: VIZ[[1, 0, 2, 4, 3][i % 5]],
-    points: rows.map((r) => ((r.archClass ?? "unknown") === c ? rate(r) : { value: null })),
-  }));
-  const designs = [...new Set(rows.map((r) => r.architectureChoice).filter((d) => d && d !== "—"))];
+  const lastDesign = [...rows].reverse().map((r) => r.architectureChoice).find((d) => d && d !== "—") ?? null;
+  const seen = seenLine(rows);
 
   // Latency per stage, from results.json (every ticket): one model call, one bot run (one reply), one ticket.
   const lat = rows.map((r) => meta.scores[String(r.stage)]?.latency ?? null);
@@ -92,62 +137,37 @@ export default function ArchitecturePage() {
     <div className="mx-auto max-w-5xl px-6 py-12">
       <h1 className="font-heading text-3xl font-normal tracking-tight">Agent design</h1>
       <p className="mt-2 max-w-3xl text-sm text-muted-foreground">How the agent the builder made gets its knowledge, and how fast it replies.</p>
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-5 py-4">
-        <div>
-          <div className="font-sans text-sm font-medium">The agent&apos;s code, and how it was built</div>
-          <div className="font-sans text-xs text-muted-foreground">Every file the builder wrote, stage by stage, what changed between stages, and the builder&apos;s own log of each build.</div>
-        </div>
-        <div className="flex flex-wrap gap-x-5 gap-y-1">
-          <TextLink href={`/runs/${job}/code`}>See the agent&apos;s code</TextLink>
-          <TextLink href={`/runs/${job}/build`}>See the build logs</TextLink>
-        </div>
+      <div className={`mt-6 grid gap-4 ${assigned || seen ? "sm:grid-cols-2" : ""}`}>
+        {(assigned || seen) && (
+          <section className="rounded-xl border px-5 py-4">
+            <div className="font-sans text-xs text-muted-foreground">{assigned ? "Design, the same at every stage" : "Design, chosen by the builder"}</div>
+            {assigned ? (
+              <>
+                <div className="mt-1 font-mono text-lg font-semibold">{assigned}</div>
+                <p className="mt-1 font-sans text-sm text-muted-foreground">{ASSIGNED[assigned] ?? "Given to the builder in its instructions at every stage."}</p>
+              </>
+            ) : lastDesign && (
+              <BuilderSays text={lastDesign} />
+            )}
+            {seen && (
+              <p className="mt-2 font-sans text-sm">
+                <span className="text-muted-foreground">What we saw it use: </span>{seen}
+              </p>
+            )}
+          </section>
+        )}
+        <section className="flex flex-col justify-between gap-3 rounded-xl border px-5 py-4">
+          <div>
+            <div className="font-sans text-sm font-medium">The agent&apos;s code and build logs</div>
+            <div className="mt-1 font-sans text-sm text-muted-foreground">Every file the builder wrote, stage by stage, and its own log of each build.</div>
+          </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-1">
+            <TextLink href={`/runs/${job}/code`}>See the agent&apos;s code</TextLink>
+            <TextLink href={`/runs/${job}/build`}>See the build logs</TextLink>
+          </div>
+        </section>
       </div>
 
-      {assigned && (
-        <section className="mt-6 rounded-lg border px-4 py-3">
-          <div className="font-sans text-xs text-muted-foreground">Architecture · fixed for this run</div>
-          <div className="mt-1 font-mono text-lg font-semibold">{assigned}</div>
-          <p className="mt-1 font-sans text-xs text-muted-foreground">
-            {ASSIGNED[assigned] ?? "Given to the builder in its instructions at every stage."} The builder was told to build
-            this design at every stage. What the grader saw the agent read:{" "}
-            <span className="text-foreground">{classes.join("; ")}</span>. The grader sorts into wiki, keyword search and
-            embedding search only, so it has no label for a graph, prompt-only knowledge or grep.
-          </p>
-        </section>
-      )}
-
-      {assigned && classes.length === 1 ? null : classes.length === 1 ? (
-        <section className="mt-6 rounded-lg border px-4 py-3">
-          <div className="font-sans text-xs text-muted-foreground">Architecture class · every stage</div>
-          <div className="mt-1 text-lg font-semibold">
-            <How how="Set from what the grader saw the agent's model read while it handled tickets: rules already in its prompt, pages it opened from a wiki, or results from a search over the docs (retrieval). Not from the builder's own description.">
-              {classes[0]}
-            </How>
-          </div>
-          <p className="mt-1 font-sans text-xs text-muted-foreground">
-            How the agent gets its knowledge, as the grader saw it run (not the builder&apos;s claim): from notes in its prompt,
-            a wiki it reads, or a search over the docs.
-            {designs.length > 0 && <> The builder described it as {designs.map((d) => `“${d}”`).join("; ")}.</>} Comparing
-            architectures needs runs that built different ones.
-          </p>
-        </section>
-      ) : (
-      <ChartCard
-        className="mt-10"
-        title="Pass rate at each stage, by architecture"
-        scope={{ label: "All stages" }}
-        how="Each point: tickets passed ÷ tickets at that stage, drawn on the line of the architecture class the grader saw at that stage."
-        subtitle={
-          <>
-            Share of tickets right at each stage, one line per architecture (how the agent gets its knowledge, as the grader saw
-            it run).{designs.length > 0 && <> Builder&apos;s own description: {designs.map((d) => `“${d}”`).join("; ")}.</>}
-          </>
-        }
-      >
-        <LineChart xLabels={rows.map(stageLabel)} series={classSeries} />
-        <Legend items={classSeries.map((x) => ({ key: x.key, label: x.label, value: 0, color: x.color }))} shape="line" />
-      </ChartCard>
-      )}
 
       {hasLatency && (
         <ChartCard
