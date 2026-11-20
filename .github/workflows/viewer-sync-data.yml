@@ -52,7 +52,7 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
           BLOB_PREFIX: ${{ vars.BLOB_PREFIX || 'observe-bench' }}
-          DATA_LICENSE: ${{ vars.HF_DATASET_LICENSE || 'bsd' }}
+          DATA_LICENSE: ${{ vars.HF_DATASET_LICENSE || 'mit' }}
       - name: Verify round-trip data before any public upload
         run: npm run verify:migration -- --dir ".migration/$RELEASE_ID" --report verification-report.json
       - name: Upload benchmark first, pin it in runs, then verify both anonymously
