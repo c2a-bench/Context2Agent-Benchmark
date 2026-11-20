@@ -17,7 +17,7 @@ const NAV = [
  * and the divider that fades in); on other pages (the blog) the name shows in place and the section links go home.
  * The blog is linked from the hero's Read the blog button, not from the nav.
  */
-export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpanElement | null>; dividerRef?: React.RefObject<HTMLSpanElement | null> }) {
+export function Nav({ slotRef, dividerRef, crumbs }: { slotRef?: React.RefObject<HTMLSpanElement | null>; dividerRef?: React.RefObject<HTMLSpanElement | null>; crumbs?: React.ReactNode }) {
   const home = !!slotRef;
   return (
     <header className="lp-nav">
@@ -36,12 +36,18 @@ export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpa
             <Link to="/" className="lp-title relative top-[2px] text-[17px] sm:text-[19px]" style={{ color: "var(--ink)", textDecoration: "none" }}><b>C</b><b>2</b><b>A</b></Link>
           )}
         </div>
-        <nav className="mx-auto hidden gap-5 text-[15px] font-medium sm:flex lg:gap-8" aria-label="Main">
-          {NAV.map(([label, href]) => href.startsWith("http")
-            ? <a key={href} href={href} target="_blank" rel="noreferrer" className="link" style={{ textDecorationColor: "transparent" }}>{label}</a>
-            : <Link key={href} to={href} className="link" style={{ textDecorationColor: "transparent" }}>{label}</Link>)}
-        </nav>
-        <div className="ml-auto flex items-center gap-2 sm:ml-0">
+        {crumbs ? (
+          /* inside a run: where you are, each part a way back up */
+          <nav className="lp-crumbs" aria-label="Breadcrumb">{crumbs}</nav>
+        ) : (
+          <nav className="mx-auto hidden gap-5 text-[15px] font-medium sm:flex lg:gap-8" aria-label="Main">
+            {NAV.map(([label, href]) => href.startsWith("http")
+              ? <a key={href} href={href} target="_blank" rel="noreferrer" className="link" style={{ textDecorationColor: "transparent" }}>{label}</a>
+              : <Link key={href} to={href} className="link" style={{ textDecorationColor: "transparent" }}>{label}</Link>)}
+          </nav>
+        )}
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:ml-0">
+          {crumbs && <Link to="/blog" className="link mr-2 hidden text-[15px] font-medium md:inline" style={{ textDecorationColor: "transparent" }}>Blog</Link>}
           {/* Landing pages redefine --muted as a text grey, so the toggle's own hover:bg-muted would turn dark and hide its
               icon: here the hover is a light tint of the ink instead. */}
           <a href={GH} target="_blank" rel="noreferrer" aria-label="GitHub" title="GitHub" className="lp-icon-link"><GitHubMark className="size-[18px]" /></a>
@@ -55,8 +61,13 @@ export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpa
 
 /** The main site's nav on the other pages (run viewer, runs tables): it keeps the landing's colours and fonts (.lp)
  *  and takes its height in the page, since the nav itself is fixed to the top. */
-export function SiteNav() {
-  return <div className="lp shrink-0" style={{ height: "var(--nav)" }}><Nav /></div>;
+export function SiteNav({ crumbs }: { crumbs?: React.ReactNode }) {
+  return <div className="lp shrink-0" style={{ height: "var(--nav)" }}><Nav crumbs={crumbs} /></div>;
+}
+
+/** The "/" between breadcrumb parts. */
+export function CrumbSep() {
+  return <span className="lp-crumb-sep" aria-hidden>/</span>;
 }
 
 const GH = "https://github.com/c2a-bench/c2a-bench";

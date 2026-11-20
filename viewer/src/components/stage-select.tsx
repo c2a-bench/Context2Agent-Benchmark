@@ -31,7 +31,9 @@ export function useStage(meta: Meta, allowAll = false, defaultAll = false): { st
 /** The stage dropdown: a sticky bar at the top of a tab that says which sections follow it. */
 export function StageBar({ meta, stage, onChange, allowAll = false, className, note }: { meta: Meta; stage: number | typeof ALL; onChange: (s: number | typeof ALL) => void; allowAll?: boolean; className?: string; /** replaces the default "sections tagged…" line */ note?: React.ReactNode }) {
   return (
-    <div className={cn("sticky top-0 z-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-background/95 px-6 py-2.5 backdrop-blur", className)}>
+    <div className={cn("sticky top-0 z-10 border-b bg-background/95 backdrop-blur", className)}>
+      {/* on the pages' width, so it lines up with the tabs and the content */}
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-1 px-6 py-2.5">
       <label htmlFor="stage-select" className="font-sans text-sm font-semibold">Stage</label>
       <select
         id="stage-select"
@@ -57,6 +59,7 @@ export function StageBar({ meta, stage, onChange, allowAll = false, className, n
           </>
         )}
       </span>
+      </div>
     </div>
   );
 }
