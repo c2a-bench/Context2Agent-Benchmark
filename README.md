@@ -145,3 +145,9 @@ rebuilds and deploys the site. Runs must be linked to the benchmark commit they 
 published; the command refuses otherwise.
 
 - [Viewer, publishing tools, and deployment setup](viewer/README.md)
+
+## License
+
+MIT, see [`LICENSE`](LICENSE). The two Hugging Face datasets are MIT too. Docs for `redwood-inference` and
+`support-agent-knowledge` derive from [EnterpriseRAG-Bench](https://github.com/onyx-dot-app/EnterpriseRAG-Bench) (MIT,
+DanswerAI, Inc.); their license is kept at `tasks/*/environment/app/docs/UPSTREAM_LICENSE`.
