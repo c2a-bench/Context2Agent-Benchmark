@@ -107,7 +107,7 @@ const FILTERS: Filter[] = [
     values: (t) => (t.ticketType ? [t.ticketType] : []),
     order: (vs) => TICKET_TYPES.filter((k) => vs.includes(k)),
   },
-  { key: "behavior", label: "Customer behavior", values: (t) => (t.behavior ? [t.behavior] : []), show: behaviorLabel, order: sortBehaviors },
+  { key: "behavior", label: "Customer type", values: (t) => (t.behavior ? [t.behavior] : []), show: behaviorLabel, order: sortBehaviors },
   {
     key: "questions",
     label: "Agent's questions",

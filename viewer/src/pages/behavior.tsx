@@ -10,6 +10,7 @@ import {
   CATEGORY_ORDER,
   baselineKey,
   behaviorFamily,
+  familyLabel,
   behaviorForStage,
   behaviorLabel,
   BEHAVIOR_DEFS,
@@ -130,15 +131,15 @@ function PerTicketTables({
         <ChartCard
           title="Did the agent get the customer's facts?"
           scope={scopeTag}
-          how="A model read each conversation and marked which of the ticket's customer facts the customer told the agent (the opening counts). Each bar: decisive facts the agent got ÷ decisive facts, over the tickets with that behavior. The line is the plain (baseline) customer's rate."
-          subtitle="Some facts are known only to the customer, such as their booking details or what went wrong. Each bar shows how many of these facts the agent uncovered for each customer type. Left of the line means the agent uncovered fewer facts than with a plain customer."
+          how="A model read each conversation and marked which of the ticket's customer facts the customer told the agent (the opening counts). Each bar: facts the ticket needs that the agent got ÷ facts the ticket needs, over the tickets with that customer type. The line is the plain customer's rate."
+          subtitle="Some facts are known only to the customer, such as their booking details or what went wrong. Each bar shows how many of these facts (the ones the ticket needs) the agent uncovered for each customer type. Left of the line means the agent uncovered fewer facts than with a plain customer."
           table={
             <table className="w-full text-sm">
               <thead className="border-b text-left text-xs text-muted-foreground">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">behavior</th>
+                  <th className="py-2 pr-3 font-medium">customer type</th>
                   <th className="py-2 pr-3 font-medium">tickets</th>
-                  <th className="py-2 pr-3 font-medium">decisive facts got</th>
+                  <th className="py-2 pr-3 font-medium">facts the ticket needs, got</th>
                   <th className="py-2 font-medium">failed tickets missing one</th>
                 </tr>
               </thead>
@@ -157,19 +158,20 @@ function PerTicketTables({
         >
           <RateBars
             color={VIZ[0]}
-            reference={baseFacts == null ? undefined : { value: baseFacts, label: `baseline ${baseFacts.toFixed(2)}` }}
+            reference={baseFacts == null ? undefined : { value: baseFacts, label: `plain customer ${baseFacts.toFixed(2)}` }}
             rows={factRows.map((b) => {
               const v = factsBy![b];
               return {
                 key: b,
                 group: behaviorFamily(b),
+                groupLabel: familyLabel(behaviorFamily(b)),
                 label: <Defined def={BEHAVIOR_DEFS[b]}>{behaviorLabel(b)}</Defined>,
                 passed: v.obtained,
                 total: v.decisive,
                 tip: (
                   <>
                     <div className="mb-1 font-medium">{behaviorLabel(b)}</div>
-                    <TipRow color={VIZ[0]} value={`${v.obtained} of ${v.decisive}`} label="decisive customer facts the agent got" />
+                    <TipRow color={VIZ[0]} value={`${v.obtained} of ${v.decisive}`} label="facts the ticket needs that the agent got" />
                     <div className="mt-1 text-muted-foreground">
                       {v.tickets} tickets; {v.failed_missed} of {v.failed} failed tickets missed one
                     </div>
@@ -187,24 +189,25 @@ function PerTicketTables({
           <ChartCard
             title="Were the agent's questions relevant?"
           scope={scopeTag}
-            how="A model read each conversation and, for every support turn that asks the customer for something, named the customer facts it asks for (its quote is checked against the turn). Each bar: turns asking for at least one decisive customer fact ÷ turns that ask for anything, over the tickets with that behavior. The line is the plain (baseline) customer's rate."
+            how="A model read each conversation and, for every support turn that asks the customer for something, named the customer facts it asks for (its quote is checked against the turn). Each bar: questions asking for at least one fact the ticket needs ÷ all questions, over the tickets with that customer type. The line is the plain customer's rate."
             subtitle="Of the questions the agent asked the customer, how many asked for something the ticket actually needs. Low = it asks about things that don't matter."
           >
             <RateBars
               color={VIZ[1]}
-              reference={base == null ? undefined : { value: base, label: `baseline ${base.toFixed(2)}` }}
+              reference={base == null ? undefined : { value: base, label: `plain customer ${base.toFixed(2)}` }}
               rows={rows.map((b) => {
                 const v = factsBy[b];
                 return {
                   key: b,
                   group: behaviorFamily(b),
+                groupLabel: familyLabel(behaviorFamily(b)),
                   label: <Defined def={BEHAVIOR_DEFS[b]}>{behaviorLabel(b)}</Defined>,
                   passed: v.relevant ?? 0,
                   total: v.questions ?? 0,
                   tip: (
                     <>
                       <div className="mb-1 font-medium">{behaviorLabel(b)}</div>
-                      <TipRow color={VIZ[1]} value={`${v.relevant ?? 0} of ${v.questions ?? 0}`} label="questions asking for a decisive fact" />
+                      <TipRow color={VIZ[1]} value={`${v.relevant ?? 0} of ${v.questions ?? 0}`} label="questions asking for a fact the ticket needs" />
                       <div className="mt-1 text-muted-foreground">{v.tickets} tickets</div>
                     </>
                   ),
@@ -249,6 +252,7 @@ function PerTicketTables({
             rows={replayRows.map(({ b, v }) => ({
               key: b,
               group: behaviorFamily(b),
+                groupLabel: familyLabel(behaviorFamily(b)),
               label: <Defined def={BEHAVIOR_DEFS[b]}>{behaviorLabel(b)}</Defined>,
               passed: v.plain_passed ?? 0,
               total: v.plain_replayed ?? 0,
@@ -268,19 +272,19 @@ function PerTicketTables({
 
       {keys.length > 0 && (
         <ChartCard
-          title="Pass rate by behavior"
+          title="Pass rate by customer type"
           scope={scopeTag}
-          how="Each bar: tickets passed ÷ tickets with that customer behavior. The number next to a family: its behaviors' tickets added up, passed ÷ tickets. The line is the baseline (plain customer) rate."
+          how="Each bar: tickets passed ÷ tickets with that customer type. The number next to a group: its types' tickets added up, passed ÷ tickets. The line is the plain customer's rate."
           subtitle="Pass rate for each customer type. Left of the line means the agent performed worse than with a plain customer. Since each type appears on different tickets, small differences may reflect ticket difficulty. The number beside each group shows its pass rate."
           table={
             <table className="w-full text-sm">
               <thead className="border-b text-left text-xs text-muted-foreground">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">behavior</th>
-                  <th className="py-2 pr-3 font-medium">family</th>
+                  <th className="py-2 pr-3 font-medium">customer type</th>
+                  <th className="py-2 pr-3 font-medium">group</th>
                   <th className="py-2 pr-3 font-medium">tickets passed</th>
                   <th className="py-2 pr-3 font-medium">q</th>
-                  <th className="py-2 font-medium">vs baseline</th>
+                  <th className="py-2 font-medium">vs plain customer</th>
                 </tr>
               </thead>
               <tbody>
@@ -290,13 +294,13 @@ function PerTicketTables({
                   return (
                     <tr key={b} className="border-b border-border/60">
                       <td className="py-2 pr-3">{behaviorLabel(b)}</td>
-                      <td className="py-2 pr-3 text-xs text-muted-foreground">{behaviorFamily(b)}</td>
+                      <td className="py-2 pr-3 text-xs text-muted-foreground">{familyLabel(behaviorFamily(b))}</td>
                       <td className="py-2 pr-3 tabular-nums">
                         {row.passed}/{row.total}
                       </td>
                       <td className="py-2 pr-3 tabular-nums">{fmtQ(q)}</td>
                       <td className="py-2 tabular-nums">
-                        {b === baseKey ? "baseline" : signed(base == null ? null : q - base)}
+                        {b === baseKey ? "plain customer" : signed(base == null ? null : q - base)}
                       </td>
                     </tr>
                   );
@@ -306,7 +310,7 @@ function PerTicketTables({
           }
         >
           <RateBars
-            reference={base == null ? undefined : { value: base, label: `baseline ${base.toFixed(2)}` }}
+            reference={base == null ? undefined : { value: base, label: `plain customer ${base.toFixed(2)}` }}
             rows={keys.map((b) => {
               const row = byCat[b];
               const q = row.total ? row.passed / row.total : row.q;
@@ -314,7 +318,7 @@ function PerTicketTables({
               return {
                 key: b,
                 group: behaviorFamily(b),
-                groupLabel: fam ? `${behaviorFamily(b)} · ${fmtQ(fam.q)}` : behaviorFamily(b),
+                groupLabel: fam ? `${familyLabel(behaviorFamily(b))} · ${fmtQ(fam.q)}` : familyLabel(behaviorFamily(b)),
                 label: <Defined def={BEHAVIOR_DEFS[b]}>{behaviorLabel(b)}</Defined>,
                 passed: row.passed,
                 total: row.total,
@@ -323,7 +327,7 @@ function PerTicketTables({
                     <div className="mb-1 font-medium">{behaviorLabel(b)}</div>
                     <TipRow color={VIZ[1]} value={`${fmtQ(q)} (${row.passed}/${row.total})`} label="passed" />
                     <div className="mt-1 text-muted-foreground">
-                      {behaviorFamily(b)} · {b === baseKey ? "baseline" : `${signed(base == null ? null : q - base)} vs baseline`}
+                      {familyLabel(behaviorFamily(b))} · {b === baseKey ? "plain customer" : `${signed(base == null ? null : q - base)} vs plain customer`}
                     </div>
                   </>
                 ),
@@ -370,19 +374,16 @@ export default function BehaviorPage() {
   if (stages.length && rows.every((r) => !r.coverage)) {
     return (
       <div className="mx-auto max-w-5xl px-6 py-12">
-        <h1 className="font-heading text-3xl font-normal tracking-tight">Behavioral coverage</h1>
-        <p className="mt-4 text-sm text-muted-foreground">This run has no customer-behavior tickets, so RQ4 does not apply.</p>
+        <h1 className="font-heading text-3xl font-normal tracking-tight">Customer types</h1>
+        <p className="mt-4 text-sm text-muted-foreground">Every customer in this environment is a plain customer, so there are no customer types to compare.</p>
       </div>
     );
   }
   if (!stages.length || !rows.length) {
     return (
       <div className="mx-auto max-w-5xl px-6 py-12">
-        <h1 className="font-heading text-3xl font-normal tracking-tight">Behavioral coverage</h1>
-        <p className="mt-4 font-mono text-sm text-muted-foreground">
-          stages=[] scores={"{"}
-          {"}"} — no verifier numbers in meta.json for this run.
-        </p>
+        <h1 className="font-heading text-3xl font-normal tracking-tight">Customer types</h1>
+        <p className="mt-4 text-sm text-muted-foreground">This run has no scores yet.</p>
       </div>
     );
   }
@@ -455,7 +456,7 @@ export default function BehaviorPage() {
           k="Average across customer types"
           note="The pass rate for each kind of customer, averaged."
           v={coverage ? fmtQ(coverage.q_coverage) : "—"}
-          how={coverage && perTicket ? `For each of the ${catKeys.length} behaviors (the baseline included): tickets passed ÷ tickets with that behavior${combined ? ", every stage added up" : ""}. The average is the plain mean of those rates, so a behavior on 3 tickets counts as much as one on 40.` : undefined}
+          how={coverage && perTicket ? `For each of the ${catKeys.length} customer types (the plain customer included): tickets passed ÷ tickets with that type${combined ? ", every stage added up" : ""}. The average is the plain mean of those rates, so a type on 3 tickets counts as much as one on 40.` : undefined}
         />
         <Stat
           k="Tickets passed"

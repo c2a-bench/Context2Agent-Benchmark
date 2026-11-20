@@ -52,7 +52,9 @@ export function JobNav({ job, meta }: { job: string; meta: Meta }) {
   // Carry the picked stage to the next tab (not tab-specific filters such as ?family=).
   const stage = new URLSearchParams(search).get("stage");
   const keep = stage && (stage === "all" || meta.stages.includes(Number(stage))) ? `?stage=${stage}` : "";
-  const tabs = TABS.filter((t) => t.slug !== "rq5" || hasKnowledgeConditions(meta));
+  // Doc packaging only where the docs come in packs (SAK); Customer types only where tickets have customer types.
+  const typed = meta.stages.some((s) => meta.scores[String(s)]?.behavior_coverage);
+  const tabs = TABS.filter((t) => (t.slug !== "rq5" || hasKnowledgeConditions(meta)) && (t.slug !== "behavior" || typed));
   return (
     <nav className="-mx-3 flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none] max-sm:basis-full" aria-label="Run">
       {tabs.map((t) => (
