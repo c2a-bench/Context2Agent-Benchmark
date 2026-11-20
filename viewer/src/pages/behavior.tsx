@@ -467,12 +467,10 @@ export default function BehaviorPage() {
         <Stat
           k="Average across customer types"
           v={coverage ? fmtQ(coverage.q_coverage) : "—"}
-          note="The pass rate of each customer behavior, averaged with every behavior counting the same. From 0 to 1; higher means the agent copes with more kinds of customers."
           how={coverage && perTicket ? `For each of the ${catKeys.length} behaviors (the baseline included): tickets passed ÷ tickets with that behavior${combined ? ", every stage added up" : ""}. The average is the plain mean of those rates, so a behavior on 3 tickets counts as much as one on 40.` : undefined}
         />
         <Stat
           k="Tickets passed"
-          note="Tickets the agent got fully right, out of all tickets (each has one customer behavior, the plain customer included)."
           how={combined ? `Tickets passed ÷ tickets, every stage added up (${active.headline.passed}/${active.headline.total}).` : behTickets ? `Tickets passed ÷ tickets in this stage (${behTickets.passed}/${behTickets.total}).` : undefined}
           v={
             combined
@@ -485,7 +483,6 @@ export default function BehaviorPage() {
         {perTicket ? (
           <Stat
             k="Got it right after a correction"
-            note="Tickets where the customer corrected something the agent said, and the agent still got the ticket right."
             how={corrections.tickets ? `Tickets where the customer model pointed out a wrong detail the agent stated (${corrections.tickets}); of those, the ones that still passed (${corrections.fixed}).${combined ? " Every stage added up." : ""}` : undefined}
             v={corrections.tickets ? `${corrections.fixed}/${corrections.tickets}` : "none"}
           />
