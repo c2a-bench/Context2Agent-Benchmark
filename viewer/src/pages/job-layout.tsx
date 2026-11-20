@@ -11,6 +11,7 @@ import { BackBar, JobNav } from "@/components/job-nav";
 import { DocProvider } from "@/components/doc-sheet";
 import { CrumbSep, SiteNav } from "@/landing/nav";
 import { ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const model = (m: string | null | undefined) => (m ? m.split("/").pop()! : "unknown");
 const pct = (j: JobSummary) => Math.round(100 * (passRate(j)?.rate ?? 0));
@@ -26,21 +27,33 @@ function modelRuns(task: string, jobs: JobSummary[], arch?: string | null): JobS
     .filter((j) => !seen.has(model(j.builder.model)) && !!seen.add(model(j.builder.model)));
 }
 
-/** A breadcrumb part that is also a picker: reads as text, opens the browser's own list. */
-function CrumbSelect({ label, value, options, onPick }: { label: string; value: string; options: { value: string; text: string }[]; onPick: (v: string) => void }) {
+/** A breadcrumb part that is also a switch: the current choice with a chevron, opening a list with the others. */
+function CrumbSelect({ label, value, options, onPick }: { label: string; value: string; options: { value: string; text: string; meta?: string }[]; onPick: (v: string) => void }) {
+  const current = options.find((o) => o.value === value);
   return (
-    <span className="relative inline-flex items-center">
-      <select
-        aria-label={label}
-        value={value}
-        onChange={(e) => onPick(e.target.value)}
-        style={{ fieldSizing: "content" } as React.CSSProperties}
-        className="here cursor-pointer appearance-none bg-transparent pr-4 font-medium outline-none [&>option]:bg-background [&>option]:text-foreground"
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label={`${label}: ${current?.text ?? value}`}
+        className="here inline-flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-1 font-medium outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--ink)_10%,transparent)] focus-visible:ring-2 focus-visible:ring-ring data-[popup-open]:bg-[color-mix(in_srgb,var(--ink)_10%,transparent)]"
       >
-        {options.map((o) => <option key={o.value} value={o.value}>{o.text}</option>)}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-0 size-3.5 opacity-60" aria-hidden />
-    </span>
+        {current?.text ?? value}
+        {current?.meta && <span className="font-normal opacity-60">{current.meta}</span>}
+        <ChevronDown className="size-3.5 opacity-60" aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{label}</DropdownMenuLabel>
+          <DropdownMenuRadioGroup value={value} onValueChange={(v) => onPick(String(v))}>
+            {options.map((o) => (
+              <DropdownMenuRadioItem key={o.value} value={o.value}>
+                <span className="flex-1">{o.text}</span>
+                {o.meta && <span className="text-xs text-muted-foreground tabular-nums">{o.meta}</span>}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -78,7 +91,7 @@ function Crumbs({ job }: { job: string }) {
       <CrumbSelect
         label="Builder model"
         value={models.find((r) => model(r.builder.model) === model(me.builder.model))!.key}
-        options={models.map((r) => ({ value: r.key, text: `${model(r.builder.model)} · ${pct(r)}%` }))}
+        options={models.map((r) => ({ value: r.key, text: model(r.builder.model), meta: `${pct(r)}%` }))}
         onPick={(next) => go(next, model(jobs.find((j) => j.key === next)?.builder.model))}
       />
       {me.architecture && (
@@ -87,7 +100,7 @@ function Crumbs({ job }: { job: string }) {
           <CrumbSelect
             label="Architecture"
             value={me.key}
-            options={archs.map((r) => ({ value: r.key, text: `${r.architecture} · ${pct(r)}%` }))}
+            options={archs.map((r) => ({ value: r.key, text: r.architecture ?? "run", meta: `${pct(r)}%` }))}
             onPick={(next) => go(next, jobs.find((j) => j.key === next)?.architecture ?? "run")}
           />
         </>

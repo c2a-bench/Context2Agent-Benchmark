@@ -119,8 +119,8 @@ html:not(.dark) .lp { --bg: #ffffff; --surface: #ffffff; --ink: #0c1016; }
   font-size: 15px; font-weight: 500; scrollbar-width: none; }
 .lp-crumbs::-webkit-scrollbar { display: none; }
 .lp-nav .lp-crumbs { justify-content: safe center; } /* in the nav: centred, where the section links are on other pages */
-.lp-crumbs a { color: color-mix(in srgb, var(--ink) 60%, transparent); text-decoration: none; transition: color 160ms; }
-.lp-crumbs a:hover { color: var(--ink); }
+.lp-crumbs a { color: color-mix(in srgb, var(--ink) 60%, transparent); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; transition: color 160ms, text-decoration-color 160ms; }
+.lp-crumbs a:hover { color: var(--ink); text-decoration-color: currentColor; }
 .lp-crumbs .here { color: var(--ink); }
 .lp-crumb-sep { color: var(--line); }
 /* On a phone the nav keeps only the logo and icons (as on the main site); the run page shows its own line. */
