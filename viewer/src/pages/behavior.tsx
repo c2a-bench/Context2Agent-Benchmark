@@ -484,8 +484,10 @@ export default function BehaviorPage() {
         />
         {perTicket ? (
           <Stat
-            k="Got it right after a correction"
-            note="The customer corrected the agent, and it still got the ticket right."
+            k="Fixed after the customer corrected it"
+            note={corrections.tickets
+              ? `In ${corrections.tickets} tickets the customer pointed out a wrong detail the agent said. The agent still solved ${corrections.fixed} of them.`
+              : "No customer had to point out a wrong detail."}
             how={corrections.tickets ? `Tickets where the customer model pointed out a wrong detail the agent stated (${corrections.tickets}); of those, the ones that still passed (${corrections.fixed}).${combined ? " Every stage added up." : ""}` : undefined}
             v={corrections.tickets ? `${corrections.fixed}/${corrections.tickets}` : "none"}
           />
