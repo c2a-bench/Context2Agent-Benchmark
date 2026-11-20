@@ -25,9 +25,6 @@ import observe_usage
 import prompt_cap
 
 TRACE = os.environ.get("OBSERVE_TRACE")
-# Replays only: guidance from the grader (the rule, what the customer has told us), appended on every model call
-# to the end of the bot's own system message, the channel the bot trusts. Customer text is where injection tickets hide fake instructions.
-HINT = os.environ.get("BOT_SYSTEM_HINT", "").strip()
 _state = threading.local()
 _lock = threading.Lock()
 _seen = set()
@@ -164,30 +161,6 @@ def _llm_entry(args, kwargs):
     }
 
 
-def _with_hint(args, kwargs):
-    """args/kwargs with HINT appended to the end of the bot's own system message (the last of its leading system
-    messages), so it reads as part of the bot's instructions; a bot with no system message gets one."""
-    messages = kwargs.get("messages", args[1] if len(args) > 1 else None)
-    if not HINT or not isinstance(messages, list):
-        return args, kwargs
-    at = 0
-    while at < len(messages) and isinstance(messages[at], dict) and messages[at].get("role") == "system":
-        at += 1
-    if at == 0:
-        messages = [{"role": "system", "content": HINT}] + messages
-    else:
-        last = dict(messages[at - 1])
-        content = last.get("content")
-        if isinstance(content, list):  # content parts
-            last["content"] = content + [{"type": "text", "text": "\n\n" + HINT}]
-        else:
-            last["content"] = (f"{content}\n\n" if content else "") + HINT
-        messages = messages[:at - 1] + [last] + messages[at:]
-    if "messages" in kwargs or len(args) < 2:
-        return args, {**kwargs, "messages": messages}
-    return (args[0], messages, *args[2:]), kwargs
-
-
 def _llm_finish(entry, start, resp=None, error=None):
     entry["seconds"] = round(time.time() - start, 2)
     if error is not None:
@@ -209,8 +182,6 @@ def _emb_entry(args, kwargs):
 def _wrap(fn, make_entry, finish, is_async):
     if is_async:
         async def wrapper(*args, **kwargs):
-            if make_entry is _llm_entry:
-                args, kwargs = _with_hint(args, kwargs)
             start, entry = time.time(), make_entry(args, kwargs)
             try:
                 if make_entry is _llm_entry:
@@ -226,8 +197,6 @@ def _wrap(fn, make_entry, finish, is_async):
             return resp
     else:
         def wrapper(*args, **kwargs):
-            if make_entry is _llm_entry:
-                args, kwargs = _with_hint(args, kwargs)
             start, entry = time.time(), make_entry(args, kwargs)
             try:
                 if make_entry is _llm_entry:

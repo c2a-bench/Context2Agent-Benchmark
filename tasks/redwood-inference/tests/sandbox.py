@@ -289,11 +289,9 @@ def _run_in_new_sandbox(cases, rules, seed_dir, bot_path, argv_extra, timeout_se
             pass
 
 
-def run_solo(case, base, name, extra_text=None):
+def run_solo(case, base, name):
     """Run one ticket in a Daytona sandbox; return a single result dict."""
-    argv = ["--case-id", case["id"], "--result-name", name]
-    if extra_text:
-        argv.extend(["--extra", extra_text])
+    argv = ["--case-id", case["id"]]
     if base.get("timeout"):
         argv.extend(["--bot-timeout", str(base["timeout"])])
     rules = list(base["rules_by_id"].values())
@@ -312,13 +310,9 @@ def run_solo(case, base, name, extra_text=None):
     raise RuntimeError(f"sandbox missing result for {case['id']}: {sorted(results)}")
 
 
-def run_pair(first, second, base, extra=None, extra_first=None):
+def run_pair(first, second, base):
     """Run a follow-up pair in one Daytona sandbox; return {id: result}."""
     argv = ["--pair-head", first["id"]]
-    if extra:
-        argv.extend(["--extra", extra])
-    if extra_first:
-        argv.extend(["--extra-first", extra_first])
     if base.get("timeout"):
         argv.extend(["--bot-timeout", str(base["timeout"])])
     rules = list(base["rules_by_id"].values())

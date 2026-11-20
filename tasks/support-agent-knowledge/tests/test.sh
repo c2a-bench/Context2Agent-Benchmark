@@ -16,5 +16,5 @@ chmod -R a+rwX /app/bot
 cases_dir=/tests
 status=0
 python3 /tests/verify.py run --cases "$cases_dir/cases.json" --seed /tests/seed --rules "$cases_dir/rules.json" \
-  --workers "${VERIFIER_WORKERS:-$(nproc)}" --no-replay || status=$?
+  --workers "${VERIFIER_WORKERS:-$(nproc)}" || status=$?
 exit "$status"

@@ -19,5 +19,5 @@ if [ "${STAGE:-stage0}" != "stage0" ]; then
 fi
 status=0
 python3 /tests/verify.py run --cases "$cases_dir/cases.json" --seed "$cases_dir/seed" --rules "$cases_dir/rules.json" \
-  --workers "${VERIFIER_WORKERS:-$(nproc)}" --no-replay || status=$?
+  --workers "${VERIFIER_WORKERS:-$(nproc)}" || status=$?
 exit "$status"

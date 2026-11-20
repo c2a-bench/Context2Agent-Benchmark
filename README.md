@@ -113,8 +113,8 @@ python3 tasks/redwood-inference/steps/stage1/check/check.py
 Static viewer: **GitHub Pages frontend + the two public, commit-pinned Hugging Face datasets**.
 No hosted server, AWS infrastructure, or runtime credentials are required.
 
-Intended Pages URL: `https://c2a-bench.github.io/Context2Agent-Benchmark/`.
-Upload revisions remain unset until the normalized datasets pass local and anonymous remote verification.
+Live at `https://c2a-bench.github.io/Context2Agent-Benchmark/`, pinned to fixed commits of both datasets
+(`viewer/datasets/production.json`).
 
 ```bash
 cd viewer
@@ -126,9 +126,9 @@ npx playwright install chromium
 npm run test:pages
 ```
 
-Tests work without a real dataset or secrets. Pages deployment is disabled until explicitly enabled and
-`viewer/datasets/production.json` identifies verified commits for both public repositories. Large data is never
-committed to GitHub or bundled into the frontend. Do not embed a Hugging Face token in the app.
+Tests work without a real dataset or secrets. Every push to `main` deploys the site with the commits in
+`viewer/datasets/production.json`. Large data is never committed to GitHub or bundled into the frontend. Do not embed
+a Hugging Face token in the app.
 
 ### Publish new results
 

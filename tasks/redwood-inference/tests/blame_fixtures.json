@@ -266,68 +266,6 @@
     ]
   },
   {
-    "case": "case-11",
-    "name": "rule-buried-replay-passed",
-    "data": {
-      "tickets": {
-        "SUP-4111": {
-          "assigned_team": "Billing Ops"
-        }
-      }
-    },
-    "model_calls": [
-      {
-        "kind": "llm",
-        "model": "m",
-        "messages": [
-          {
-            "role": "system",
-            "content": "### When to route for credits consideration\nRoute to CS lead / account team when any of the following are true:"
-          }
-        ],
-        "reply": {
-          "content": "{\"assigned_team\": \"Billing Ops\"}",
-          "tool_calls": []
-        }
-      }
-    ],
-    "expect_blame": [
-      "rule buried"
-    ],
-    "replay_passed": true
-  },
-  {
-    "case": "case-11",
-    "name": "misapplied-replay-failed",
-    "data": {
-      "tickets": {
-        "SUP-4111": {
-          "assigned_team": "Billing Ops"
-        }
-      }
-    },
-    "model_calls": [
-      {
-        "kind": "llm",
-        "model": "m",
-        "messages": [
-          {
-            "role": "system",
-            "content": "### When to route for credits consideration\nRoute to CS lead / account team when any of the following are true:"
-          }
-        ],
-        "reply": {
-          "content": "{\"assigned_team\": \"Billing Ops\"}",
-          "tool_calls": []
-        }
-      }
-    ],
-    "expect_blame": [
-      "misapplied rule"
-    ],
-    "replay_passed": false
-  },
-  {
     "case": "handoff-01",
     "name": "handoff-rule-never-sent",
     "expect_blame": [
