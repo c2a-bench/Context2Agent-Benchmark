@@ -114,7 +114,8 @@ python3 scripts/regrade.py --help                                           # re
 
 ## Viewer
 
-Static site (graphs + run viewer) that reads the two commit-pinned Hugging Face datasets. Live at
+Static site (graphs + run viewer). The landing page graphs read `viewer/public/landing.json`, committed with the site, so
+they load without any Hugging Face request; the run viewer reads the two commit-pinned Hugging Face datasets. Live at
 https://c2abench.com/.
 
 ### View it locally
@@ -146,7 +147,7 @@ The site is built with fixed commits of both datasets (`viewer/datasets/producti
 reaches it. After new runs (or a new benchmark version) are on Hugging Face's `main`:
 
 ```bash
-cd viewer && npm run pin:production
+cd viewer && npm run pin:production    # also regenerates public/landing.json
 ```
 
 It looks up both datasets' latest commits, checks without a token that every run points to that exact benchmark commit

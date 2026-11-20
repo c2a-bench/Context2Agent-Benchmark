@@ -55,8 +55,12 @@ Add `submissions/<model>-<org>-<yyyy-mm-dd>/submission.json`:
 }
 ```
 
-### 5. Send it
+### 5. Check and send it
 
-Open a PR with that file. We check the runs, re-grade a sample of tickets, then publish them to
+```bash
+python3 scripts/validate_submission.py submissions/<name>/submission.json --runs-root <where your run folders are>
+```
+
+It checks the fields, the pinned revision, that every run is a judged `-facts` folder with all its stages, and that each task is complete. Fix what it lists, then open a PR with that file. We check the runs, re-grade a sample of tickets, then publish them to
 [observeai/c2a-bench-runs](https://huggingface.co/datasets/observeai/c2a-bench-runs). The leaderboard updates the next
 time the site is pinned to that dataset (`npm run pin:production` in `viewer/`).
