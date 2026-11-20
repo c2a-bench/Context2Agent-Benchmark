@@ -2,8 +2,6 @@
  * Data for the landing page: the latest finished run of every builder model on the current ticket version,
  * plus the per-run meta.json of the Redwood runs (ticket types, failure groups, rule recall, architecture,
  * latency and tokens are not in the catalog).
- * ponytail: 8 meta.json fetches (~140 KB each) on page load; move the few fields into index.json at publish time
- * when the builder count grows.
  */
 import { olderThan } from "@/lib/leaderboard";
 import { getLandingMeta, listJobs, listTasks, type JobSummary } from "@/lib/data";

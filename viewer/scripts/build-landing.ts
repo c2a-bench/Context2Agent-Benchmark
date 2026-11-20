@@ -3,7 +3,7 @@
 //
 //   npm run build:landing        # writes public/landing.json
 //
-// The site ignores the file if its runsRevision is not datasets/production.json's, and falls back to Hugging Face.
+// The site ignores the file if its runsRevision or benchmarkRevision is not datasets/production.json's, and falls back to Hugging Face.
 import { readFile, writeFile } from "node:fs/promises";
 import { parseRelease, releaseUrl } from "./data/release";
 import { createDatasetLoader } from "../src/lib/dataset-v2";
@@ -38,6 +38,6 @@ for (const task of index.tasks) {
     metas[job.key] = { scores: Object.fromEntries(Object.entries((m.scores ?? {}) as Record<string, Stage>).map(([k, v]) => [k, trim(v)])), failure_summary: m.failure_summary };
   }
 }
-const out = JSON.stringify({ runsRevision: release.runs.revision, index, metas });
+const out = JSON.stringify({ runsRevision: release.runs.revision, benchmarkRevision: release.benchmark.revision, index, metas });
 await writeFile("public/landing.json", out + "\n");
 console.log(`public/landing.json: ${index.tasks.reduce((n, t) => n + t.jobs.length, 0)} runs, ${(out.length / 1024).toFixed(0)} KB`);

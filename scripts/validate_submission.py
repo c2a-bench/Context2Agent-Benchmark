@@ -29,6 +29,9 @@ def main() -> int:
     except (OSError, ValueError) as e:
         print(f"cannot read {a.submission}: {e}")
         return 1
+    if not isinstance(s, dict) or not isinstance(s.get("runs"), list):
+        print("submission.json must be an object with a runs list")
+        return 1
     for k in REQUIRED:
         if s.get(k) in (None, "", []):
             errors.append(f"missing field: {k}")
@@ -39,7 +42,7 @@ def main() -> int:
         errors.append("contact must be an email address")
 
     per_task: dict[str, int] = {}
-    for run in s.get("runs", []):
+    for run in dict.fromkeys(s["runs"]):  # each folder once
         path = Path(a.runs_root) / run
         task = next((t for t in NEEDED if f"/{t}/" in f"/{run}/"), None)
         if not run.rstrip("/").endswith("-facts"):

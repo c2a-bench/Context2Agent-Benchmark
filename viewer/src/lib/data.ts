@@ -96,13 +96,13 @@ let catalog: { at: number; promise: Settled<PublishedIndex>; refreshing: boolean
 
 /** The landing data committed with the site (scripts/build-landing.ts): the catalog and each run's scores in one small
  *  file, so the landing page needs no Hugging Face request. Used only when it is for the pinned runs commit. */
-type Landing = { runsRevision: string; index: PublishedIndex; metas: Record<string, unknown> };
+type Landing = { runsRevision: string; benchmarkRevision: string; index: PublishedIndex; metas: Record<string, unknown> };
 let landing: Promise<Landing | null> | null = null;
 function committedLanding(): Promise<Landing | null> {
   return (landing ??= fetch(publicAsset("landing.json"))
     .then((res) => (res.ok ? (res.json() as Promise<Landing>) : null))
-    .then((l) => (l && l.runsRevision === publishedConfig().release.runs.revision ? l : null))
-    .catch(() => null));
+    .then((l) => (l && l.runsRevision === publishedConfig().release.runs.revision && l.benchmarkRevision === publishedConfig().release.benchmark.revision ? l : null))
+    .catch(() => { landing = null; return null; })); // a failed load is retried next time; a stale file is not refetched
 }
 /** A run's scores for the landing graphs: from the committed file, else the run's meta.json on Hugging Face. */
 export const getLandingMeta = (key: string) =>
