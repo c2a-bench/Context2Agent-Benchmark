@@ -4,7 +4,7 @@ import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
 
-const root = path.resolve(".local-data"), port = 5300;
+const root = path.resolve(".local-data");
 // First run: download the pinned datasets (~1 GB); `npm run dev:local-hf` again resumes an interrupted download.
 if (process.argv.includes("--fetch") || !existsSync(path.join(root, ".done"))) {
   const r = spawnSync("uv", ["run", "--with", "huggingface_hub", "python3", "scripts/fetch-local-hf.py"], { stdio: "inherit" });
@@ -17,6 +17,8 @@ createServer((req, res) => {
   if (!file.startsWith(root + path.sep) || !statSync(file, { throwIfNoEntry: false })?.isFile()) { res.statusCode = 404; return res.end(); }
   res.setHeader("Content-Type", file.endsWith(".json") ? "application/json" : "text/plain");
   createReadStream(file).pipe(res);
-}).listen(port, "127.0.0.1");
-const urls = { benchmark: `http://127.0.0.1:${port}/benchmark`, runs: `http://127.0.0.1:${port}/runs` };
-spawn("npx", ["vite", "--port", "5199"], { stdio: "inherit", env: { ...process.env, VITE_DATA_MODE: "published", VITE_DATA_RELEASE: JSON.stringify({ release, urls }) } });
+}).listen(0, "127.0.0.1", function () {
+  const port = this.address().port; // any free port
+  const urls = { benchmark: `http://127.0.0.1:${port}/benchmark`, runs: `http://127.0.0.1:${port}/runs` };
+  spawn("npx", ["vite", "--port", "5199"], { stdio: "inherit", env: { ...process.env, VITE_DATA_MODE: "published", VITE_DATA_RELEASE: JSON.stringify({ release, urls }) } });
+});

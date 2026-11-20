@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { publicAsset } from "@/lib/assets";
 
-export const CONTRIBUTING = "https://github.com/c2a-bench/Context2Agent-Benchmark/blob/main/CONTRIBUTING.md";
+export const CONTRIBUTING = "https://github.com/c2a-bench/c2a-bench/blob/main/CONTRIBUTING.md";
 
 const NAV = [
   ["Home", "/"],
@@ -51,7 +51,7 @@ export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpa
   );
 }
 
-const GH = "https://github.com/c2a-bench/Context2Agent-Benchmark";
+const GH = "https://github.com/c2a-bench/c2a-bench";
 const HF = "https://huggingface.co/datasets/observeai/c2a-bench";
 const HF_RUNS = "https://huggingface.co/datasets/observeai/c2a-bench-runs";
 

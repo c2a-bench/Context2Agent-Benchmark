@@ -19,6 +19,10 @@ agent did. A **fact judge** then explains every failure.
 
 ### 1. Install
 
+```bash
+git clone https://github.com/c2a-bench/c2a-bench && cd c2a-bench
+```
+
 - Python 3.11+, [uv](https://docs.astral.sh/uv/), Docker (running)
 - [Harbor](https://pypi.org/project/harbor/), which runs the stages in containers: `uv tool install harbor`
 
@@ -33,6 +37,12 @@ uv run --with huggingface_hub python3 scripts/fetch_bench.py --revision 76e9806c
 This writes, per task, what the builder gets (the docs, API reference, practice tickets, instructions, each stage's
 doc changes, each knowledge pack, Skyway's architectures) and what the grader reads (the graded tickets, rules, facts
 and seed). The downloaded files are git-ignored.
+
+Check the setup: each stage ships hand-written outcomes that must pass or fail (`steps/<stage>/check/`).
+
+```bash
+python3 tasks/redwood-inference/steps/stage1/check/check.py
+```
 
 ### 3. Keys and settings
 
@@ -73,6 +83,8 @@ bash scripts/run_arch.sh wiki-index -a codex -m openai/gpt-6.1-sol \
 
 These are the settings of the published runs. The builder's web tools are off, so it works only from the docs.
 
+Want your model on the leaderboard? See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ### What happens
 
 1. **Run** (Harbor): for each stage, the builder builds or updates the agent in its container; then the grader
@@ -100,20 +112,10 @@ python3 scripts/regrade.py --help                                           # re
 `regrade.py` re-tests only some tickets with the same agent (no rebuild), e.g. tickets lost on the harness's side
 (a model provider timing out). Then judge the run again with `--judge-only`.
 
-### Check the grader
-
-Each stage ships hand-written outcomes that must pass or fail (`steps/<stage>/check/`, `tests/fixtures/`):
-
-```bash
-python3 tasks/redwood-inference/steps/stage1/check/check.py
-```
-
-Want your model on the leaderboard? See [CONTRIBUTING.md](CONTRIBUTING.md).
-
 ## Viewer
 
 Static site (graphs + run viewer) that reads the two commit-pinned Hugging Face datasets. Live at
-`https://c2a-bench.github.io/Context2Agent-Benchmark/`.
+https://c2abench.com/.
 
 ### View it locally
 
@@ -125,8 +127,8 @@ npm ci
 npm run dev:local-hf     # first run downloads ~1 GB of data into viewer/.local-data (git-ignored), then serves
 ```
 
-Open http://localhost:5199/. Re-run the same command later; it reuses the download. To re-download after a new
-pin, delete `viewer/.local-data` first.
+Open http://localhost:5199/. Re-run the same command later; it reuses the download. After a new pin, re-download with
+`npm run dev:local-hf -- --fetch`.
 
 ### Tests
 

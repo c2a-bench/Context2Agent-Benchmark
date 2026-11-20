@@ -1,36 +1,40 @@
 # Contributing
 
+Bugs, fixes and new tasks: open an issue first, then a PR. Check code changes with
+`python3 tasks/redwood-inference/steps/stage1/check/check.py` and, for the site, `cd viewer && npm run test:data`.
+
 ## Submit results
 
 Run C2A with your builder model or harness and send us the runs. We check them and add them to the leaderboard.
 
-### 1. Run the benchmark
+### 1. Run
 
-Set up and download the data as in the [README](README.md#run-the-benchmark), then run each task with the published settings:
+Follow the [README](README.md#run-the-benchmark) (install, download the data at the pinned revision, keys), then run
+each task with the command for your harness. Submit the `-facts` folders: `<run>-facts` is the judged copy of the run
+that `run_with_judge.sh` writes beside it.
 
-```bash
-# Redwood Inference or Knowledge perturbations
-bash scripts/run_with_judge.sh redwood-inference -a codex -m openai/gpt-6.1-sol \
-    --agent-setup-timeout-multiplier 3 --ak web_search=disabled --ak reasoning_effort=high
+### 2. Rules
 
-# Skyway Air: one architecture, or "all" for the six
-bash scripts/run_arch.sh all -a codex -m openai/gpt-6.1-sol \
-    --agent-setup-timeout-multiplier 3 --ak web_search=disabled --ak reasoning_effort=high
-```
+A **standard** submission follows all of these. Anything else is labelled **custom** on the leaderboard (say what you
+changed in `notes`).
 
-Each run lands in `tasks/<task>/jobs/<run>/`. The judge writes `<run>-facts/` beside it.
+- Pinned benchmark revision `76e9806`; `tasks/` and the grader unchanged.
+- Every stage of each task you submit. Skyway counts only with all six architectures, the knowledge packs with all five.
+- The same builder model, harness and settings for every task.
+- `BOT_MODEL` (`openai/gpt-5.6-sol`) and the judge (`openai/gpt-6.1-sol`) left at their defaults, so builders compare on
+  what they built.
+- Builder web tools off, reasoning effort high (the flag differs per harness; see the README examples).
+- The builder model was not trained on the benchmark's tickets or facts.
 
-### 2. Check the rules
+### 3. Failed tickets
 
-- Use the benchmark at the pinned revision `76e9806` and leave `tasks/` and the grader unchanged.
-- Run every stage of each task you submit. Skyway counts only with all six architectures, the knowledge packs with all five.
-- Every support agent and the simulated customer run on `BOT_MODEL` (`openai/gpt-5.6-sol`), so builders compare on what they built.
-- Builder web tools off, reasoning effort high.
-- Let the fact judge finish: submit the `-facts` run folders, not only the raw runs.
+A ticket lost on our side or the provider's (a sandbox that never started, a provider that dropped the call) may be
+graded again with `python3 scripts/regrade.py --help`. A ticket the agent got wrong may not. Judge the run again with
+`--judge-only` afterwards.
 
-### 3. Describe the submission
+### 4. Describe it
 
-Put a `submission.json` next to your run folders:
+Add `submissions/<model>-<org>-<yyyy-mm-dd>/submission.json`:
 
 ```json
 {
@@ -40,14 +44,19 @@ Put a `submission.json` next to your run folders:
   "harness": "codex | claude-code | pi | other",
   "reasoning_effort": "high",
   "benchmark_revision": "76e9806cbd77860265fab7c3473e94860c5014bb",
-  "tasks": ["redwood-inference", "skyway-air", "support-agent-knowledge"],
-  "runs": ["tasks/redwood-inference/jobs/<run>-facts"],
-  "notes": "anything we should know"
+  "standard": true,
+  "runs": [
+    "tasks/redwood-inference/jobs/<run>-facts",
+    "tasks/skyway-air/jobs/<arch-run>-facts (one per architecture)",
+    "tasks/support-agent-knowledge/jobs/<run>-facts"
+  ],
+  "runs_url": "link to the uploaded run folders (a Hugging Face dataset, a bucket or a zip)",
+  "notes": ""
 }
 ```
 
-### 4. Send it
+### 5. Send it
 
-[Open an issue](https://github.com/c2a-bench/Context2Agent-Benchmark/issues/new?title=Result%20submission%3A%20%3Cmodel%3E%20%2B%20%3Charness%3E) titled `Result submission: <model> + <harness>`, with `submission.json` and the run folders attached or linked (a Hugging Face dataset, a bucket or a zip).
-
-We re-grade a sample of tickets, then publish the runs to [observeai/c2a-bench-runs](https://huggingface.co/datasets/observeai/c2a-bench-runs). The leaderboard updates when the site is next pinned to that dataset.
+Open a PR with that file. We check the runs, re-grade a sample of tickets, then publish them to
+[observeai/c2a-bench-runs](https://huggingface.co/datasets/observeai/c2a-bench-runs). The leaderboard updates the next
+time the site is pinned to that dataset (`npm run pin:production` in `viewer/`).

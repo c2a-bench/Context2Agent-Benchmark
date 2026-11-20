@@ -1,6 +1,6 @@
 # C2A replay viewer
 
-GitHub Pages frontend: [`c2a-bench/Context2Agent-Benchmark`](https://github.com/c2a-bench/Context2Agent-Benchmark).
+GitHub Pages frontend: [`c2a-bench/c2a-bench`](https://github.com/c2a-bench/c2a-bench).
 Data is split into two public, ungated Hugging Face datasets. No hosted server, Space, or runtime tokens.
 
 ## Canonical data layout
@@ -109,8 +109,8 @@ Review/copy a fully verified candidate into `datasets/production.json`. It pins 
 inventory hashes. No moving branches, Blob fallback, tokens, or one-repo compatibility mode are used.
 
 ```bash
-VITE_BASE_PATH=/Context2Agent-Benchmark/ npm run build:pages
-npm run smoke:pages -- --url https://c2a-bench.github.io/Context2Agent-Benchmark/
+VITE_BASE_PATH=/c2a-bench/ npm run build:pages
+npm run smoke:pages -- --url https://c2abench.com/
 ```
 
 Settings → Pages → Source → GitHub Actions. Restrict `github-pages` to main, then set repository variable
