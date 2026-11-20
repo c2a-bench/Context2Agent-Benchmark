@@ -100,7 +100,7 @@ export function ChartCard({
 }) {
   const [asTable, setAsTable] = useState(false);
   return (
-    <section className={cn("mt-14", scope?.stage && "-ml-4 border-l-2 border-foreground/30 pl-4", className)}>
+    <section className={cn("mt-20", scope?.stage && "-ml-4 border-l-2 border-foreground/30 pl-4", className)}>
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-sans text-[15px] font-semibold tracking-tight">
           {title}

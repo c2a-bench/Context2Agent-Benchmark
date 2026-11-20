@@ -83,7 +83,7 @@ function ByStage({ meta, per }: { meta: Meta; per: { st: number; r: Rollup; tota
   const legend: Segment[] = keys.map((k) => ({ key: k, label: k === NONE ? PARTY_LABEL.none : PARTY_LABEL[k], value: Math.round(10 * per.reduce((a, x) => a + (x.r.parties[k] ?? 0), 0)) / 10, color: colorOf(k) }));
   return (
     <ChartCard
-      className="mt-10"
+      className="mt-20"
       title="Failed tickets, by stage"
       how="Each bar is a stage. Its height is the stage's failed tickets ÷ the stage's tickets, so a taller bar means more of that stage failed. The colours say whose responsibility the failures were; a ticket blamed on two parties counts half in each."
       subtitle="A taller bar is a stage where more tickets failed. The label above each bar is the pass rate. To look at one stage, pick it in the Stage menu at the top."
@@ -309,7 +309,7 @@ function FactGradedFailureAnalysis() {
       <div className="mx-auto max-w-5xl px-6 pb-12">
         <Headline r={cur} total={total} scope={label} />
         {stage === ALL && <ByStage meta={meta} per={per} />}
-        <div className="mt-12 grid items-start gap-10 lg:grid-cols-2">
+        <div className="mt-20 grid items-start gap-10 lg:grid-cols-2">
           <Breakdown r={cur} pick={pick} onPick={onPick} />
           <TicketList meta={meta} tickets={scoped} job={job} stage={stage} pick={pick} pickLabel={pickLabel} counted={pick === NONE ? cur.leaves[NONE] ?? 0 : cur.failed} />
         </div>
