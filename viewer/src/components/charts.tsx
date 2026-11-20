@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link as RouterLink } from "react-router";
 import { cn } from "@/lib/utils";
@@ -16,12 +16,14 @@ let setPageTip: ((t: Tip) => void) | null = null;
 export function TipRoot() {
   const [tip, setTip] = useState<Tip>(null);
   const el = useRef<HTMLDivElement>(null);
-  const [top, setTop] = useState<number | null>(null);
-  // Below the pointer when it fits, else above it, so a tooltip near the window's bottom is never cut off.
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  // Below and right of the pointer when it fits; else above and/or left of it, so it is never cut off by the window.
   useLayoutEffect(() => {
-    if (!tip || !el.current) return setTop(null);
-    const h = el.current.offsetHeight;
-    setTop(tip.y + 14 + h <= window.innerHeight - 8 ? tip.y + 14 : Math.max(8, tip.y - 10 - h));
+    if (!tip || !el.current) return setPos(null);
+    const h = el.current.offsetHeight, w = el.current.offsetWidth;
+    const top = tip.y + 14 + h <= window.innerHeight - 8 ? tip.y + 14 : Math.max(8, tip.y - 10 - h);
+    const left = tip.x + 12 + w <= window.innerWidth - 8 ? tip.x + 12 : Math.max(8, tip.x - 12 - w);
+    setPos({ left, top });
   }, [tip]);
   useEffect(() => {
     setPageTip = setTip;
@@ -36,9 +38,9 @@ export function TipRoot() {
   return createPortal(
     <div
       role="tooltip"
-      className="pointer-events-none fixed z-50 min-w-40 rounded-md border bg-popover px-3 py-2 font-sans text-xs font-normal normal-case tracking-normal text-popover-foreground shadow-md"
+      className="pointer-events-none fixed z-50 max-w-80 min-w-40 rounded-md border bg-popover px-3 py-2 font-sans text-xs font-normal normal-case tracking-normal text-popover-foreground shadow-md"
       ref={el}
-      style={{ left: Math.max(8, Math.min(tip.x + 12, window.innerWidth - 320)), top: top ?? tip.y + 14, visibility: top == null ? "hidden" : "visible" }}
+      style={{ left: pos?.left ?? tip.x + 12, top: pos?.top ?? tip.y + 14, visibility: pos == null ? "hidden" : "visible" }}
     >
       {tip.body}
     </div>,
@@ -71,7 +73,7 @@ export function TipRow({ color, value, label }: { color?: string; value: ReactNo
   return (
     <div className="flex items-center gap-2">
       {color && <span className="h-0.5 w-3 shrink-0 rounded-full" style={{ background: color }} />}
-      <span className="font-semibold tabular-nums">{value}</span>
+      <span className="font-semibold whitespace-nowrap tabular-nums">{value}</span>
       <span className="text-muted-foreground">{label}</span>
     </div>
   );
@@ -85,6 +87,7 @@ export function ChartCard({
   scope,
   children,
   className,
+  side,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
@@ -95,34 +98,55 @@ export function ChartCard({
   how?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Text beside the chart instead of above it, on wide screens (as on the home page): "left" puts the text on the
+   *  left, "right" on the right; pages alternate them. Narrow screens stack as usual. */
+  side?: "left" | "right";
 }) {
   const [asTable, setAsTable] = useState(false);
+  const chip = scope && <ScopeChip stage={scope.stage}>{scope.label}</ScopeChip>;
+  const tools = (how || table) && (
+    <div className="flex shrink-0 items-baseline gap-3">
+      {how && (
+        <How how={how} className="font-sans text-[11px] text-muted-foreground">
+          how it&apos;s calculated
+        </How>
+      )}
+      {table && (
+        <button
+          type="button"
+          onClick={() => setAsTable(!asTable)}
+          className="shrink-0 rounded-md border px-2 py-0.5 font-sans text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          {asTable ? "Show chart" : "Show table"}
+        </button>
+      )}
+    </div>
+  );
+  const body = asTable && table ? table : children;
+  if (side) {
+    return (
+      <section className={cn("mt-20 grid items-start gap-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:gap-14", side === "right" && "lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)]", className)}>
+        <div className={cn("lg:sticky lg:top-6", side === "right" && "lg:order-2")}>
+          {chip && <div className="mb-3">{chip}</div>}
+          <h2 className="font-sans text-xl font-semibold tracking-tight">{title}</h2>
+          {subtitle && <p className="mt-3 font-sans text-sm leading-relaxed text-muted-foreground">{subtitle}</p>}
+          {tools && <div className="mt-4">{tools}</div>}
+        </div>
+        <div className="relative min-w-0">{body}</div>
+      </section>
+    );
+  }
   return (
     <section className={cn("mt-14", scope?.stage && "-ml-4 border-l-2 border-foreground/30 pl-4", className)}>
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-sans text-[15px] font-semibold tracking-tight">
           {title}
-          {scope && <span className="ml-2 align-[1px]"><ScopeChip stage={scope.stage}>{scope.label}</ScopeChip></span>}
+          {chip && <span className="ml-2 align-[1px]">{chip}</span>}
         </h2>
-        <div className="flex shrink-0 items-baseline gap-3">
-        {how && (
-          <How how={how} className="font-sans text-[11px] text-muted-foreground">
-            how it&apos;s calculated
-          </How>
-        )}
-        {table && (
-          <button
-            type="button"
-            onClick={() => setAsTable(!asTable)}
-            className="shrink-0 rounded-md border px-2 py-0.5 font-sans text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            {asTable ? "Show chart" : "Show table"}
-          </button>
-        )}
-        </div>
+        {tools}
       </div>
       {subtitle && <p className="mt-2 max-w-3xl font-sans text-xs leading-relaxed text-muted-foreground">{subtitle}</p>}
-      <div className="relative mt-6">{asTable && table ? table : children}</div>
+      <div className="relative mt-6">{body}</div>
     </section>
   );
 }
@@ -358,14 +382,13 @@ function RateGrid({ reference }: { reference?: number }) {
   );
 }
 
-function RateBarRow({ r, color, grouped, showGroup, divider, reference }: { r: RateRow; color: string; grouped: boolean; showGroup: boolean; divider: boolean; reference?: number }) {
+function RateBarRow({ r, color, reference }: { r: RateRow; color: string; reference?: number }) {
   const rate = r.total ? r.passed / r.total : 0;
   const tip = useTip(r.tip ?? <TipRow color={color} value={`${rate.toFixed(2)} (${r.passed}/${r.total})`} label={r.label} />);
-  const cell = cn("py-1", divider && "border-t border-border/60");
+  const cell = "py-1";
   return (
     <div {...tip} className="group/row contents outline-none">
-      {grouped && <div className={cn(cell, "truncate pr-2 font-sans text-xs text-muted-foreground")}>{showGroup ? (r.groupLabel ?? r.group) : ""}</div>}
-      <div className={cn(cell, "truncate pr-3 font-sans text-xs group-hover/row:font-medium")}>{r.label}</div>
+      <div className={cn(cell, "truncate pr-3 font-sans text-xs group-hover/row:font-medium", r.group && "pl-3")}>{r.label}</div>
       <div className={cn(cell, "relative flex items-center")}>
         <RateGrid reference={reference} />
         <div className="relative z-10 h-3.5 rounded-r group-hover/row:brightness-110" style={{ width: `${100 * rate}%`, minWidth: rate > 0 ? 2 : 0, background: color }} />
@@ -379,10 +402,11 @@ function RateBarRow({ r, color, grouped, showGroup, divider, reference }: { r: R
 
 /** Pass rates on a fixed 0–1 scale, one bar per row, rows grouped under a label; an optional reference line (e.g. baseline). */
 export function RateBars({ rows, color = VIZ[1], reference }: { rows: RateRow[]; color?: string; reference?: { value: number; label: string } }) {
-  const grouped = rows.some((r) => r.group);
-  const pad = grouped ? [0, 1] : [0];
+  const size = new Map<string, number>();
+  for (const r of rows) if (r.group) size.set(r.group, (size.get(r.group) ?? 0) + 1);
+  const pad = [0];
   return (
-    <div className={cn("grid", grouped ? "grid-cols-[minmax(0,11rem)_minmax(0,10rem)_minmax(0,1fr)_7.5rem]" : "grid-cols-[minmax(0,16rem)_minmax(0,1fr)_7.5rem]")}>
+    <div className="grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)_7rem]">
       {pad.map((k) => <div key={k} />)}
       <div className="relative h-4">
         {reference && (
@@ -393,8 +417,19 @@ export function RateBars({ rows, color = VIZ[1], reference }: { rows: RateRow[];
       </div>
       <div />
       {rows.map((r, i) => {
-        const first = i === 0 || rows[i - 1].group !== r.group;
-        return <RateBarRow key={r.key} r={r} color={color} grouped={grouped} showGroup={first} divider={grouped && first && i > 0} reference={reference?.value} />;
+        const first = !!r.group && (i === 0 || rows[i - 1].group !== r.group);
+        const head = first && (size.get(r.group!) ?? 0) > 1;
+        return (
+          <Fragment key={r.key}>
+            {head && (
+              <div className={cn("col-span-3 pt-3 pb-0.5 font-sans text-[10.5px] font-medium tracking-wide text-muted-foreground uppercase", i > 0 && "mt-1 border-t border-border/60")}>
+                {r.groupLabel ?? r.group}
+              </div>
+            )}
+            {first && !head && i > 0 && <div className="col-span-3 mt-1 border-t border-border/60" />}
+            <RateBarRow r={(size.get(r.group ?? "") ?? 0) > 1 ? r : { ...r, group: undefined }} color={color} reference={reference?.value} />
+          </Fragment>
+        );
       })}
       {pad.map((k) => <div key={k} />)}
       <div className="relative h-5">

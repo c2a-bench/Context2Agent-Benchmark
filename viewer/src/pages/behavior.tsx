@@ -130,6 +130,7 @@ function PerTicketTables({
       {factsBy && factRows.length > 0 && (
         <ChartCard
           title="Did the agent get the customer's facts?"
+          side="left"
           scope={scopeTag}
           how="A model read each conversation and marked which of the ticket's customer facts the customer told the agent (the opening counts). Each bar: facts the ticket needs that the agent got ÷ facts the ticket needs, over the tickets with that customer type. The line is the plain customer's rate."
           subtitle="Some facts are known only to the customer, such as their booking details or what went wrong. Each bar shows how many of these facts (the ones the ticket needs) the agent uncovered for each customer type. Left of the line means the agent uncovered fewer facts than with a plain customer."
@@ -188,6 +189,7 @@ function PerTicketTables({
         return (
           <ChartCard
             title="Were the agent's questions relevant?"
+          side="right"
           scope={scopeTag}
             how="A model read each conversation and, for every support turn that asks the customer for something, named the customer facts it asks for (its quote is checked against the turn). Each bar: questions asking for at least one fact the ticket needs ÷ all questions, over the tickets with that customer type. The line is the plain customer's rate."
             subtitle="Of the questions the agent asked the customer, how many asked for something the ticket actually needs. Low = it asks about things that don't matter."
@@ -273,6 +275,7 @@ function PerTicketTables({
       {keys.length > 0 && (
         <ChartCard
           title="Pass rate by customer type"
+          side="left"
           scope={scopeTag}
           how="Each bar: tickets passed ÷ tickets with that customer type. The number next to a group: its types' tickets added up, passed ÷ tickets. The line is the plain customer's rate."
           subtitle="Pass rate for each customer type. Left of the line means the agent performed worse than with a plain customer. Since each type appears on different tickets, small differences may reflect ticket difficulty. The number beside each group shows its pass rate."
