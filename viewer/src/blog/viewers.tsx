@@ -1,5 +1,5 @@
 /**
- * Interactive viewers for the blog post, placed with `<!-- figure:ticket -->` and `<!-- figure:behaviours -->`.
+ * Interactive viewers for the blog post, placed with `<!-- figure:ticket -->`, `<!-- figure:behaviours -->` and `<!-- figure:customer-types -->`.
  *  - TicketViewer: an animated diagram of how the bench works, one ticket through the six stages (based on Skyway service-02, Nov 6).
  *  - BehaviourViewer: the 14 customer behaviours, each with a short real exchange (Redwood runs) and what it tests.
  * The numbers are fixed here (from the published runs), not loaded.
@@ -256,3 +256,45 @@ export function BehaviourViewer() {
 }
 
 
+
+/** Pass rate and customer recall per customer behavior, one bar chart with a toggle between the two, over every published
+ *  run with customer types (Redwood Inference and Skyway Air). Plain numbers, no adjustment; from `npm run customer-types`
+ *  on the pinned runs. [tickets, attempts, pass %, customer recall %]. */
+const CUSTOMER_TYPES = {"baseline": [57, 921, 66.2, 74.8], "exception_request": [27, 624, 64.1, 69.8], "disfluency": [26, 617, 61.9, 67.3], "underspecified": [44, 1004, 60.6, 60.4], "incremental": [56, 1320, 60, 81.8], "urgency_pressure": [48, 858, 60, 59], "on_request": [63, 1485, 59.7, 49.9], "pushback": [50, 1075, 58.6, 72.5], "frustration": [64, 1434, 56.4, 73.2], "goal_change": [14, 301, 55.1, 40.3], "ambiguous": [43, 939, 51.5, 75], "urgency_mismatch": [39, 882, 47.3, 74.8], "person_request": [32, 833, 40.6, 58.4], "self_correction": [38, 933, 28.9, 49.2]} as Record<string, [number, number, number, number]>;
+const typeName = (k: string) => (k === "baseline" ? "Baseline (plain customer)" : k.replace(/^./, (c) => c.toUpperCase()).replace(/_/g, " "));
+const MEASURE = { pass: { label: "Pass rate", at: 2, color: "var(--f-state)" }, recall: { label: "Customer recall", at: 3, color: "var(--f-customer)" } } as const;
+
+export function CustomerTypeViewer() {
+  const [m, setM] = useState<"pass" | "recall">("pass");
+  const { at, color } = MEASURE[m];
+  const rows = Object.entries(CUSTOMER_TYPES).sort((x, y) => y[1][at] - x[1][at]); // highest first
+  const base = CUSTOMER_TYPES.baseline[at]; // the comparison: what a plain customer gets
+  return (
+    <div className="ct">
+      <div className="ct-top">
+        <div className="seg" role="group" aria-label="Measure">
+          {(Object.keys(MEASURE) as (keyof typeof MEASURE)[]).map((k) => (
+            <button key={k} type="button" aria-pressed={m === k} onClick={() => setM(k)}>{MEASURE[k].label}</button>
+          ))}
+        </div>
+        <span className="muted ct-avg-note"><i className="ct-key-avg" aria-hidden /> baseline customer: {Math.round(base)}%</span>
+      </div>
+      <div className="ct-row ct-axis-row" aria-hidden>
+        <span />
+        <div className="ct-track ct-axis">{[0, 25, 50, 75, 100].map((v) => <span key={v} style={{ left: `${v}%` }}>{v}%</span>)}</div>
+        <span />
+      </div>
+      <ul className="ct-rows">
+        {rows.map(([k, v]) => (
+          <li key={k} className="ct-row" aria-label={`${typeName(k)}: ${MEASURE[m].label.toLowerCase()} ${Math.round(v[at])}%, ${v[0]} tickets`}
+            title={`${typeName(k)}\npass rate ${v[2].toFixed(0)}%\ncustomer recall ${v[3].toFixed(0)}%\n${v[0]} tickets, ${v[1].toLocaleString()} attempts`}>
+            <span className="ct-name">{typeName(k)}</span>
+            <div className="ct-track"><span className="ct-avg" style={{ left: `${base}%` }} /><span className="ct-bar" style={{ width: `${v[at]}%`, background: color }} /></div>
+            <b className="ct-val num">{Math.round(v[at])}%</b>
+          </li>
+        ))}
+      </ul>
+      <p className="muted ct-foot">Each ticket always has the same customer behavior, so a behavior's rate also reflects the tickets it was given. The dashed line marks the baseline customer.</p>
+    </div>
+  );
+}
