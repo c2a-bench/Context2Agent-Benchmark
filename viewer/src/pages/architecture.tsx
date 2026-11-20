@@ -17,7 +17,7 @@ const ASSIGNED: Record<string, string> = {
   "prompt-workflows": "No search: the rules are written into the agent's prompts.",
 };
 
-/** What the grader saw the agent use at a stage (its knowledge_access categories), in plain words. */
+/** What the grader found in the agent at a stage, from its run or its code (knowledge_access), in plain words. */
 const SEEN: Record<string, string> = {
   llm_wiki: "a wiki",
   sparse_retrieval: "keyword search",
@@ -34,7 +34,7 @@ const OLD_CLASS: Record<string, string> = {
 function seenAt(r: ArchRow): string | null {
   const ka = r.raw?.observed?.knowledge_access;
   if (!Array.isArray(ka)) return r.archClass ? OLD_CLASS[r.archClass] ?? r.archClass : null;
-  if (!ka.length) return "nothing we can detect (it reads files directly or keeps the rules in its prompt)";
+  if (!ka.length) return "none of these: no wiki, search or knowledge graph";
   return [...ka].sort((a, b) => SEEN_ORDER.indexOf(a) - SEEN_ORDER.indexOf(b)).map((c) => SEEN[c] ?? c).join(" + ");
 }
 
@@ -105,6 +105,9 @@ export default function ArchitecturePage() {
   const p90s = lat.map((l) => l?.run?.p90).filter((v): v is number => v != null);
   const p90Typical = p90s.length ? [...p90s].sort((x, y) => x - y)[Math.floor((p90s.length - 1) / 2)] : null;
   const replyLabel = wall ? "Agent reply" : "Agent reply (model time)";
+  // Replies per ticket in this run: all replies ÷ all tickets, over the stages with timings.
+  const nRuns = lat.reduce((a, l) => a + (l?.run?.n ?? 0), 0), nTickets = lat.reduce((a, l) => a + (l?.ticket?.n ?? 0), 0);
+  const perTicket = nTickets ? Math.round((10 * nRuns) / nTickets) / 10 : null;
   const latSeries: LineSeries[] = [
     { key: "p90", label: "p90", color: VIZ[0], points: lat.map((l) => ({ value: l?.run?.p90 ?? null, note: l?.run ? `${l.run.n} replies` : undefined })) },
   ];
@@ -151,7 +154,7 @@ export default function ArchitecturePage() {
             )}
             {seen && (
               <p className="mt-2 font-sans text-sm">
-                <span className="text-muted-foreground">What we saw it use: </span>{seen}
+                <span className="text-muted-foreground">What we found in the agent: </span>{seen}
               </p>
             )}
           </section>
@@ -174,7 +177,7 @@ export default function ArchitecturePage() {
           className="mt-14"
           title={`How long the agent takes to reply · p90 ${p90Typical == null ? "—" : sec(p90Typical)}`}
           how={`For each stage, every reply's time is sorted (${wall ? "start to end of the agent's run" : "the model time of one agent process"}, over all tickets, passed or failed) and the p90 is the value 90% of the way up the list. The title shows the middle of the stage p90s.`}
-          subtitle={`One reply = the agent handling one customer message (about 5 per ticket). The p90 is the time 9 in 10 replies finish within.${wall ? "" : " This run times a reply by its model calls only; newer runs time the whole reply."} The title shows the middle stage.`}
+          subtitle={`One reply = the agent handling one customer message${perTicket ? ` (about ${perTicket} per ticket in this run)` : ""}. The p90 is the time 9 in 10 replies finish within.${wall ? "" : " This run times a reply by its model calls only; newer runs time the whole reply."} The title shows the middle stage.`}
           table={latTable}
         >
           <GroupedBarsLine xLabels={rows.map(stageLabel)} bars={latSeries} yMax={latTop} ticks={latTicks} format={sec} height={240} />
