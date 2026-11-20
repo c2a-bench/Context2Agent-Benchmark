@@ -5,7 +5,7 @@ export default function Rq5Page() {
   const { kCond, complete, parts } = useRunSummary();
   const applies = complete?.qk != null && kCond.length > 1;
   return (
-    <div className="run-wrap py-12">
+    <div className="mx-auto max-w-5xl px-6 py-12">
       <h1 className="font-heading text-3xl font-normal tracking-tight">Knowledge conditions</h1>
       {applies ? (
         parts.rq5
