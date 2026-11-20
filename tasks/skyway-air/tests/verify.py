@@ -2,7 +2,7 @@
 
 run     - Harbor mode: for each case, reset data, run the bot (traced), compare JSON state,
           check that every change was a value the model said, write the reward. Then diagnose,
-          optionally replay failed tickets (RQ2), and build the observed architecture card.
+          optionally replay failed tickets (REPLAY=0 turns it off), and build the observed architecture card.
           With TICKET_SANDBOX=daytona, each ticket (or follow-up pair) runs in its own sandbox.
 run-one - Worker entrypoint for one ticket or follow-up pair (used inside a ticket sandbox).
 check   - author mode: grade hand-written fixtures (no bot) and confirm each verdict matches `should`.
@@ -585,7 +585,7 @@ def plain_case(case):
 
 
 def plain_replay(results, by_id, follow, base, workers, backend):
-    """Behaviour replay (RQ4, customer information given): a failed ticket that the full replay fixed runs again with
+    """Behaviour replay (customer information given): a failed ticket that the full replay fixed runs again with
     the customer's information given (plain_case) and no rule. Passing means the rule was not needed; failing means
     it was."""
     jobs, meta, pairs = [], {}, []
@@ -622,7 +622,7 @@ def plain_replay(results, by_id, follow, base, workers, backend):
 def full_replay(results, by_id, follow, base, workers, backend, notes):
     """Full replay (rule and customer information given), first: the rule note with the customer's information given
     (plain_case), for every failed ticket. Failing means the bot cannot do it even with both given (execution), or
-    the ticket itself is wrong; then the rule and behaviour replays are not run (Rishi's order) and are marked
+    the ticket itself is wrong; then the rule and behaviour replays are not run and are marked
     skipped, not failed. Passing means something was missing; the rule and behaviour replays then say which."""
     jobs, meta, pairs = [], {}, []
     for r in results:
@@ -1402,7 +1402,7 @@ def cmd_replay(args):
 
 
 def run_replays(results, cases, follow, base, workers, backend):
-    """The RQ2 replays of the failed tickets, in Rishi's order: the full replay (rule and customer facts given) first;
+    """The replays of the failed tickets: the full replay (rule and customer facts given) first;
     the rule and behaviour replays only where it passed. Updates the results in place."""
     # A replay is a new conversation from the ticket's own story, with the customer model.
     by_id = {c["id"]: c for c in cases}
@@ -2152,7 +2152,7 @@ def behavior_failure_split(results):
     execution  the full replay (rule and customer's information given) failed too, so the other replays were skipped;
     ours / bot_errors  lost to us, or a crash / no model call, so no rule was tested;
     plain_replayed / plain_passed  failed tickets run again with the customer's information given and no rule (after the full
-                  replay), and how many then passed: the behaviour cost those tickets (RQ4)."""
+                  replay), and how many then passed: the behaviour cost those tickets."""
     kinds = ("failed", "ours", "bot_errors", "lacked_rule", "fixed_when_told", "cannot_apply", "execution", "not_replayed",
              "plain_replayed", "plain_passed")
     by_behavior = {}
@@ -2905,7 +2905,7 @@ def main():
     run.add_argument("--bot-timeout", type=int, default=240)
     run.add_argument("--rules", default="/tests/rules.json")
     run.add_argument("--app", default="/app")
-    run.add_argument("--no-replay", action="store_true", help="skip the RQ2 replay of failed tickets")
+    run.add_argument("--no-replay", action="store_true", help="skip the replay of failed tickets")
     run.add_argument("--workers", type=int, default=WORKERS, help="tickets to run at once")
     run.add_argument("--bot", default=str(BOT))
     run.add_argument("--server", default=str(SERVER))

@@ -732,7 +732,7 @@ def owning_rules(case, key, rules_by_id):
 
 
 def replay_note(case, checks, rules_by_id):
-    """The rule text the RQ2 replay gives the bot: verify.replay_hint wraps it, and the trace hook appends it to the
+    """The rule text the replay gives the bot: verify.replay_hint wraps it, and the trace hook appends it to the
     end of the bot's own system message on every model call."""
     ids = []
     for check in checks:
@@ -874,7 +874,7 @@ def bot_code(bot_dir):
 
 
 def embeddings_in_code(bot_dir):
-    """Bot code files that call (a)embedding(. A code check, used for the RQ3 class
+    """Bot code files that call (a)embedding(. A code check, used for the architecture class
     only when a run has no runtime trace to count real embedding calls."""
     return [path for path, text in bot_code(bot_dir).items() if EMBEDDING_CALL.search(text)]
 
@@ -1248,7 +1248,7 @@ def load_self_report(path):
     return value if isinstance(value, dict) else "ARCHITECTURE.json is not a JSON object"
 
 
-# ----- RQ2 knowledge acquisition vs runtime realization (quantitative) -----
+# ----- knowledge acquisition vs runtime realization (quantitative) -----
 ACQUISITION_BLAMES = frozenset({
     "not kept", "not retrieved", "retrieval", "no tools",
 })

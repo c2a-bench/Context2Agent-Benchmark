@@ -2,7 +2,7 @@
 
 run     - Harbor mode: for each case, reset data, run the bot (traced), compare JSON state,
           check that every change was a value the model said, write the reward. Then diagnose,
-          optionally replay failed tickets (RQ2), and build the observed architecture card.
+          optionally replay failed tickets (REPLAY=0 turns it off), and build the observed architecture card.
           With TICKET_SANDBOX=daytona, each ticket (or follow-up pair) runs in its own sandbox.
 run-one - Worker entrypoint for one ticket or follow-up pair (used inside a ticket sandbox).
 check   - author mode: grade hand-written fixtures (no bot) and confirm each verdict matches `should`.
@@ -2397,7 +2397,7 @@ def main():
     run.add_argument("--bot-timeout", type=int, default=240)
     run.add_argument("--rules", default="/tests/rules.json")
     run.add_argument("--app", default="/app")
-    run.add_argument("--no-replay", action="store_true", help="skip the RQ2 replay of failed tickets")
+    run.add_argument("--no-replay", action="store_true", help="skip the replay of failed tickets")
     run.add_argument("--workers", type=int, default=WORKERS, help="tickets to run at once")
     run.add_argument("--bot", default=str(BOT))
     run.add_argument("--server", default=str(SERVER))

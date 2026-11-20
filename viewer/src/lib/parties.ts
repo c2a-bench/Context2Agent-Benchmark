@@ -13,17 +13,3 @@ export const PARTY_HINT: Record<string, string> = {
   Bot: "the agent had the knowledge and still got it wrong",
   Harness: "our side: time limit, provider error",
 };
-
-// One colour per failure group: the builder's groups in orange tones, the agent's in purple/pink/teal, ours in yellow.
-export const FAMILY_COLOR: Record<string, string> = {
-  "Context recall": VIZ[0],
-  "Context precision": "color-mix(in oklab, var(--viz-1) 45%, transparent)",
-  "Tool failure": VIZ[2],
-  "NL assertion failure": VIZ[4],
-  "Information gathering": "color-mix(in oklab, var(--viz-3) 55%, transparent)",
-  Robustness: "color-mix(in oklab, var(--muted-foreground) 55%, transparent)",
-  "Resource limit": VIZ[3],
-  "Fault or crash": "color-mix(in oklab, var(--viz-4) 60%, transparent)",
-  "Trace or service": "color-mix(in oklab, var(--viz-4) 35%, transparent)",
-  none: "color-mix(in oklab, var(--muted-foreground) 30%, transparent)",
-};

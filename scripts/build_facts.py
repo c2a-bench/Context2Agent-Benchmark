@@ -6,7 +6,7 @@ with a decisive value each: R1 (priority definitions) into R1.P0..R1.P4, and R2 
 into R2.<priority>.<tier>. Only rules written as those tables are split ("P0 = ..." and "P2: self_serve 1bd, ...").
 A task with tests/rule_parts.json (skyway-air, whose rules' parts sit in different docs) splits every rule the same
 way, into one fact per part (an evidence sentence: R12.1, R12.2, ...), and a ticket is judged on the parts it needs.
-The judge gets, per step (Rishi's spec):
+The judge gets, per step:
   rule   the facts the step needs: the union of the facts of the step's tickets
   trap   a wrong version of a needed rule: a sentence from an old, draft or look-alike page (its trap_evidence)
   stale  an earlier version of a needed fact, or of a needed rule (its stale_evidence)
