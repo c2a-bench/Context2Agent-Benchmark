@@ -2,7 +2,7 @@ import fs from "node:fs";
 import type { Connect, Plugin } from "vite";
 import { getCases, getTextShard, listJobs, listTasks, runFilePath } from "./data-local";
 
-// Local only: serve tasks/<task>/jobs as JSON under /api, the same shapes the published Blob files have.
+// Local only: serve tasks/<task>/jobs as JSON under /api, the same shapes the published datasets have.
 //   /api/index.json                     → { tasks: [{ ...task, jobs }] }
 //   /api/<task>/<job>/<meta|tickets|passed|code|docs|cases>.json
 //   /api/<task>/<job>/texts/<2 hex>.json

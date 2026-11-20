@@ -2,9 +2,12 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { PublishedIndex, JobSummary } from "../../src/lib/data-types";
 import type { BuildsData, BuildEvent, CasesData, CodeData, Doc, DocsData, Meta, Ticket } from "../../src/lib/types";
-import { canonicalDomain, caseTicketBase, makeLeaderboardRow, type BenchmarkCase, type BenchmarkTask, type ResultRecord, type RunRecord, type StageChanges, type StageCode, type StageRecord } from "../../src/lib/dataset-v2";
+import { caseTicketBase, makeLeaderboardRow, type BenchmarkCase, type BenchmarkTask, type ResultRecord, type RunRecord, type StageChanges, type StageCode, type StageRecord } from "../../src/lib/dataset-v2";
 import { fingerprint, pool, safePath, snapshotId, type Source, type SourceObject } from "./inventory";
 import { canonical, ContentStore, digest, exists, inventoryDirectory, MigrationReader, redact, verifyDirectory, writeJson } from "./migration-io";
+
+/** Run folders of the fixed-architecture Skyway task were named skyway-arch; the datasets call the domain skyway-air. */
+const canonicalDomain = (domain: string) => (domain === "skyway-arch" ? "skyway-air" : domain);
 
 export type MigrationOptions = { source: Source; out: string; id: string; benchmarkRepository: string; runsRepository: string; expectedRuns?: number; license?: string; concurrency?: number; seed?: { root: string; mappings: Record<string, string>; objects: Map<string, SourceObject> }; log?: (message: string) => void };
 const without = (value: Record<string, unknown>, keys: string[]) => Object.fromEntries(Object.entries(value).filter(([key]) => !keys.includes(key)));

@@ -7,7 +7,7 @@ Needs scripts/fact_metrics.py to have run on the job. The copy hard-links every 
 then writes each step's results.json and scores.json as new files (the run's own files are never changed):
   - a failed ticket's blame records are fact_metrics.py's (one per failed check, named by
     scripts/failure_types.py);
-  - the replays, the keyword-based "rules kept / reached" and doc recall are dropped;
+  - any replay fields (older runs), the keyword-based "rules kept / reached" and doc recall are dropped;
   - failure_taxonomy and the blame counts are rebuilt from the new records.
 Pass/fail, scores and everything else are the run's own.
 """
@@ -23,7 +23,8 @@ import failure_types as ft  # noqa: E402
 REPLAY_KEYS = ("full_replay", "replay", "plain_replay", "replay_verdict", "replays_skipped", "full_replay_lost",
                "plain_replay_lost", "replay_lost", "full_replay_lost_cost", "plain_replay_lost_cost")
 DROP_SCORES = ("subset", "docs", "replay_verdicts", "behavior_attribution")
-# The fact-level verdicts take the replay verdicts' place (results.json replay_verdict, scores.json replay_verdicts).
+# The fact-level verdicts are stored under the older field names results.json replay_verdict and scores.json
+# replay_verdicts, which the site reads.
 def load(path):
     return json.loads(Path(path).read_text())
 
@@ -65,7 +66,7 @@ def blame_counts(results, ka):
 
 
 def fact_verdict(t):
-    """One verdict per failed ticket, in place of the replay verdict."""
+    """One verdict per failed ticket (stored as replay_verdict, the field the site reads)."""
     if t["blame"] == "builder":
         if any(c.get("never_started") for c in t["checks"]):
             return "agent never started"
@@ -136,7 +137,7 @@ def facts_block(metrics, results, judge, customer, dummy_rule=None):
 
 
 def judge_cost(cost, judge_usd):
-    """The run's cost without replays (they are not run), with the judge and the customer-facts reader."""
+    """The run's cost with the judge and the customer-facts reader (replay costs of older runs dropped)."""
     cost = dict(cost or {})
     for k in ("replay_bot", "replay_customer"):
         cost.pop(k, None)

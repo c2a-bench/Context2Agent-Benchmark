@@ -9,9 +9,6 @@
                                                                        # relabel failures with a newer grader
     python3 scripts/regrade.py <job dir> --step stage5 --rebuild-only --reblame --ids receipt-ask-04 --tests ...
                                                                        # relabel only these tickets
-    python3 scripts/regrade.py <job dir> --step stage3 --replays-only --tests tasks/redwood-inference/tests
-                                                                       # replay the failed tickets again with this grader
-                                                                       # (live results kept; e.g. a changed replay hint)
 
 For tickets that failed because of us or the model provider (a sandbox that never started, a provider that
 dropped the call), not for tickets the bot simply got wrong: grading those again until they pass would
@@ -20,7 +17,7 @@ inflate the score.
 1. Runs the chosen tickets (and the other half of any follow-up pair they are in) with the grader's own
    `verify.py run`, inside the verifier image built from the run's own tests/ (the task path in the job's
    config.json, so the same grader the run used), against the bot that step was graded with
-   (steps/<step>/verifier/bot), on Daytona, with replays. Same per-step settings as harbor: STAGE and the
+   (steps/<step>/verifier/bot), on Daytona. Same per-step settings as harbor: STAGE and the
    [verifier.env] models.
 2. Puts the new results of the chosen tickets in place of the old ones and rebuilds the step's results.json,
    scores.json, reward.txt, report.md and architecture.json with the grader's own `finish`.
@@ -86,8 +83,6 @@ if len(sys.argv) > 3 and sys.argv[3] == "reblame":
             continue  # set by the grader after the checks (watcher gap, customer model): not something to recompute
         r["blame"] = diagnose.blame_case(by_id[r["id"]], r["checks"], rules_by_id, r.get("model_calls") or [],
                                          r.get("bot_problem") or "", stored, r.get("bot_stderr_tail") or "")
-        if isinstance(r.get("replay"), dict):
-            diagnose.apply_replay(r["blame"], r["replay"].get("passed"))
 verify.finish(results, cases, rules, bot, logs, baseline, self_report, bot_files, None)
 """
 
@@ -121,10 +116,10 @@ def env_file_values(path, names):
 def verifier_env(task_dir, env_file=None):
     """[verifier.env] model settings, resolved as the run resolves them: "${NAME:-default}" takes NAME from this
     shell, then from --env-file (the run's .env), then the default. These go to docker as -e and override the env
-    file, so a setting only in .env (REPLAY=0) must be read here, or the task.toml default (REPLAY=1) wins."""
+    file, so a setting only in .env must be read here, or the task.toml default wins."""
     import tomllib
     env = tomllib.loads((task_dir / "task.toml").read_text()).get("verifier", {}).get("env", {})
-    names = ("BOT_MODEL", "EMBED_MODEL", "CUSTOMER_MODEL", "REPLAY", "ARCHITECTURE")  # ARCHITECTURE: skyway-air only
+    names = ("BOT_MODEL", "EMBED_MODEL", "CUSTOMER_MODEL", "ARCHITECTURE")  # ARCHITECTURE: skyway-air only
     from_file = env_file_values(env_file, names) if env_file else {}
     out = {}
     for k in names:
@@ -160,15 +155,11 @@ def main():
     ap.add_argument("--reblame", action="store_true",
                     help="with --rebuild-only: blame each failed ticket again with the grader in --tests")
     ap.add_argument("--tests", help="grader folder to use instead of the run's own (e.g. tasks/<task>/tests in this repo)")
-    ap.add_argument("--replays-only", action="store_true",
-                    help="keep every live result and run the failed tickets' replays again (verify.py replay), on Daytona")
     args = ap.parse_args()
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.step):
         sys.exit(f"not a step name: {args.step!r}")
     if args.reblame and not args.rebuild_only:
         sys.exit("--reblame goes with --rebuild-only")
-    if args.replays_only and (args.rebuild_only or args.ids):
-        sys.exit("--replays-only replays every failed ticket of the step; it takes no --ids or --rebuild-only")
 
     job = Path(args.job).resolve()
     cfg = json.loads((job / "config.json").read_text())
@@ -200,7 +191,7 @@ def main():
     unknown = [i for i in reblame_ids if i not in by_id]
     if unknown:
         sys.exit(f"not tickets of {args.step}: {', '.join(unknown)}")
-    if args.rebuild_only or args.replays_only:
+    if args.rebuild_only:
         ids = []
     elif args.ids:
         ids = [i.strip() for i in args.ids.split(",") if i.strip()]
@@ -209,7 +200,7 @@ def main():
             sys.exit(f"not tickets of {args.step}: {', '.join(unknown)}")
     else:
         ids = [r["id"] for r in old if verify.ours_only(r)]
-    if not ids and not args.rebuild_only and not args.replays_only:
+    if not ids and not args.rebuild_only:
         print(f"{args.step}: no tickets lost to us; nothing to do (pass --ids to choose tickets)")
         return
     # A follow-up pair runs together: its other half runs too, but keeps its old result.
@@ -217,8 +208,7 @@ def main():
     run_ids = list(dict.fromkeys(
         x for i in ids for x in (i, by_id[i].get("after"), heads.get(i)) if x))
     before = {r["id"]: r["passed"] for r in old}
-    print(f"{job.name} {args.step}: " + ("replaying the failed tickets again, live results kept" if args.replays_only else
-                                         "rebuilding the scores, no tickets run"
+    print(f"{job.name} {args.step}: " + ("rebuilding the scores, no tickets run"
                                          + (f", blaming again {', '.join(reblame_ids) or 'every failed ticket'}" if args.reblame else "")
                                          if args.rebuild_only else f"grading again {', '.join(ids)}")
           + (f" (with {', '.join(x for x in run_ids if x not in ids)}, the other half of a pair)" if len(run_ids) > len(ids) else ""))
@@ -266,7 +256,7 @@ def main():
         mounts = ["-v", f"{tmp}:/regrade", "-v", f"{tmp / 'bot'}:/app/bot"]
         new = {}
         if ids:
-            # 1. the chosen tickets, with replays
+            # 1. the chosen tickets
             run = subprocess.run(
                 ["docker", "run", "--rm", "--env-file", args.env_file, *envs, *mounts, "-v", f"{keep / 'run'}:/logs/verifier",
                  image, "sh", "-c",
@@ -288,34 +278,18 @@ def main():
         shutil.copytree(verifier, stage, symlinks=True, ignore=shutil.ignore_patterns("regrade-*"))
         for f in (keep / "run" / "traces").glob("*.jsonl"):
             shutil.copy2(f, stage / "traces" / f.name)  # the new run's traces replace the chosen tickets' old ones
-        if args.replays_only:
-            # verify.py replay: the step's live results, replays run again, then finish() rewrites the step's files
-            shutil.copy2(verifier / "results.json", tmp / "results.json")
-            res = subprocess.run(
-                ["docker", "run", "--rm", "--env-file", args.env_file, *envs, *mounts, "-v", f"{stage}:/logs/verifier",
-                 image, "sh", "-c",
-                 'chmod -R a+rwX /app/bot; python3 /tests/verify.py replay --cases "$1" --rules "$2" --seed "$5" '
-                 '--results /regrade/results.json --workers "$4"; s=$?; chown -R "$3" /logs/verifier; exit $s',
-                 "sh", f"/tests/{rel_cases}", f"/tests/{rel_rules}", owner, str(args.workers), f"/tests/{rel_seed}"],
-                capture_output=True, text=True)
-            (keep / "replay.txt").write_text(res.stdout + res.stderr)
-            if res.returncode or not (stage / "scores.json").exists():
-                sys.exit(f"the replays failed (exit {res.returncode}); see {keep / 'replay.txt'}. The step's files are unchanged.")
-        else:
-            res = subprocess.run(
-                ["docker", "run", "--rm", "--env-file", args.env_file, *envs, *mounts, "-v", f"{stage}:/logs/verifier",
-                 image, "sh", "-c",
-                 'chmod -R a+rwX /app/bot; python3 /regrade/rescore.py "$1" "$2" "$4"; s=$?; chown -R "$3" /logs/verifier; exit $s',
-                 "sh", f"/tests/{rel_cases}", f"/tests/{rel_rules}", owner, "reblame" if args.reblame else ""],
-                capture_output=True, text=True)
-            (keep / "rescore.txt").write_text(res.stdout + res.stderr)
-            if res.returncode or not (stage / "scores.json").exists():
-                sys.exit(f"rebuilding the scores failed (exit {res.returncode}); see {keep / 'rescore.txt'}. "
-                         f"The step's files are unchanged.")
+        res = subprocess.run(
+            ["docker", "run", "--rm", "--env-file", args.env_file, *envs, *mounts, "-v", f"{stage}:/logs/verifier",
+             image, "sh", "-c",
+             'chmod -R a+rwX /app/bot; python3 /regrade/rescore.py "$1" "$2" "$4"; s=$?; chown -R "$3" /logs/verifier; exit $s',
+             "sh", f"/tests/{rel_cases}", f"/tests/{rel_rules}", owner, "reblame" if args.reblame else ""],
+            capture_output=True, text=True)
+        (keep / "rescore.txt").write_text(res.stdout + res.stderr)
+        if res.returncode or not (stage / "scores.json").exists():
+            sys.exit(f"rebuilding the scores failed (exit {res.returncode}); see {keep / 'rescore.txt'}. "
+                     f"The step's files are unchanged.")
         # 3. note what was graded again (keeping earlier regrades: finish() wrote fresh files), then put them in place
         history = list(prior)
-        if args.replays_only:
-            history.append({"at": stamp, "replays_only": True, "grader": str(tests_dir)})
         if ids:
             history.append({"at": stamp, "tickets": ids, "with": [x for x in run_ids if x not in ids],
                             "before": {i: before.get(i) for i in ids}, "after": {i: new[i]["passed"] for i in ids}})
@@ -326,16 +300,14 @@ def main():
         if history:
             with open(stage / "report.md", "a") as f:
                 f.write("\n## Graded again\n\n" + "".join(
-                    (f"- {n['at']}: the failed tickets' replays run again with scripts/regrade.py --replays-only (live "
-                     f"results kept; old files in regrade-{n['at']}/before/).\n") if n.get("replays_only") else
                     (f"- {n['at']}: {', '.join(n['tickets'])} graded again with scripts/regrade.py (old files in "
                      f"regrade-{n['at']}/before/): " + ", ".join(f"{i} {'passed' if n['after'][i] else 'failed'}" for i in n["tickets"])
-                     + ".\n") for n in history if n.get("replays_only") or n.get("tickets")))
-        (keep / "regrade.json").write_text(json.dumps(history[-1] if ids or args.replays_only else {"at": stamp, "rebuilt": True}, indent=2))
+                     + ".\n") for n in history if n.get("tickets")))
+        (keep / "regrade.json").write_text(json.dumps(history[-1] if ids else {"at": stamp, "rebuilt": True}, indent=2))
         for f in OUTPUTS:
             shutil.copy2(stage / f, verifier / f)
         for f in (stage / "traces").glob("*.jsonl"):
-            if any(f.stem == i or f.stem.startswith(i + "-") for i in ids):  # the ticket's own traces and its replays'
+            if any(f.stem == i or f.stem.startswith(i + "-") for i in ids):  # the ticket's own traces
                 shutil.copy2(f, verifier / "traces" / f.name)
 
     old_passed = sum(before.values())

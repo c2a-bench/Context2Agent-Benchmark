@@ -110,7 +110,7 @@ export default function TaskRuns() {
     );
 }
 
-/** An environment with one architecture per run (skyway-arch): one row per builder model, which ran every
+/** An environment with one architecture per run (Skyway): one row per builder model, which ran every
  *  architecture; the row asks which architecture's run to open. */
 function ArchitectureRuns({ name, groups }: { name: string; groups: ReturnType<typeof architectureGroups> }) {
     const pct = (n: number | null | undefined) => (n == null ? "—" : `${Math.round(100 * n)}%`);

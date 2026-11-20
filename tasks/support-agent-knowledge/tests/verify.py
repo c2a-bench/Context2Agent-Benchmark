@@ -2,7 +2,7 @@
 
 run     - Harbor mode: for each case, reset data, run the bot (traced), compare JSON state,
           check that every change was a value the model said, write the reward. Then diagnose,
-          optionally replay failed tickets (RQ2), and build the observed architecture card.
+          and build the observed architecture card.
           With TICKET_SANDBOX=daytona, each ticket (or follow-up pair) runs in its own sandbox.
 run-one - Worker entrypoint for one ticket or follow-up pair (used inside a ticket sandbox).
 check   - author mode: grade hand-written fixtures (no bot) and confirm each verdict matches `should`.
@@ -430,7 +430,7 @@ def crashed_result(case, exc):
     }
 
 
-def run_sandboxed(case, base, name, extra_text=None):
+def run_sandboxed(case, base, name):
     """One ticket: own folder, own server. Ends when run_case returns."""
     rel = case.get("reliability") or {}
     box = Path(base["work_root"]) / name
@@ -452,32 +452,31 @@ def run_sandboxed(case, base, name, extra_text=None):
             trace_path = new_trace(ctx["trace_dir"], f"{name}-first")
             run_bot_watch(
                 ticket, ctx["api_url"], ctx["timeout"], ctx["hook_dir"], trace_path,
-                box, rel["kill_after"], None if extra_text else case.get("prompt_cap_tokens"),
-                replay_hint(extra_text, case.get("facts") if case.get("facts_given") else ()),
+                box, rel["kill_after"], case.get("prompt_cap_tokens"),
             )
-        return run_case(case, ctx, name, extra_text)
+        return run_case(case, ctx, name)
     finally:
         restore_stored(hidden)
         stop_server(server)
 
 
 def run_pool(jobs, base, workers, prefix=""):
-    """Start the next ticket as soon as a slot is free. jobs is (case, name, extra_text)."""
+    """Start the next ticket as soon as a slot is free. jobs is (case, name)."""
     if not jobs:
         return {}
     out = {}
     use_daytona = _ticket_backend() == "daytona"
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         futures = {
-            pool.submit(_run_solo_job, case, base, name, extra, use_daytona): name
-            for case, name, extra in jobs
+            pool.submit(_run_solo_job, case, base, name, use_daytona): name
+            for case, name in jobs
         }
         for fut in as_completed(futures):
             name = futures[fut]
             try:
                 r = fut.result()
             except Exception as exc:
-                case = next(c for c, n, _ in jobs if n == name)
+                case = next(c for c, n in jobs if n == name)
                 r = crashed_result(case, exc)
                 r = {**r, "id": case["id"]}
             out[name] = r
@@ -493,18 +492,18 @@ def _ticket_backend():
         return "local"
 
 
-def _run_solo_job(case, base, name, extra_text, use_daytona):
+def _run_solo_job(case, base, name, use_daytona):
     if use_daytona:
         import sandbox as ticket_sandbox
-        return ticket_sandbox.run_solo(case, base, name, extra_text)
-    return run_sandboxed(case, base, name, extra_text)
+        return ticket_sandbox.run_solo(case, base, name)
+    return run_sandboxed(case, base, name)
 
 
-def _run_pair_job(first, second, base, extra=None, extra_first=None, prefix="", tag=""):
+def _run_pair_job(first, second, base, prefix=""):
     if _ticket_backend() == "daytona":
         import sandbox as ticket_sandbox
         try:
-            got = ticket_sandbox.run_pair(first, second, base, extra, extra_first)
+            got = ticket_sandbox.run_pair(first, second, base)
         except Exception as exc:
             got = {
                 first["id"]: crashed_result(first, exc),
@@ -513,7 +512,7 @@ def _run_pair_job(first, second, base, extra=None, extra_first=None, prefix="", 
         for r in got.values():
             print_ticket(r, prefix)
         return got
-    return run_chain(first, second, base, extra=extra, extra_first=extra_first, prefix=prefix, tag=tag)
+    return run_chain(first, second, base, prefix=prefix)
 
 
 def run_pairs(heads, follow, base, workers, prefix=""):
@@ -529,7 +528,7 @@ def run_pairs(heads, follow, base, workers, prefix=""):
     out = {}
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         futures = {
-            pool.submit(_run_pair_job, head, follow[head["id"]], base, None, None, prefix): head["id"]
+            pool.submit(_run_pair_job, head, follow[head["id"]], base, prefix): head["id"]
             for head in heads
         }
         for fut in as_completed(futures):
@@ -537,15 +536,14 @@ def run_pairs(heads, follow, base, workers, prefix=""):
     return out
 
 
-def run_chain(first, second, base, extra=None, extra_first=None, prefix="", tag=""):
+def run_chain(first, second, base, prefix=""):
     """Ticket 1 then ticket 2, same folder and API. Does not wipe ticket 1.
-    tag (e.g. "-replay") names a replay's traces and folder, so they do not overwrite the live run's.
 
     If the head has reliability.kill_after / fail_writes / hide_stored, apply the
     same prologue as run_sandboxed so attempt-id pairs still share one desk.
     """
     rel = first.get("reliability") or {}
-    name = f"{first['id']}__{second['id']}{tag}"
+    name = f"{first['id']}__{second['id']}"
     box = Path(base["work_root"]) / name
     reset(box, base["seed_dir"])
     os.chmod(box, 0o700)
@@ -563,15 +561,14 @@ def run_chain(first, second, base, extra=None, extra_first=None, prefix="", tag=
         ensure_bot_writable(BOT.parent)
         if rel.get("kill_after"):
             ticket = dict(first["input"])
-            trace_path = new_trace(ctx["trace_dir"], f"{first['id']}{tag}-first")
+            trace_path = new_trace(ctx["trace_dir"], f"{first['id']}-first")
             run_bot_watch(
                 ticket, ctx["api_url"], ctx["timeout"], ctx["hook_dir"], trace_path,
-                box, rel["kill_after"], None if extra_first else first.get("prompt_cap_tokens"),
-                replay_hint(extra_first, first.get("facts") if first.get("facts_given") else ()),
+                box, rel["kill_after"], first.get("prompt_cap_tokens"),
             )
-        r1 = run_case(first, ctx, f"{first['id']}{tag}", extra_first)
+        r1 = run_case(first, ctx, first["id"])
         print_ticket(r1, prefix)
-        r2 = run_case(second, ctx, f"{second['id']}{tag}", extra)
+        r2 = run_case(second, ctx, second["id"])
         print_ticket(r2, prefix)
         return {first["id"]: r1, second["id"]: r2}
     finally:
@@ -579,61 +576,21 @@ def run_chain(first, second, base, extra=None, extra_first=None, prefix="", tag=
         stop_server(server)
 
 
-def replay_worthy(r):
-    """A failed ticket a replay can tell us something about. Not ours, and the bot really ran: a crash or a
-    failed model call tests no rule. A crash only because the prompt went over the ticket's cap still is
-    worth it: the replay is uncapped, so it shows whether the bot knew the rule."""
-    if r["passed"] or ours_only(r):
-        return False
-    labels = {b["blame"] for b in r["blame"]}
-    if "model call failed" in labels:
-        return False
-    return not r["bot_problem"] or labels == {"context overflow"}
-
-
-def replay_lost(rr):
-    """Why a replay tells us nothing about the bot (customer model failed, provider down, our time limit), or ""."""
-    if not ours_only(rr):
-        return ""
-    return rr.get("customer_fault") or "; ".join(b.get("detail") or b["blame"] for b in rr.get("blame") or []) or "ours"
-
-
-def record_replay(r, rule_ids, note, rr):
-    """Keep the rule replay on the ticket. A replay lost to us is not counted (the ticket stays not replayed)."""
-    lost = replay_lost(rr)
-    if lost:
-        r["replay_lost"] = lost
-        r["replay_lost_cost"] = {"usage": rr.get("usage"), "sandbox": rr.get("sandbox")}  # billed all the same
-        return
-    diagnose.apply_replay(r["blame"], rr["passed"])
-    r["replay"] = {"rules": rule_ids, "note": note, "passed": rr["passed"], "usage": rr.get("usage"), "sandbox": rr.get("sandbox"),
-                   "failures": rr["failures"], "bot_problem": rr["bot_problem"]}
-
-
-REPLAY_KEYS = ("full_replay", "replay", "plain_replay")
-
-
 def cost_summary(results):
-    """What grading this stage cost: model tokens and dollars for the bot and the customer model, on the tickets and on
-    their replays, plus the Daytona sandboxes' life and cost. None for results graded before usage was recorded."""
+    """What grading this stage cost: model tokens and dollars for the bot and the customer model on the tickets, plus
+    the Daytona sandboxes' life and cost. None for results graded before usage was recorded."""
     rs = [r for r in results if isinstance(r, dict)]
     if not any(r.get("usage") for r in rs):
         return None
     use = lambda r, who: (r.get("usage") or {}).get(who)
-    # Replays lost to us were billed too, so their cost counts.
-    replays = [r[k] for r in rs for k in REPLAY_KEYS + tuple(f"{x}_lost_cost" for x in REPLAY_KEYS) if isinstance(r.get(k), dict)]
-    # A sandbox shared by a pair is split over its two results; a replay keeps only its own result, so it counts the
-    # whole sandbox.
+    # A sandbox shared by a pair is split over its two results.
     boxes = [r.get("sandbox") for r in rs if r.get("sandbox")]
-    replay_boxes = [x["sandbox"] for x in replays if x.get("sandbox")]
-    box_seconds = sum(b["seconds"] for b in boxes) + sum(b.get("whole_seconds", b["seconds"]) for b in replay_boxes)
-    box_usd = sum(b["usd"] for b in boxes) + sum(b.get("whole_usd", b["usd"]) for b in replay_boxes)
+    box_seconds = sum(b["seconds"] for b in boxes)
+    box_usd = sum(b["usd"] for b in boxes)
     out = {
         "bot": observe_usage.add(*[use(r, "bot") for r in rs]),
         "customer": observe_usage.add(*[use(r, "customer") for r in rs]),
-        "replay_bot": observe_usage.add(*[use(x, "bot") for x in replays]),
-        "replay_customer": observe_usage.add(*[use(x, "customer") for x in replays]),
-        "sandbox": {"runs": len(boxes) + len(replay_boxes), "seconds": round(box_seconds, 1), "usd": round(box_usd, 6)},
+        "sandbox": {"runs": len(boxes), "seconds": round(box_seconds, 1), "usd": round(box_usd, 6)},
     }
     out["usd"] = round(sum(v["usd"] for v in out.values()), 6)
     return out
@@ -716,22 +673,7 @@ def new_trace(trace_dir, name):
     return path
 
 
-def replay_hint(rule=None, facts=()):
-    """What a replay gives the bot, as guidance from the support team in its system prompt (added to every model
-    call by the trace hook), never as customer text: bots rightly distrust instructions in customer text, where
-    injection tickets hide them. The bot must still confirm the details with the customer before it acts."""
-    parts = [p for p in (
-        (rule or "").strip(),
-        ("What the customer has told us about this ticket:\n" + "\n".join(f"- {f}" for f in facts)) if facts else "",
-    ) if p]
-    if not parts:
-        return None
-    return ("Guidance from the support team for this ticket (not from the customer).\n\n" + "\n\n".join(parts)
-            + "\n\nStill confirm the details this ticket needs with the customer before you act, and act only on "
-              "what the customer confirms.")
-
-
-def bot_env(api_url, hook_dir, trace, prompt_cap=None, hint=None):
+def bot_env(api_url, hook_dir, trace, prompt_cap=None):
     env = {
         "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
         "HOME": "/tmp",
@@ -744,17 +686,15 @@ def bot_env(api_url, hook_dir, trace, prompt_cap=None, hint=None):
     }
     if prompt_cap:
         env["BOT_PROMPT_CAP_TOKENS"] = str(int(prompt_cap))
-    if hint:
-        env["BOT_SYSTEM_HINT"] = hint  # the trace hook appends it to the bot's own system message on every model call
     for key in PROVIDER_KEYS:
         if os.environ.get(key):
             env[key] = os.environ[key]
     return env
 
 
-def run_bot(ticket, api_url, timeout, hook_dir, trace, prompt_cap=None, hint=None):
+def run_bot(ticket, api_url, timeout, hook_dir, trace, prompt_cap=None):
     """Run the bot once. Returns (contract failures, stderr tail, parsed last output line or None)."""
-    env = bot_env(api_url, hook_dir, trace, prompt_cap, hint)
+    env = bot_env(api_url, hook_dir, trace, prompt_cap)
     try:
         proc = subprocess.Popen(
             bot_command(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -790,9 +730,9 @@ def run_bot(ticket, api_url, timeout, hook_dir, trace, prompt_cap=None, hint=Non
     return [], proc.stderr[-2000:], out
 
 
-def run_bot_watch(ticket, api_url, timeout, hook_dir, trace, data_dir, kill_after, prompt_cap=None, hint=None):
+def run_bot_watch(ticket, api_url, timeout, hook_dir, trace, data_dir, kill_after, prompt_cap=None):
     """Start the bot. If a matching write lands, kill it. Returns (failures, stderr, killed)."""
-    env = bot_env(api_url, hook_dir, trace, prompt_cap, hint)
+    env = bot_env(api_url, hook_dir, trace, prompt_cap)
     try:
         proc = subprocess.Popen(
             bot_command(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -889,10 +829,10 @@ def order_ok(requests, steps):
     return True
 
 
-def column_results(case, passed, requests, bot_problem="", extra_text=None):
+def column_results(case, passed, requests, bot_problem=""):
     """End is the last ticket. Order is the only extra check; it does not change the score."""
     columns = {"end": bool(passed), "order": None}
-    if extra_text or bot_problem:
+    if bot_problem:
         return columns
     if case.get("order"):
         columns["order"] = order_ok(requests, case["order"])
@@ -930,13 +870,8 @@ def timeout_message(budget, used, starts, last=None):
     return msg
 
 
-def run_case(case, ctx, name, extra_text=None):
-    """The customer speaks first. After each bot exit the customer may reply again.
-
-    On a replay, extra_text is the company rule. The conversation runs as on a live ticket, with the
-    customer model; the rule (and on a "customer information given" replay, the customer's facts) reaches the bot as
-    guidance in its system prompt on every start (replay_hint). The customer never sees it.
-    """
+def run_case(case, ctx, name):
+    """The customer speaks first. After each bot exit the customer may reply again."""
     rules_by_id = ctx["rules_by_id"]
     if ctx.get("keep_state"):
         starting = load_state(ctx["data_dir"])
@@ -951,10 +886,7 @@ def run_case(case, ctx, name, extra_text=None):
     brief = str(case.get("customer") or "").strip()
     facts = list(case.get("facts") or [])
     behavior = case.get("behavior")
-    policy = (extra_text or "").strip() or None
-    hint = replay_hint(policy, facts if case.get("facts_given") else ())
-    # Replay is uncapped. Live tickets use the case cap, if any.
-    prompt_cap = None if policy else case.get("prompt_cap_tokens")
+    prompt_cap = case.get("prompt_cap_tokens")
     history = []
     customer_usage = []  # each customer model call's tokens and cost
     bot_runs = []  # each start of the bot: wall-clock window and seconds (latency per customer message)
@@ -1002,7 +934,7 @@ def run_case(case, ctx, name, extra_text=None):
         run_start = time.time()
         starts += 1
         failures, stderr, out = run_bot(
-            ticket, ctx["api_url"], remaining, ctx["hook_dir"], trace_path, prompt_cap, hint,
+            ticket, ctx["api_url"], remaining, ctx["hook_dir"], trace_path, prompt_cap,
         )
         last = time.monotonic() - started
         bot_runs.append({"start": round(run_start, 3), "end": round(time.time(), 3), "seconds": round(last, 2)})
@@ -1047,7 +979,7 @@ def run_case(case, ctx, name, extra_text=None):
         # The conversation could not run as written: the ticket is ours, not the bot's.
         blame = [diagnose.blame_record("customer", [], "customer fault", customer_fault)]
     passed = not failures
-    columns = column_results(case, passed, requests, bot_problem, extra_text)
+    columns = column_results(case, passed, requests, bot_problem)
     return {
         "id": case["id"],
         "group": case.get("group", "normal"),
@@ -1117,7 +1049,7 @@ def cmd_run(args):
     # Daytona: solos + reliability tickets each get their own sandbox, so fan out together.
     # Local: reliability tickets stay sequential after solos (they mutate the shared bot tree).
     first_wave = solo + (special if backend == "daytona" else [])
-    got = run_pool([(case, case["id"], None) for case in first_wave], base, workers)
+    got = run_pool([(case, case["id"]) for case in first_wave], base, workers)
     got.update(run_pairs(heads, follow, base, workers))
     if backend != "daytona":
         for case in special:
@@ -1128,55 +1060,6 @@ def cmd_run(args):
             got[case["id"]] = r
             print_ticket(r)
     results = [got[case["id"]] for case in cases]
-    if args.no_replay:
-        print("Replay skipped.")
-    if not args.no_replay:
-        # A replay is a new conversation from the ticket's own story, with the customer model.
-        by_id = {c["id"]: c for c in cases}
-        follow = {after: by_id[case["id"]] for after, case in follow.items()}
-        replay_jobs = []
-        replay_meta = {}
-        replay_pairs = []
-        for r in results:
-            if not replay_worthy(r):
-                continue
-            rule_ids, note = diagnose.replay_note(by_id[r["id"]], r["checks"], base["rules_by_id"])
-            case = by_id[r["id"]]
-            if case.get("after"):
-                replay_pairs.append((by_id[case["after"]], case, note, r, rule_ids))
-            elif case["id"] in follow:
-                replay_pairs.append((case, follow[case["id"]], note, r, rule_ids))
-            else:
-                replay_jobs.append((case, f"{r['id']}-replay", note))
-                replay_meta[f"{r['id']}-replay"] = (r, rule_ids, note)
-        replayed = run_pool(replay_jobs, base, workers, prefix="REPLAY ")
-        if backend == "daytona" and replay_pairs:
-            with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-                futs = []
-                for first, second, note, r, rule_ids in replay_pairs:
-                    extra = note if r["id"] == second["id"] else None
-                    extra_first = note if r["id"] == first["id"] else None
-                    futs.append((pool.submit(
-                        _run_pair_job, first, second, base, extra, extra_first, "REPLAY ", "-replay"
-                    ), r, rule_ids, note))
-                for fut, r, rule_ids, note in futs:
-                    pair = fut.result()
-                    rr = pair[r["id"]]
-                    record_replay(r, rule_ids, note, rr)
-        else:
-            for first, second, note, r, rule_ids in replay_pairs:
-                pair = run_chain(
-                    first, second, base,
-                    extra=note if r["id"] == second["id"] else None,
-                    extra_first=note if r["id"] == first["id"] else None,
-                    prefix="REPLAY ", tag="-replay",
-                )
-                rr = pair[r["id"]]
-                record_replay(r, rule_ids, note, rr)
-        for name, (r, rule_ids, note) in replay_meta.items():
-            rr = replayed[name]
-            record_replay(r, rule_ids, note, rr)
-
     finish(results, cases, rules, BOT.parent, logs, baseline, self_report, bot_files, trace_dir)
 
 
@@ -1258,8 +1141,6 @@ def finish(results, cases, rules, bot_dir, logs, baseline, self_report, bot_file
         print(f"Behaviour failures {attribution['behavior_failures']}, doc failures {attribution['doc_failures']}")
     if realization and realization.get("mean_q_realization") is not None:
         print(f"Mean Qrealization {realization['mean_q_realization']:.4f}")
-    if ka.get("replayed"):
-        print(f"Qapplication {ka['Qapplication']:.4f} (replay {ka['replay_passed']}/{ka['replayed']})")
     print(f"Readable report: {logs / 'report.md'}")
 
 
@@ -1300,15 +1181,15 @@ def cmd_run_one(args):
         if head["id"] not in follow:
             raise SystemExit(f"no follow-up after {args.pair_head}")
         ensure_bot_writable(BOT.parent)
-        got = run_chain(head, follow[head["id"]], base, extra=args.extra, extra_first=args.extra_first)
+        got = run_chain(head, follow[head["id"]], base)
     else:
         if not args.case_id or args.case_id not in by_id:
             raise SystemExit(f"unknown case id: {args.case_id}")
         case = by_id[args.case_id]
         ensure_bot_writable(BOT.parent)
-        key = args.result_name or case["id"]
+        key = case["id"]
         try:
-            r = run_sandboxed(case, base, case["id"], args.extra)
+            r = run_sandboxed(case, base, case["id"])
         except Exception as exc:
             r = crashed_result(case, exc)
         got = {key: r}
@@ -1541,15 +1422,6 @@ def blame_sentence(r):
         if text + detail not in parts:
             parts.append(text + detail)
     return "; ".join(parts)
-
-
-def replay_sentence(r):
-    rp = r.get("replay")
-    if not rp:
-        return ""
-    if rp["passed"]:
-        return "When we put the rule on the ticket, the bot got it right."
-    return "When we put the rule on the ticket, the bot still got it wrong."
 
 
 def blame_summary(results):
@@ -1882,7 +1754,6 @@ def design_text(claims):
         text = design.get(key) or "not stated"
         lines.append(f"**{label}:** {text}")
     return lines
-
 
 
 def claim_lines(claims):
@@ -2367,9 +2238,6 @@ def cmd_check(args):
             checks = diagnose.failed_checks(case, state, requests, seed, lookup, calls, model_requests=this_requests, all_requests=fixture.get("requests", []))
             got = sorted({b["blame"] for b in diagnose.blame_case(
                 case, checks, rules_by_id, calls, fixture.get("bot_problem", ""), fixture.get("stored"))})
-            if "replay_passed" in fixture:
-                got = sorted({b["blame"] for b in diagnose.apply_replay(
-                    [{"blame": g} for g in got], fixture["replay_passed"])})
             want = sorted(fixture["expect_blame"])
             ok = got == want
             print(f"{'ok ' if ok else 'BAD'} blame {fixture['case']:8} {fixture['name']:32} want={want} got={got}")
@@ -2397,7 +2265,6 @@ def main():
     run.add_argument("--bot-timeout", type=int, default=240)
     run.add_argument("--rules", default="/tests/rules.json")
     run.add_argument("--app", default="/app")
-    run.add_argument("--no-replay", action="store_true", help="skip the RQ2 replay of failed tickets")
     run.add_argument("--workers", type=int, default=WORKERS, help="tickets to run at once")
     run.add_argument("--bot", default=str(BOT))
     run.add_argument("--server", default=str(SERVER))
@@ -2414,9 +2281,6 @@ def main():
     one.add_argument("--server", default=str(SERVER))
     one.add_argument("--case-id", help="solo or reliability ticket id")
     one.add_argument("--pair-head", help="first ticket id of a follow-up pair")
-    one.add_argument("--extra", default=None, help="text appended to the (second) ticket message")
-    one.add_argument("--extra-first", default=None, help="text appended to the pair head message")
-    one.add_argument("--result-name", default=None, help="key for the result dict (replay uses <id>-replay)")
     one.add_argument("--out", default="/tmp/ticket_result.json")
 
     check = sub.add_parser("check")

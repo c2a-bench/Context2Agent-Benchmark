@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fact-level metrics for a finished run, from what the run saved: no bot or replay is run again.
+"""Fact-level metrics for a finished run, from what the run saved: the bot is not run again.
 
     python3 scripts/fact_metrics.py <job dir> [--steps stage0,stage1] [--force [--customer-only]]
 
@@ -21,7 +21,7 @@ Per step (steps/<step>/):
                         every failure was ours; else agent
 Writes steps/<step>/verifier/fact-metrics/{judge.json, customer.json, metrics.json}. The judge and customer files
 are reused when present (--force calls the models again); metrics.json is always rebuilt. The run's own files are
-not changed, so the old blame and replay verdicts stay where they are for comparison.
+not changed, so the grader's own blame stays where it is for comparison.
 
 Models (litellm): JUDGE_MODEL (default openai/gpt-6.1-sol) and FACTS_MODEL (default openai/gpt-6.1-sol), both at
 JUDGE_EFFORT reasoning (default high). Run with a Python that has litellm, with the keys in the environment. In folder
@@ -640,8 +640,7 @@ def metrics(step_facts, results, judged, told):
             "checks": checks,
             # One blame record per failed check, named by scripts/failure_types.py (fact_run.py copies them).
             "records": new,
-            "old": {"replay_verdict": r.get("replay_verdict"),
-                    "blame": [b.get("blame") for b in r.get("blame") or [] if isinstance(b, dict)]},
+            "old": {"blame": [b.get("blame") for b in r.get("blame") or [] if isinstance(b, dict)]},
         }
     per_kind = {}
     for f in step_facts["facts"]:
@@ -728,7 +727,7 @@ def old_side(labels):
 def run_report(job, task_dir, steps):
     """One file for the viewer (<job>/fact-metrics.json): per step the summary, every fact with its text and the
     judge's answer, every ticket; and the new blame against the old one, per failed ticket."""
-    out = {"judge_model": None, "facts_model": None, "steps": [], "compare": {"old_blame": {}, "replay_verdict": {}}}
+    out = {"judge_model": None, "facts_model": None, "steps": [], "compare": {"old_blame": {}}}
     cost = 0.0
     for step_dir in steps:
         fm = step_dir / "verifier" / "fact-metrics"
@@ -743,9 +742,9 @@ def run_report(job, task_dir, steps):
             r = results.get(tid, {})
             tickets.append({"id": tid, "title": r.get("title"), "behavior": r.get("behavior"), **t})
             if not t["passed"]:
-                for key, value in (("old_blame", old_side(t["old"]["blame"])), ("replay_verdict", t["old"]["replay_verdict"] or "none")):
-                    row = out["compare"][key].setdefault(t["blame"], {})
-                    row[value] = row.get(value, 0) + 1
+                row = out["compare"]["old_blame"].setdefault(t["blame"], {})
+                value = old_side(t["old"]["blame"])
+                row[value] = row.get(value, 0) + 1
         out["steps"].append({
             "name": step_dir.name,
             "passed": sum(t["passed"] for t in m["tickets"].values()),

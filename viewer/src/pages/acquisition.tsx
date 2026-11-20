@@ -11,7 +11,6 @@ import { defOf, groupDef, NONE, PARTIES, rollup, specRank, under, withGap, type 
 import { stepLabel } from "@/lib/format";
 import type { Meta, Ticket } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import LegacyFailureAnalysis from "@/pages/acquisition-legacy";
 
 const NONE_COLOR = "color-mix(in oklab, var(--muted-foreground) 45%, transparent)";
 const colorOf = (party: string) => (party === NONE ? NONE_COLOR : PARTY_COLOR[party] ?? NONE_COLOR);
@@ -310,8 +309,7 @@ function FactGradedFailureAnalysis() {
   );
 }
 
+/** Every run is graded by the fact judge, so the page always shows its breakdown. */
 export default function AcquisitionPage() {
-  const meta = use(getMeta(useJob()));
-  const graded = (meta.stages ?? []).some((s) => meta.scores[String(s)]?.facts);
-  return graded ? <FactGradedFailureAnalysis /> : <LegacyFailureAnalysis />;
+  return <FactGradedFailureAnalysis />;
 }
