@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { Picker } from "@/components/picker";
 import { useSearchParams } from "react-router";
 import { stepLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -37,26 +38,22 @@ export function StageBar({ meta, stage, onChange, allowAll = false, className }:
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   useEffect(() => setSlot(document.getElementById("run-bar-slot")), []);
   const picker = (
-    <label className={cn("flex items-center gap-2 py-1.5 font-sans text-xs", !slot && className)}>
+    <div className={cn("flex items-center gap-2 py-1.5 font-sans text-xs", !slot && className)}>
       <span className="text-muted-foreground">Stage</span>
-      <select
+      <Picker
         id="stage-select"
+        label="Stage"
         value={String(stage)}
-        onChange={(e) => onChange(e.target.value === ALL ? ALL : Number(e.target.value))}
-        className="rounded-md border bg-background px-2 py-1 font-sans text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {allowAll && <option value={ALL}>All stages</option>}
-        {meta.stages.map((s) => {
-          const sc = meta.scores[String(s)];
-          return (
-            <option key={s} value={s}>
-              {stageName(meta, s)}
-              {sc?.total ? ` · ${sc.passed ?? 0}/${sc.total} passed` : ""}
-            </option>
-          );
-        })}
-      </select>
-    </label>
+        onPick={(v) => onChange(v === ALL ? ALL : Number(v))}
+        options={[
+          ...(allowAll ? [{ value: ALL, text: "All stages" }] : []),
+          ...meta.stages.map((s) => {
+            const sc = meta.scores[String(s)];
+            return { value: String(s), text: stageName(meta, s), meta: sc?.total ? `${sc.passed ?? 0}/${sc.total} passed` : undefined };
+          }),
+        ]}
+      />
+    </div>
   );
   return slot ? createPortal(picker, slot) : picker;
 }

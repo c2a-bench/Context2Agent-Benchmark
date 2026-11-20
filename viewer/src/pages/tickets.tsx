@@ -12,6 +12,7 @@ import { FaultTags } from "@/components/fault-tags";
 import { evolutionForStage, fraction, pct } from "@/lib/knowledge-evolution";
 import { TICKET_TYPES, TICKET_TYPE_DEFS, TICKET_TYPE_LABEL, ticketTypes } from "@/lib/ticket-types";
 import { stageName } from "@/components/stage-select";
+import { Picker } from "@/components/picker";
 import { PARTY_LABEL } from "@/lib/parties";
 import { NONE, ticketLeaves } from "@/lib/failure-types";
 import { behaviorForStage, behaviorLabel, fmtQ, sortBehaviors } from "@/lib/behavior-coverage";
@@ -241,22 +242,18 @@ export default function InteractionsPage() {
     <div className="grid h-full grid-cols-1 grid-rows-[minmax(0,1fr)] lg:grid-cols-[340px_minmax(0,1fr)] lg:grid-rows-1">
       <aside className={cn("flex min-h-0 flex-col border-b max-lg:overflow-y-auto lg:border-r lg:border-b-0", detailOpen && "max-lg:hidden")}>
         <div className="flex items-center gap-2 border-b p-3">
-          <label htmlFor="stage-select" className="font-sans text-sm font-semibold">Stage</label>
-          <select
+          <span className="font-sans text-sm font-semibold">Stage</span>
+          <Picker
             id="stage-select"
-            value={stage}
-            onChange={(e) => setParams(new URLSearchParams(href({ stage: e.target.value, t: null }).slice(1)), { replace: true })}
-            className="min-w-0 flex-1 rounded-md border bg-background px-2 py-1 font-sans text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {meta.stages.map((s) => {
+            label="Stage"
+            className="flex-1 text-sm"
+            value={String(stage)}
+            onPick={(v) => setParams(new URLSearchParams(href({ stage: v, t: null }).slice(1)), { replace: true })}
+            options={meta.stages.map((s) => {
               const score = meta.scores[String(s)];
-              return (
-                <option key={s} value={s}>
-                  {stageName(meta, s)}{score?.total ? ` · ${score.passed}/${score.total} passed` : ""}
-                </option>
-              );
+              return { value: String(s), text: stageName(meta, s), meta: score?.total ? `${score.passed}/${score.total} passed` : undefined };
             })}
-          </select>
+          />
         </div>
         {beh.answersRq && beh.coverage && (
           <Link
@@ -359,18 +356,14 @@ export default function InteractionsPage() {
               {usable.map(({ f, opts }) => (
                 <label key={f.key} className="min-w-0 text-[10.5px] text-muted-foreground">
                   {f.label}
-                  <select
+                  <Picker
+                    label={f.label}
+                    menuLabel={false}
+                    className={cn("mt-0.5 flex w-full px-1.5 text-foreground", params.get(f.key) && "border-foreground/50")}
                     value={params.get(f.key) ?? ""}
-                    onChange={(e) => set({ [f.key]: e.target.value, t: null })}
-                    className={cn("mt-0.5 block w-full truncate rounded-md border bg-background px-1.5 py-1 text-xs text-foreground", params.get(f.key) && "border-foreground/50")}
-                  >
-                    <option value="">Any</option>
-                    {opts.map(({ v, n }) => (
-                      <option key={v} value={v}>
-                        {(f.show ?? String)(v)} ({n})
-                      </option>
-                    ))}
-                  </select>
+                    onPick={(v) => set({ [f.key]: v, t: null })}
+                    options={[{ value: "", text: "Any" }, ...opts.map(({ v, n }) => ({ value: String(v), text: String((f.show ?? String)(v)), meta: String(n) }))]}
+                  />
                 </label>
               ))}
             </div>
