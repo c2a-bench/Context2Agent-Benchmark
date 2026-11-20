@@ -3,7 +3,8 @@
  * hover needed to read them. Shown side by side with the current charts on /draft-charts until approved.
  */
 import { useRef, useState, type ReactNode } from "react";
-import { useWidth } from "./charts";
+import { BuilderLegend, Mark, frontier, useWidth, worseRegion } from "./charts";
+import type { Shape } from "./data";
 
 const pct = (v: number) => `${Math.round(100 * v)}%`;
 
@@ -355,7 +356,7 @@ function Panel({ p, max, pts }: { p: Parameters<typeof ChangePanels>[0]["panels"
 export type CostDot = { label: string; sub?: string; cost: number; rate: number; color: string; tip?: ReactNode };
 
 /** Pass rate against what the builder spent (log scale: costs span about 100×). Every dot is named; up and to the left is
- *  better. No shading or frontier line, so it reads at a glance. Hover a dot for its numbers. */
+ *  better. The dashed line is the Pareto frontier; the tint is what it beats (dearer and passing fewer). Hover a dot for its numbers. */
 export function CostScatter({ dots, height = 340, title = "Tickets passed vs what the builder spent on the whole run", axis = "builder cost, log scale", spent = "Builder spent" }: { dots: CostDot[]; height?: number; title?: string; axis?: string; spent?: string }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const h = useHover();
@@ -371,6 +372,7 @@ export function CostScatter({ dots, height = 340, title = "Tickets passed vs wha
   const y = (v: number) => m.t + (1 - (v - yLo) / (yHi - yLo)) * (height - m.t - m.b);
   const xt = [0.25, 0.5, 1, 2, 4, 8, 16, 32, 64].filter((t) => Math.log10(t) >= lo && Math.log10(t) <= hi);
   const yt = Array.from({ length: 11 }, (_, i) => i / 10).filter((v) => v >= yLo - 1e-9 && v <= yHi + 1e-9);
+  const front = frontier(dots.map((d) => [d.cost, d.rate] as [number, number]));
   // names sit to the right of the dot (left near the right edge); a name that would overlap one already placed moves down
   const placed: { x0: number; x1: number; y: number }[] = [];
   const named = [...dots].sort((a, b) => b.rate - a.rate).map((d) => {
@@ -401,6 +403,8 @@ export function CostScatter({ dots, height = 340, title = "Tickets passed vs wha
               ))}
               <text x={(m.l + cw - m.r) / 2} y={height - 4} textAnchor="middle" fontSize={11} fill="var(--muted)">{axis}</text>
               <text x={m.l} y={14} fontSize={11} fill="var(--muted)">↖ better: more passed for less</text>
+              <path d={worseRegion(front, x, y, cw - m.r, height - m.b)} fill="var(--ink)" opacity={0.12} />
+              <path d={front.map(([fx, fy], i) => `${i ? "L" : "M"}${x(fx)},${y(fy)}`).join("")} fill="none" stroke="var(--ink)" strokeWidth={1.2} strokeDasharray="4 4" opacity={0.6} />
               {named.map(({ d, cx, cy, ly, right }) => {
                 const body = (
                   <>
@@ -425,7 +429,57 @@ export function CostScatter({ dots, height = 340, title = "Tickets passed vs wha
         </div>
         <HoverTip tip={h.tip} />
       </div>
+      <p className="label muted mt-2">The tint is what the dashed frontier beats: a builder there cost more and passed fewer tickets than one on the line.</p>
       {narrow && <p className="label muted mt-2">Swipe the chart sideways to see all of it.</p>}
+    </div>
+  );
+}
+
+export type StageLine = { label: string; sub?: string; color: string; shape: Shape; values: (number | null)[]; counts?: string[] };
+
+/** Pass rate at each stage, one line per builder. Hover a point for the builder and stage; the other lines dim. */
+export function StageLines({ lines, height = 340 }: { lines: StageLine[]; height?: number }) {
+  const [ref, w] = useWidth<HTMLDivElement>();
+  const h = useHover();
+  const m = { l: 40, r: 18, t: 14, b: 34 };
+  const n = Math.max(...lines.map((l) => l.values.length));
+  const all = lines.flatMap((l) => l.values.filter((v): v is number => v != null));
+  const yLo = Math.max(0, Math.floor(10 * Math.min(...all)) / 10 - 0.1), yHi = Math.min(1, Math.ceil(10 * Math.max(...all)) / 10 + 0.05);
+  const x = (i: number) => m.l + (n > 1 ? (i / (n - 1)) * (w - m.l - m.r) : 0);
+  const y = (v: number) => m.t + (1 - (v - yLo) / (yHi - yLo)) * (height - m.t - m.b);
+  const yt = Array.from({ length: 11 }, (_, i) => i / 10).filter((v) => v >= yLo - 1e-9 && v <= yHi + 1e-9);
+  return (
+    <div>
+      <div ref={h.ref} className={h.on ? "relative sc-hov" : "relative"} onPointerLeave={h.hide}>
+        <div ref={ref}>
+          {w > 0 && (
+            <svg width={w} height={height} role="img" aria-label={`Pass rate at each stage: ${lines.map((l) => `${l.label} ${l.values.map((v) => (v == null ? "–" : pct(v))).join(", ")}`).join("; ")}`}>
+              {yt.map((v) => (
+                <g key={v}>
+                  <line x1={m.l} x2={w - m.r} y1={y(v)} y2={y(v)} stroke="var(--line)" />
+                  <text x={m.l - 6} y={y(v) + 4} textAnchor="end" fontSize={11} fill="var(--muted)">{Math.round(v * 100)}%</text>
+                </g>
+              ))}
+              {Array.from({ length: n }, (_, i) => <text key={i} x={x(i)} y={height - m.b + 20} textAnchor="middle" fontSize={11} fill="var(--muted)">Stage {i}</text>)}
+              {lines.map((l) => (
+                <g key={l.label} className={h.on === l.label ? "sc-item sc-on" : "sc-item"}>
+                  <path d={l.values.flatMap((v, i) => (v == null ? [] : [`${i ? "L" : "M"}${x(i)},${y(v)}`])).join("")} fill="none" stroke={l.color} strokeWidth={2} />
+                  {l.values.map((v, i) => v == null ? null : (
+                    <g key={i}
+                      onPointerEnter={(e) => h.show(e, l.label, <><TipHead>{l.label}</TipHead>{l.sub && <TipLine muted>{l.sub}</TipLine>}<TipLine>Stage {i}: <span className="num font-semibold">{pct(v)}</span> passed{l.counts?.[i] ? ` · ${l.counts[i]}` : ""}</TipLine></>)}
+                      onPointerDown={(e) => h.show(e, l.label, <><TipHead>{l.label}</TipHead>{l.sub && <TipLine muted>{l.sub}</TipLine>}<TipLine>Stage {i}: <span className="num font-semibold">{pct(v)}</span> passed{l.counts?.[i] ? ` · ${l.counts[i]}` : ""}</TipLine></>)}>
+                      <circle cx={x(i)} cy={y(v)} r={12} fill="transparent" />
+                      <Mark shape={l.shape} x={x(i)} y={y(v)} r={4.5} color={l.color} />
+                    </g>
+                  ))}
+                </g>
+              ))}
+            </svg>
+          )}
+        </div>
+        <HoverTip tip={h.tip} />
+      </div>
+      <BuilderLegend items={lines.map((l) => ({ model: l.label, color: l.color, shape: l.shape }))} />
     </div>
   );
 }

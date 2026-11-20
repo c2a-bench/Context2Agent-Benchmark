@@ -108,27 +108,35 @@ Each stage ships hand-written outcomes that must pass or fail (`steps/<stage>/ch
 python3 tasks/redwood-inference/steps/stage1/check/check.py
 ```
 
+Want your model on the leaderboard? See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Viewer
 
-Static replay viewer: **GitHub Pages frontend + the two public, commit-pinned Hugging Face datasets**.
-No hosted server, AWS infrastructure, or runtime credentials are required.
+Static site (graphs + run viewer) that reads the two commit-pinned Hugging Face datasets. Live at
+`https://c2a-bench.github.io/Context2Agent-Benchmark/`.
 
-Intended Pages URL: `https://c2a-bench.github.io/Context2Agent-Benchmark/`.
-Upload revisions remain unset until the normalized datasets pass local and anonymous remote verification.
+### View it locally
+
+Needs Node 20+, [uv](https://docs.astral.sh/uv/).
 
 ```bash
 cd viewer
 npm ci
-npm run check:tools
-npm run test:data
-python3 -m unittest discover -s scripts -p 'test_*.py'
-npx playwright install chromium
-npm run test:pages
+npm run dev:local-hf     # first run downloads ~1 GB of data into viewer/.local-data (git-ignored), then serves
 ```
 
-Tests work without a real dataset or secrets. Pages deployment is disabled until explicitly enabled and
-`viewer/datasets/production.json` identifies verified commits for both public repositories. Large data is never
-committed to GitHub or bundled into the frontend. Do not embed a Hugging Face token in the app.
+Open http://localhost:5199/. Re-run the same command later; it reuses the download. To re-download after a new
+pin, delete `viewer/.local-data` first.
+
+### Tests
+
+```bash
+cd viewer
+npm run test:data
+npx playwright install chromium && npm run test:pages
+```
+
+Tests need no real data or secrets. Never embed a Hugging Face token in the app.
 
 ### Publish new results
 

@@ -43,22 +43,17 @@ The published catalog's overall score is retained as `run.score` (`published_tri
 replaced by the pooled pass rate or mean stage reward. Differences are reported as `aggregateWarnings`.
 Case-result `grading` is separate from conversation failures and `replayVerdict`.
 
-## Install and test
+## Run locally
 
 ```bash
-cd viewer
 npm ci
-npm run check:tools
-npm run test:data
-python3 -m unittest discover -s scripts -p 'test_*.py'
-npx playwright install chromium
-npm run test:pages
-# Existing Chrome: PLAYWRIGHT_CHANNEL=chrome npm run test:pages
+npm run dev:local-hf     # downloads the pinned datasets to .local-data on first run, then serves http://localhost:5199/
 ```
 
-Tests convert fixtures into the real two-repo layout, reconstruct the UI projection, follow redirects,
-check CORS and text/plain JSON, and exercise root/project Pages paths, queries, anchors, Monaco, workers,
-and empty-code stages. No real data, credentials, or benchmark jobs are required.
+Tests (no real data needed): `npm run test:data`, then `npx playwright install chromium && npm run test:pages`
+(with an existing Chrome: `PLAYWRIGHT_CHANNEL=chrome npm run test:pages`). Python tests:
+`python3 -m unittest discover -s scripts -p 'test_*.py'`. The tests convert fixtures into the real two-repo layout
+and cover Pages base paths, queries, anchors, Monaco, workers and empty-code stages.
 
 ## Convert the current Blob catalog locally
 
