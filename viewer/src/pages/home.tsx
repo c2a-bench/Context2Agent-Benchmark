@@ -6,12 +6,12 @@ import { Suspense, use, useLayoutEffect, useRef, useState, type ReactNode } from
 import { Link } from "react-router";
 import { publicAsset } from "@/lib/assets";
 import { ArrowRight } from "lucide-react";
-import { Nav } from "@/landing/nav";
+import { CONTRIBUTING, Nav, RepoLinks } from "@/landing/nav";
 import { Journey } from "@/landing/journey";
 import { ArchTradeoff, ArchTypes, RecallScatter, type ArchRun, type TicketType, type RecallPoint, type StageRow, type StagePoint } from "@/landing/charts";
 import { CONDITIONS, CONFOUND, ENV, SKYWAY_ARCH, catalog, crashed, harnessName, loadMetas, pooled, shortModel, stagesOf, style, type Builder, type FailureGroup } from "@/landing/data";
 import type { JobSummary } from "@/lib/data";
-import { BenchmarkBars, ChangePanels, Columns, CostScatter, SlopeChart, ReasonBars, type ReasonKey, type ReasonRow } from "@/landing/simple-charts";
+import { BenchmarkBars, ChangePanels, Columns, CostScatter, SlopeChart, StageLines, REASONS, ReasonBars, type ReasonKey, type ReasonRow } from "@/landing/simple-charts";
 import "@/landing/landing.css";
 
 
@@ -170,9 +170,10 @@ export function Seg<T extends string>({ value, options, onChange }: { value: T; 
 /** Pass rate by stage, comparing builder models and harnesses. Redwood: one line per builder.
  *  Skyway: one line per model, pooled over the prescribed architectures; hover draws those architectures. */
 function Results({ redwood, metas, skyway, skywayMetas, bare, compact, env: fixedEnv }: { compact?: boolean; redwood: Builder[]; metas: Awaited<ReturnType<typeof loadMetas>>; skyway?: JobSummary[]; skywayMetas?: Awaited<ReturnType<typeof loadMetas>>; bare?: boolean; env?: FigureEnv }) {
-  const [ownEnv, setEnvRaw] = useState<FigureEnv>("redwood");
+  const [ownEnv, setEnvRaw] = useState<FigureEnv>(skyway?.length ? "skyway" : "redwood");
   const env = fixedEnv ?? ownEnv;
   const setEnv = (e: "redwood" | "skyway") => setEnvRaw(e);
+  const [view, setView] = useState<"overall" | "stage">("overall");
   const sky = env === "skyway" && skyway?.length && skywayMetas;
   const rows: StageRow[] = sky
     ? [...new Set(skyway.map((j) => shortModel(j.builder.model)))]
@@ -198,7 +199,7 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact, env: fixe
           });
           const passed = runs.reduce((a, r) => a + sum(r.j, "passed"), 0), total = runs.reduce((a, r) => a + sum(r.j, "total"), 0);
           return {
-            model, harness: `${harnessName(runs[0].j.builder.agent)} · ${runs.length} architectures`, ...style(model), rate: passed / total, passed, total, stages, band,
+            model, harness: harnessName(runs[0].j.builder.agent), ...style(model), rate: passed / total, passed, total, stages, band,
             parts: runs.map((r) => ({ name: SKYWAY_ARCH[r.j.architecture!] ?? r.j.architecture!, stages: r.st })),
           };
         })
@@ -213,15 +214,12 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact, env: fixe
         return c.length ? [{ model: r.model, harness: r.harness, color: r.color, shape: r.shape, rate: r.rate, cost: c.reduce((a, x) => a + x, 0) / c.length }] : [];
       })
     : redwood.filter((b) => b.job.cost != null).map((b) => ({ model: b.model, harness: b.harness, ...style(b.model), rate: pooled(b.job), cost: b.job.cost! }));
-  const toggle = skyway?.length ? <Seg value={env} onChange={setEnv} options={[["redwood", "Redwood Inference"], ["skyway", "Skyway Air"]]} /> : undefined;
+  const toggle = skyway?.length ? <Seg value={env} onChange={setEnv} options={[["skyway", "Skyway Air"], ["redwood", "Redwood Inference"]]} /> : undefined;
   return (
     <Sec bare={bare} id="results" className="lp-sec" head={
           <SectionHead
             from={sky ? "Skyway Air" : "Redwood Inference"}
             title="Pass rate by model and harness"
-            lead={sky
-              ? "Each column is one builder model and its harness, pooled over the architectures it was assigned."
-              : "Each column is one builder model and its harness."}
             right={toggle}
           />
         }>
@@ -233,7 +231,7 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact, env: fixe
           const zig: ZigRow[] = [{
             title: "Which builder makes the best agent",
             body: sky
-              ? "Share of all Skyway tickets each builder's agents passed, pooled over the architectures it was given."
+              ? "Share of all Skyway tickets each builder's agents passed."
               : "Share of all Redwood tickets each builder's agent passed, over the six stages. Every agent runs on the same model; only the builder differs.",
             points: sky ? [
               <><b>Build reliability directly affects performance.</b> Gemini ranked second on completed stages but fell to fourth due to failed builds.</>,
@@ -242,13 +240,26 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact, env: fixe
               <><b>The first build is not where builders separate; updates are.</b> One builder checked file dates instead of content, missed new pages, and fell to last place for three stages.</>,
               <><b>Testing new constraints prevents failures.</b> When a prompt size limit was added, two builders missed it and lost 20% of their tickets.</>,
             ],
-            chart: <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />,
+            chart: (
+              <>
+                <div className="mb-4"><Seg value={view} onChange={setView} options={[["overall", "Overall"], ["stage", "By stage"]]} /></div>
+                {view === "stage" ? (
+                  <StageLines lines={rows.map((r) => ({
+                    label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, color: r.color, shape: r.shape,
+                    values: r.stages.map((s) => (s.total ? (s.crashed ? 0 : s.passed / s.total) : null)),
+                    counts: r.stages.map((s) => `${fmt(s.crashed ? 0 : s.passed)} of ${fmt(s.total)} tickets`),
+                  }))} />
+                ) : (
+                  <Columns cols={rows.map((r) => ({ label: r.model === CONFOUND ? `${r.model} *` : r.model, sub: r.harness, value: r.rate, color: r.color, tip: <div className="muted mt-0.5">{fmt(r.passed)} of {fmt(r.total)} tickets</div> }))} height={compact ? 280 : 340} />
+                )}
+              </>
+            ),
           }];
           if (costs.length > 1) zig.push({
             title: "What it cost to build",
             body: sky
-              ? "Each dot is one builder: Skyway tickets passed, pooled over its architectures, against what one build cost it on average."
-              : "Each dot is one builder: tickets passed against what the builder spent on the whole run.",
+              ? "Cost is what one build cost the builder, averaged over its architectures."
+              : "Cost is what the builder spent on the whole run.",
             points: sky ? [
               <><b>A bigger budget doesn't guarantee a better agent.</b> Two builders with the same spend finish 17 points apart.</>,
               <><b>At scale, spend starts to matter.</b> Unlike on Redwood, the top spender leads and the cheapest builder comes last.</>,
@@ -263,7 +274,7 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact, env: fixe
               />
             ),
           });
-          return <Zig rows={zig} />;
+          return <div className="lp-top"><Zig rows={zig} /></div>;
         })()}
     </Sec>
   );
@@ -307,7 +318,7 @@ function runReasons(meta: Metas[number], into = noReasons()) {
 /** Why tickets failed. Redwood: one row per builder. Skyway: one row per builder too, either pooled over its runs with
  *  the prescribed architectures ("Overall") or for one architecture. An "All builders" row on top. */
 function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact, env: fixedEnv }: { compact?: boolean; redwood: Builder[]; metas: Metas; skyway?: JobSummary[]; skywayMetas?: Metas; bare?: boolean; env?: FigureEnv } & Focus) {
-  const [ownEnv, setEnv] = useState<FigureEnv>("redwood");
+  const [ownEnv, setEnv] = useState<FigureEnv>(skyway?.length ? "skyway" : "redwood");
   const env = fixedEnv ?? ownEnv;
   const [arch, setArch] = useState("overall");
   const sky = env === "skyway" && !!skyway?.length && !!skywayMetas;
@@ -339,13 +350,13 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact, e
           <SectionHead
             from={sky ? `Skyway Air${arch === "overall" ? "" : ` · ${SKYWAY_ARCH[arch]}`}` : "Redwood Inference"}
             title="Why tickets failed"
-            right={skyway?.length ? <Seg value={env} onChange={setEnv} options={[["redwood", "Redwood Inference"], ["skyway", "Skyway Air"]]} /> : undefined}
+            right={skyway?.length ? <Seg value={env} onChange={setEnv} options={[["skyway", "Skyway Air"], ["redwood", "Redwood Inference"]]} /> : undefined}
           />
         }>
         {/* The architecture picker sits here, not in the header, so the header (and its Redwood/Skyway toggle) is the same
-            in both views; its row keeps its height on Redwood too, so nothing below moves when switching. */}
+            in both views; it is always rendered (hidden on Redwood) so its row, even when it wraps, keeps its height and nothing below moves. */}
         {!bare && skyway?.length ? (
-          <div className="mb-6 min-h-[40px]" style={{ visibility: sky ? "visible" : "hidden" }} aria-hidden={!sky}>
+          <div className="mb-6" style={{ visibility: sky ? "visible" : "hidden" }} aria-hidden={!sky}>
             <Seg value={arch} onChange={setArch} options={[["overall", "Overall"], ...Object.keys(SKYWAY_ARCH).filter((a) => skyway.some((j) => j.architecture === a)).map((a) => [a, a] as [string, string])]} />
           </div>
         ) : null}
@@ -378,10 +389,10 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact, e
               <><b>Having the rule is not applying it.</b> Near-complete rule recall still leaves a quarter of tickets failed.</>,
               <><b>Knowledge no longer separates the builders.</b> Six of seven held every rule their tickets needed, yet their pass rates still range from 73% to 80%.</>,
             ],
-            note: "The shaded band is rule recall below 0.9. Hover a mark for the builder and stage.",
+            note: "The shaded band is rule recall below 0.9.",
             chart: <RecallScatter points={points} height={340} />,
           });
-          return <Zig rows={zig} />;
+          return <div className="lp-top"><Zig rows={zig} /></div>;
         })()}
     </Sec>
   );
@@ -486,7 +497,7 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                       <><b>Agent cost scales with context size.</b> Concise wiki notes are the cheapest to answer from.</>,
                       <><b>Stable prompts are cheap to reuse.</b> Prompt-only agents read the most per ticket yet stay mid-priced, thanks to caching.</>,
                     ],
-                    note: "Cost is the agent's model spend per ticket; time is the median time to finish a ticket, over the stages where the agent ran. Hover a mark for each builder's own numbers.",
+                    note: "Cost is the agent's model spend per ticket; time is the median time to finish a ticket, over the stages where the agent ran.",
                     chart: <ArchTradeoff runs={pooledDesigns(arch, order)} order={order} />,
                     wide: true,
                   },
@@ -688,11 +699,13 @@ function Closing({ last, skywayTask }: { last: string | null; skywayTask: string
                 <li><Link className="link" to={`/t/${skywayTask}`}>Skyway Air</Link></li>
                 <li><Link className="link" to={`/t/${ENV.redwood}`}>Redwood Inference</Link></li>
                 <li><Link className="link" to={`/t/${ENV.packs}`}>Knowledge perturbations</Link></li>
+                <li><a className="link" href={CONTRIBUTING} target="_blank" rel="noreferrer">Submit results</a></li>
               </ul>
             </div>
             <div>
-              <div className="label" style={{ opacity: 0.6 }}>Data</div>
-              <ul className="mt-2 space-y-1.5 text-[14px]" style={{ opacity: 0.75 }}>
+              <div className="label" style={{ opacity: 0.6 }}>Code and data</div>
+              <RepoLinks className="mt-2 !flex-col !gap-1.5 text-[14px]" />
+              <ul className="mt-3 space-y-1.5 text-[14px]" style={{ opacity: 0.75 }}>
                 {last && <li>Updated {day(last)}</li>}
                 <li className="flex items-center gap-2">
                   <span>Built with</span>
@@ -815,6 +828,7 @@ export default function Home() {
                   <Link to="/#results" className="btn btn--primary">See the results</Link>
                   <Link to="/blog" className="btn btn--secondary">Read the blog</Link>
                 </div>
+                <RepoLinks runs={false} className="muted mt-6" />
               </div>
               <div className="lg:col-span-5"><HeroEnvs picks={picks} cases={facts[0].value} /></div>
             </div>

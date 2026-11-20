@@ -310,8 +310,8 @@ a.lp-pick:hover .lp-pick-arrow { color: var(--ink); }
 .lp-tip { position: relative; text-decoration: underline dotted; text-decoration-thickness: 1px; text-underline-offset: 4px; cursor: help; outline: none; }
 .lp-tip::after { content: attr(data-tip); position: absolute; left: 0; top: calc(100% + 8px); z-index: 20; width: max-content; max-width: min(340px, 80vw);
   padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
-  font-size: 14px; font-weight: 400; line-height: 1.5; box-shadow: 0 8px 24px rgba(0,0,0,.12); opacity: 0; pointer-events: none; transition: opacity .12s; }
-.lp-tip:hover::after, .lp-tip:focus-visible::after { opacity: 1; }
+  font-size: 14px; font-weight: 400; line-height: 1.5; box-shadow: 0 8px 24px rgba(0,0,0,.12); display: none; pointer-events: none; } /* display:none, not opacity:0: an invisible note still widens the scrollable page */
+.lp-tip:hover::after, .lp-tip:focus-visible::after { display: block; }
 /* an "i" beside a heading that explains it */
 .lp-info { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; margin-left: 7px; vertical-align: 2px;
   border-radius: 999px; border: 1px solid var(--muted); color: var(--muted); font: italic 600 11px/1 Georgia, serif; text-decoration: none; }
@@ -350,9 +350,8 @@ a.lp-pick:hover .lp-pick-arrow { color: var(--ink); }
 
 /* The bench demo: an SVG diagram (docs → builder → support agent ← customer; agent → desk → check). The active boxes and
    arrows light up beat by beat, and one sentence below says what is happening. */
-/* On a phone the diagram keeps a readable size (its text ~10px) and scrolls sideways instead of shrinking to fit. */
-.bd-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.bd-svg { display: block; width: 100%; min-width: 640px; height: auto; padding: 18px 18px 0; }
+/* The diagram scales to the card's width (a sideways-scrolling chart hides most of itself on a phone); the sentence below narrates each beat. */
+.bd-svg { display: block; width: 100%; height: auto; padding: 18px 18px 0; }
 .bd-node rect { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; transition: stroke 0.3s, fill 0.3s; }
 .bd-node text { transition: opacity 0.3s; }
 .bd-node:not(.on) { opacity: 0.55; }
@@ -443,6 +442,7 @@ a.lp-pick:hover .lp-pick-arrow { color: var(--ink); }
 .lp .lp-zig-row--flip > .lp-zig-text { order: 2; }
 .lp .lp-zig-row--wide { grid-template-columns: minmax(0, 340px) minmax(0, 1fr); }
 .lp .lp-zig-row--flip.lp-zig-row--wide { grid-template-columns: minmax(0, 1fr) minmax(0, 340px); }
+.lp .lp-top .lp-zig-row { align-items: start; } /* text stays put when the chart beside it changes height */
 .lp .lp-zig-chart { min-width: 0; }
 .lp .lp-zig-text h3 { font-size: 24px; }
 .lp .lp-zig-points { margin-top: 22px; display: grid; gap: 12px; font-size: 15px; }
@@ -464,3 +464,10 @@ a.lp-pick:hover .lp-pick-arrow { color: var(--ink); }
 
 .lp .tip--smooth { transition: opacity 140ms ease, left 110ms ease-out, top 110ms ease-out; }
 @media (prefers-reduced-motion: reduce) { .lp .tip--smooth { transition: none; } }
+
+/* Repo links (GitHub, Hugging Face): a quiet row in the hero, the blog and the footer. */
+.lp-repos { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 15px; }
+.lp-repos a { display: inline-flex; align-items: center; gap: 7px; text-decoration: none; }
+.lp-repos a:hover { text-decoration: underline; text-underline-offset: 3px; } /* inherits the colour: muted in the hero, light on the dark footer */
+.lp-icon-link { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; color: var(--muted); }
+.lp-icon-link:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
