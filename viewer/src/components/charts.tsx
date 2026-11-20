@@ -16,12 +16,14 @@ let setPageTip: ((t: Tip) => void) | null = null;
 export function TipRoot() {
   const [tip, setTip] = useState<Tip>(null);
   const el = useRef<HTMLDivElement>(null);
-  const [top, setTop] = useState<number | null>(null);
-  // Below the pointer when it fits, else above it, so a tooltip near the window's bottom is never cut off.
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  // Below and right of the pointer when it fits; else above and/or left of it, so it is never cut off by the window.
   useLayoutEffect(() => {
-    if (!tip || !el.current) return setTop(null);
-    const h = el.current.offsetHeight;
-    setTop(tip.y + 14 + h <= window.innerHeight - 8 ? tip.y + 14 : Math.max(8, tip.y - 10 - h));
+    if (!tip || !el.current) return setPos(null);
+    const h = el.current.offsetHeight, w = el.current.offsetWidth;
+    const top = tip.y + 14 + h <= window.innerHeight - 8 ? tip.y + 14 : Math.max(8, tip.y - 10 - h);
+    const left = tip.x + 12 + w <= window.innerWidth - 8 ? tip.x + 12 : Math.max(8, tip.x - 12 - w);
+    setPos({ left, top });
   }, [tip]);
   useEffect(() => {
     setPageTip = setTip;
@@ -36,9 +38,9 @@ export function TipRoot() {
   return createPortal(
     <div
       role="tooltip"
-      className="pointer-events-none fixed z-50 min-w-40 rounded-md border bg-popover px-3 py-2 font-sans text-xs font-normal normal-case tracking-normal text-popover-foreground shadow-md"
+      className="pointer-events-none fixed z-50 max-w-80 min-w-40 rounded-md border bg-popover px-3 py-2 font-sans text-xs font-normal normal-case tracking-normal text-popover-foreground shadow-md"
       ref={el}
-      style={{ left: Math.max(8, Math.min(tip.x + 12, window.innerWidth - 320)), top: top ?? tip.y + 14, visibility: top == null ? "hidden" : "visible" }}
+      style={{ left: pos?.left ?? tip.x + 12, top: pos?.top ?? tip.y + 14, visibility: pos == null ? "hidden" : "visible" }}
     >
       {tip.body}
     </div>,
@@ -71,7 +73,7 @@ export function TipRow({ color, value, label }: { color?: string; value: ReactNo
   return (
     <div className="flex items-center gap-2">
       {color && <span className="h-0.5 w-3 shrink-0 rounded-full" style={{ background: color }} />}
-      <span className="font-semibold tabular-nums">{value}</span>
+      <span className="font-semibold whitespace-nowrap tabular-nums">{value}</span>
       <span className="text-muted-foreground">{label}</span>
     </div>
   );
