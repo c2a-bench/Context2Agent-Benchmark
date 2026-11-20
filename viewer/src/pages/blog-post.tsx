@@ -8,7 +8,7 @@ import { Link } from "react-router";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ArrowRight } from "lucide-react";
-import { Nav } from "@/landing/nav";
+import { Nav, RepoLinks } from "@/landing/nav";
 import { publicAsset } from "@/lib/assets";
 import { POSTS, postDate } from "@/blog/posts";
 import { LandingFigure, Seg, type FigureEnv, type FigureName } from "@/pages/home";
@@ -157,7 +157,8 @@ export default function BlogPost() {
         <article className="lp-article">
           <div className="caps muted">{postDate(post.date)}</div>
           <h1 style={{ marginTop: 16, fontSize: "clamp(36px, 2.6vw + 22px, 64px)", lineHeight: 1.08 }}>{post.title}</h1>
-          <div className="lp-prose" style={{ marginTop: 48 }}>
+          <RepoLinks className="muted mt-5" />
+          <div className="lp-prose" style={{ marginTop: 40 }}>
             <Body md={post.body} />
           </div>
         </article>

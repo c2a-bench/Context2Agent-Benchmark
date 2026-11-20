@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local-hf": "node scripts/dev-local-hf.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "postinstall": "node scripts/copy-monaco.mjs",
@@ -18,7 +19,8 @@
     "check:tools": "tsc --project tsconfig.tools.json --noEmit",
     "test:data": "tsx --test scripts/data/*.test.ts",
     "test:pages": "tsx --test scripts/pages/*.test.ts",
-    "pin:production": "tsx scripts/pin-production.ts"
+    "pin:production": "tsx scripts/pin-production.ts && npm run build:landing",
+    "build:landing": "tsx scripts/build-landing.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
