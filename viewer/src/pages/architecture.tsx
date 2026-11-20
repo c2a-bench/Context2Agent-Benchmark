@@ -176,8 +176,8 @@ export default function ArchitecturePage() {
         <ChartCard
           className="mt-14"
           title={`How long the agent takes to reply · p90 ${p90Typical == null ? "—" : sec(p90Typical)}`}
-          how={`For each stage, every reply's time is sorted (${wall ? "start to end of the agent's run" : "the model time of one agent process"}, over all tickets, passed or failed) and the p90 is the value 90% of the way up the list. The title shows the middle of the stage p90s.`}
-          subtitle={`One reply = the agent handling one customer message${perTicket ? ` (about ${perTicket} per ticket in this run)` : ""}. The p90 is the time 9 in 10 replies finish within.${wall ? "" : " This run times a reply by its model calls only; newer runs time the whole reply."} The title shows the middle stage.`}
+          how={`A reply is the agent handling one customer message${perTicket ? ` (about ${perTicket} per ticket in this run)` : ""}. For each stage, every reply's time is sorted (${wall ? "start to end of the agent's run" : "the model time of one agent process; this run predates timing whole replies"}, over all tickets, passed or failed) and the p90 is the value 90% of the way up the list. The number in the title is the middle of the stage p90s.`}
+          subtitle="How long the agent takes to answer one customer message: 9 in 10 replies are faster than each bar."
           table={latTable}
         >
           <GroupedBarsLine xLabels={rows.map(stageLabel)} bars={latSeries} yMax={latTop} ticks={latTicks} format={sec} height={240} />
