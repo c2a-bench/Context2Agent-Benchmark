@@ -18,10 +18,6 @@ if [ "${STAGE:-stage0}" != "stage0" ]; then
   cases_dir="/tests/stages/${STAGE}"
 fi
 status=0
-replay_args=()
-if [ "${REPLAY:-1}" != "1" ]; then
-  replay_args=(--no-replay)
-fi
 python3 /tests/verify.py run --cases "$cases_dir/cases.json" --seed /tests/seed --rules "$cases_dir/rules.json" \
-  --workers "${VERIFIER_WORKERS:-$(nproc)}" "${replay_args[@]}" || status=$?
+  --workers "${VERIFIER_WORKERS:-$(nproc)}" --no-replay || status=$?
 exit "$status"

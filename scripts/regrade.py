@@ -20,7 +20,7 @@ inflate the score.
 1. Runs the chosen tickets (and the other half of any follow-up pair they are in) with the grader's own
    `verify.py run`, inside the verifier image built from the run's own tests/ (the task path in the job's
    config.json, so the same grader the run used), against the bot that step was graded with
-   (steps/<step>/verifier/bot), on Daytona, with replays. Same per-step settings as harbor: STAGE and the
+   (steps/<step>/verifier/bot), on Daytona, without replays. Same per-step settings as harbor: STAGE and the
    [verifier.env] models.
 2. Puts the new results of the chosen tickets in place of the old ones and rebuilds the step's results.json,
    scores.json, reward.txt, report.md and architecture.json with the grader's own `finish`.
@@ -121,10 +121,10 @@ def env_file_values(path, names):
 def verifier_env(task_dir, env_file=None):
     """[verifier.env] model settings, resolved as the run resolves them: "${NAME:-default}" takes NAME from this
     shell, then from --env-file (the run's .env), then the default. These go to docker as -e and override the env
-    file, so a setting only in .env (REPLAY=0) must be read here, or the task.toml default (REPLAY=1) wins."""
+    file, so a setting only in .env must be read here, or the task.toml default wins."""
     import tomllib
     env = tomllib.loads((task_dir / "task.toml").read_text()).get("verifier", {}).get("env", {})
-    names = ("BOT_MODEL", "EMBED_MODEL", "CUSTOMER_MODEL", "REPLAY", "ARCHITECTURE")  # ARCHITECTURE: skyway-air only
+    names = ("BOT_MODEL", "EMBED_MODEL", "CUSTOMER_MODEL", "ARCHITECTURE")  # ARCHITECTURE: skyway-air only
     from_file = env_file_values(env_file, names) if env_file else {}
     out = {}
     for k in names:
@@ -266,12 +266,12 @@ def main():
         mounts = ["-v", f"{tmp}:/regrade", "-v", f"{tmp / 'bot'}:/app/bot"]
         new = {}
         if ids:
-            # 1. the chosen tickets, with replays
+            # 1. the chosen tickets (no replays; the judge grades)
             run = subprocess.run(
                 ["docker", "run", "--rm", "--env-file", args.env_file, *envs, *mounts, "-v", f"{keep / 'run'}:/logs/verifier",
                  image, "sh", "-c",
                  'chmod -R a+rwX /app/bot; python3 /tests/verify.py run --cases /regrade/cases.json --rules "$1" '
-                 '--seed "$4" --workers "$2"; s=$?; chown -R "$3" /logs/verifier; exit $s',
+                 '--seed "$4" --workers "$2" --no-replay; s=$?; chown -R "$3" /logs/verifier; exit $s',
                  "sh", f"/tests/{rel_rules}", str(args.workers), owner, f"/tests/{rel_seed}"],
                 capture_output=True, text=True)
             (keep / "run" / "stdout.txt").write_text(run.stdout + run.stderr)

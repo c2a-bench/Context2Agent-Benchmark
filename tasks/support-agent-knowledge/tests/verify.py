@@ -2,7 +2,7 @@
 
 run     - Harbor mode: for each case, reset data, run the bot (traced), compare JSON state,
           check that every change was a value the model said, write the reward. Then diagnose,
-          optionally replay failed tickets (REPLAY=0 turns it off), and build the observed architecture card.
+          no replays (test.sh passes --no-replay), and build the observed architecture card.
           With TICKET_SANDBOX=daytona, each ticket (or follow-up pair) runs in its own sandbox.
 run-one - Worker entrypoint for one ticket or follow-up pair (used inside a ticket sandbox).
 check   - author mode: grade hand-written fixtures (no bot) and confirm each verdict matches `should`.

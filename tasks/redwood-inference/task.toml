@@ -34,7 +34,6 @@ OPENAI_API_KEY = "${OPENAI_API_KEY:-}"
 ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}"
 GEMINI_API_KEY = "${GEMINI_API_KEY:-}"
 OPENROUTER_API_KEY = "${OPENROUTER_API_KEY:-}"
-REPLAY = "${REPLAY:-1}"
 # Max concurrent ticket sandboxes (or local threads when TICKET_SANDBOX=local).
 VERIFIER_WORKERS = "${VERIFIER_WORKERS:-25}"
 # local = in-process threads (default); daytona = one sandbox per ticket.
