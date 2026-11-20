@@ -27,7 +27,7 @@ export default function ArchitecturePage() {
 
   if (!hasData) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-12">
+      <div className="run-wrap py-12">
         <h1 className="font-heading text-3xl font-normal tracking-tight">Agent design</h1>
         {assigned && (
           <p className="mt-6 text-sm">
@@ -89,7 +89,7 @@ export default function ArchitecturePage() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-12">
+    <div className="run-wrap py-12">
       <h1 className="font-heading text-3xl font-normal tracking-tight">Agent design</h1>
       <p className="mt-2 max-w-3xl text-sm text-muted-foreground">How the agent the builder made gets its knowledge, and how fast it replies.</p>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-5 py-4">

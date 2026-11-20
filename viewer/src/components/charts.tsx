@@ -125,7 +125,7 @@ export function ChartCard({
   const body = asTable && table ? table : children;
   if (side) {
     return (
-      <section className={cn("mt-20 grid items-start gap-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:gap-14", side === "right" && "lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)]", className)}>
+      <section className={cn("mt-28 grid items-start gap-8 first:mt-20 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:gap-20", side === "right" && "lg:grid-cols-[minmax(0,1fr)_minmax(0,320px)]", className)}>
         <div className={cn("lg:sticky lg:top-6", side === "right" && "lg:order-2")}>
           {chip && <div className="mb-3">{chip}</div>}
           <h2 className="font-sans text-xl font-semibold tracking-tight">{title}</h2>
@@ -385,7 +385,7 @@ function RateGrid({ reference }: { reference?: number }) {
 function RateBarRow({ r, color, reference }: { r: RateRow; color: string; reference?: number }) {
   const rate = r.total ? r.passed / r.total : 0;
   const tip = useTip(r.tip ?? <TipRow color={color} value={`${rate.toFixed(2)} (${r.passed}/${r.total})`} label={r.label} />);
-  const cell = "py-1";
+  const cell = "py-1.5";
   return (
     <div {...tip} className="group/row contents outline-none">
       <div className={cn(cell, "truncate pr-3 font-sans text-xs group-hover/row:font-medium", r.group && "pl-3")}>{r.label}</div>
@@ -406,7 +406,7 @@ export function RateBars({ rows, color = VIZ[1], reference }: { rows: RateRow[];
   for (const r of rows) if (r.group) size.set(r.group, (size.get(r.group) ?? 0) + 1);
   const pad = [0];
   return (
-    <div className="grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)_7rem]">
+    <div className="grid grid-cols-[minmax(0,12rem)_minmax(0,1fr)_7.5rem]">
       {pad.map((k) => <div key={k} />)}
       <div className="relative h-4">
         {reference && (
@@ -422,11 +422,11 @@ export function RateBars({ rows, color = VIZ[1], reference }: { rows: RateRow[];
         return (
           <Fragment key={r.key}>
             {head && (
-              <div className={cn("col-span-3 pt-3 pb-0.5 font-sans text-[10.5px] font-medium tracking-wide text-muted-foreground uppercase", i > 0 && "mt-1 border-t border-border/60")}>
+              <div className={cn("col-span-3 pt-4 pb-1 font-sans text-[10.5px] font-medium tracking-wide text-muted-foreground uppercase", i > 0 && "mt-2 border-t border-border/60")}>
                 {r.groupLabel ?? r.group}
               </div>
             )}
-            {first && !head && i > 0 && <div className="col-span-3 mt-1 border-t border-border/60" />}
+            {first && !head && i > 0 && <div className="col-span-3 mt-2 mb-1 border-t border-border/60" />}
             <RateBarRow r={(size.get(r.group ?? "") ?? 0) > 1 ? r : { ...r, group: undefined }} color={color} reference={reference?.value} />
           </Fragment>
         );

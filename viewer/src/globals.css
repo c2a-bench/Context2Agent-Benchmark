@@ -220,3 +220,9 @@
 .top-loader-bar {
   width: 100%;
 }
+
+/* Run pages' content width: the same as the main site's nav (landing.css .lp-wrap, its --gut steps), so the logo,
+   the tabs and the page content start on one line at every screen size. */
+.run-wrap { width: min(100% - 160px, 1280px); margin-inline: auto; }
+@media (max-width: 1023px) { .run-wrap { width: min(100% - 96px, 1280px); } }
+@media (max-width: 639px) { .run-wrap { width: calc(100% - 48px); } }

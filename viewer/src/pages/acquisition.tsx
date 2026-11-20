@@ -294,12 +294,12 @@ function FactGradedFailureAnalysis() {
 
   return (
     <div>
-      <div className="mx-auto max-w-5xl px-6 pt-10">
+      <div className="run-wrap pt-10">
         <h1 className="font-heading text-3xl font-normal tracking-tight">Failure analysis</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Why tickets failed, and whose responsibility it was: the builder (what it built), the agent (what it did) or our test setup.</p>
       </div>
       <StageBar meta={meta} stage={stage} onChange={set} allowAll className="mt-6" note="Everything below follows this." />
-      <div className="mx-auto max-w-5xl px-6 pb-12">
+      <div className="run-wrap pb-12">
         <Headline r={cur} total={total} scope={label} />
         {stage === ALL && <ByStage meta={meta} per={per} />}
         <Breakdown r={cur} pick={pick} onPick={onPick} />

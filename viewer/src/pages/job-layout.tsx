@@ -123,7 +123,7 @@ export default function JobLayout() {
       <div className="lp shrink-0 border-b px-6 py-2 sm:hidden"><div className="lp-crumbs">{crumbs}</div></div>
       {/* the run's tabs, on the pages' width; pages with stages put their stage picker at the end (#run-bar-slot) */}
       <header className="shrink-0 border-b">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 px-6">
+        <div className="run-wrap flex flex-wrap items-center gap-x-4">
           <JobNav job={job} meta={meta} />
           <div id="run-bar-slot" className="ml-auto shrink-0 empty:hidden max-sm:ml-0 max-sm:w-full max-sm:border-t" title={`run ${meta.job} · ${agentName(meta.builder.agent)} · agent ${short(meta.bot)}${day ? ` · ${day}` : ""}`} />
         </div>

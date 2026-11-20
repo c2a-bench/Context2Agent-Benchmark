@@ -376,7 +376,7 @@ export default function BehaviorPage() {
 
   if (stages.length && rows.every((r) => !r.coverage)) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-12">
+      <div className="run-wrap py-12">
         <h1 className="font-heading text-3xl font-normal tracking-tight">Customer types</h1>
         <p className="mt-4 text-sm text-muted-foreground">Every customer in this environment is a plain customer, so there are no customer types to compare.</p>
       </div>
@@ -384,7 +384,7 @@ export default function BehaviorPage() {
   }
   if (!stages.length || !rows.length) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-12">
+      <div className="run-wrap py-12">
         <h1 className="font-heading text-3xl font-normal tracking-tight">Customer types</h1>
         <p className="mt-4 text-sm text-muted-foreground">This run has no scores yet.</p>
       </div>
@@ -442,7 +442,7 @@ export default function BehaviorPage() {
 
   return (
     <div>
-      <div className="mx-auto max-w-5xl px-6 pt-10">
+      <div className="run-wrap pt-10">
         <h1 className="font-heading text-3xl font-normal tracking-tight">Customer types</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
           Every ticket has one way the customer behaves (plain, vague, pushy, frustrated, …). The right handling is the same
@@ -453,7 +453,7 @@ export default function BehaviorPage() {
         </p>
       </div>
       <StageBar meta={meta} stage={active.stage === ALL_STAGES ? ALL : active.stage} onChange={set} allowAll={preferred?.stage === ALL_STAGES} className="mt-8" />
-      <div className="mx-auto max-w-5xl px-6 pb-12">
+      <div className="run-wrap pb-12">
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Stat
           k="Average across customer types"
