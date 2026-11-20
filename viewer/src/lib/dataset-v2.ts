@@ -23,7 +23,6 @@ export type ResultRecord = Partial<Ticket> & { id: string; passed: boolean; verd
 export type StageCode = { files: CodeStage["files"]; knowledge: CodeStage["knowledge"]; changes: Pick<Transition, "files" | "knowledge"> };
 export type BuilderRecord = { format: "normalized-events-v1"; redacted: true; events: BuildEvent[] };
 export type LeaderboardRow = JobSummary & { domain: string; benchmark_revision: string | null; benchmark_inventory_sha256: string };
-export const canonicalDomain = (domain: string) => ["skyway-arch", "skyway-arch-large", "skyway-arch-regraded"].includes(domain) ? "skyway-air" : domain;
 
 /** The bench lists each ticket's pass checks ({check, field, value, list, json}) and keeps a rule's facts on the rule
  *  (rules[].facts); the pages read the grader's form: pass as {check: {field: value}} and a separate rule_facts list.

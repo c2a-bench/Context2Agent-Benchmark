@@ -2,7 +2,7 @@
 
 run     - Harbor mode: for each case, reset data, run the bot (traced), compare JSON state,
           check that every change was a value the model said, write the reward. Then diagnose,
-          optionally replay failed tickets (RQ2), and build the observed architecture card.
+          and build the observed architecture card.
           With TICKET_SANDBOX=daytona, each ticket (or follow-up pair) runs in its own sandbox.
 run-one - Worker entrypoint for one ticket or follow-up pair (used inside a ticket sandbox).
 check   - author mode: grade hand-written fixtures (no bot) and confirm each verdict matches `should`.
@@ -424,7 +424,7 @@ def crashed_result(case, exc):
     }
 
 
-def run_sandboxed(case, base, name, extra_text=None):
+def run_sandboxed(case, base, name):
     """One ticket: own folder, own server. Ends when run_case returns."""
     rel = case.get("reliability") or {}
     start_world_clock()  # this ticket's clock (a kill_after restart and run_case below keep it)
@@ -447,32 +447,31 @@ def run_sandboxed(case, base, name, extra_text=None):
             trace_path = new_trace(ctx["trace_dir"], f"{name}-first")
             run_bot_watch(
                 ticket, ctx["api_url"], ctx["timeout"], ctx["hook_dir"], trace_path,
-                box, rel["kill_after"], None if extra_text else case.get("prompt_cap_tokens"),
-                replay_hint(extra_text, case.get("facts") if case.get("facts_given") else ()),
+                box, rel["kill_after"], case.get("prompt_cap_tokens"),
             )
-        return run_case(case, ctx, name, extra_text)
+        return run_case(case, ctx, name)
     finally:
         restore_stored(hidden)
         stop_server(server)
 
 
 def run_pool(jobs, base, workers, prefix=""):
-    """Start the next ticket as soon as a slot is free. jobs is (case, name, extra_text)."""
+    """Start the next ticket as soon as a slot is free. jobs is (case, name)."""
     if not jobs:
         return {}
     out = {}
     use_daytona = _ticket_backend() in ("daytona", "modal")  # one cloud sandbox per ticket
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         futures = {
-            pool.submit(_run_solo_job, case, base, name, extra, use_daytona): name
-            for case, name, extra in jobs
+            pool.submit(_run_solo_job, case, base, name, use_daytona): name
+            for case, name in jobs
         }
         for fut in as_completed(futures):
             name = futures[fut]
             try:
                 r = fut.result()
             except Exception as exc:
-                case = next(c for c, n, _ in jobs if n == name)
+                case = next(c for c, n in jobs if n == name)
                 r = crashed_result(case, exc)
                 r = {**r, "id": case["id"]}
             out[name] = r
@@ -488,18 +487,18 @@ def _ticket_backend():
         return "local"
 
 
-def _run_solo_job(case, base, name, extra_text, use_daytona):
+def _run_solo_job(case, base, name, use_daytona):
     if use_daytona:
         import sandbox as ticket_sandbox
-        return ticket_sandbox.run_solo(case, base, name, extra_text)
-    return run_sandboxed(case, base, name, extra_text)
+        return ticket_sandbox.run_solo(case, base, name)
+    return run_sandboxed(case, base, name)
 
 
-def _run_pair_job(first, second, base, extra=None, extra_first=None, prefix="", tag=""):
+def _run_pair_job(first, second, base, prefix=""):
     if _ticket_backend() in ("daytona", "modal"):
         import sandbox as ticket_sandbox
         try:
-            got = ticket_sandbox.run_pair(first, second, base, extra, extra_first)
+            got = ticket_sandbox.run_pair(first, second, base)
         except Exception as exc:
             got = {
                 first["id"]: crashed_result(first, exc),
@@ -508,7 +507,7 @@ def _run_pair_job(first, second, base, extra=None, extra_first=None, prefix="", 
         for r in got.values():
             print_ticket(r, prefix)
         return got
-    return run_chain(first, second, base, extra=extra, extra_first=extra_first, prefix=prefix, tag=tag)
+    return run_chain(first, second, base, prefix=prefix)
 
 
 def run_pairs(heads, follow, base, workers, prefix=""):
@@ -524,7 +523,7 @@ def run_pairs(heads, follow, base, workers, prefix=""):
     out = {}
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         futures = {
-            pool.submit(_run_pair_job, head, follow[head["id"]], base, None, None, prefix): head["id"]
+            pool.submit(_run_pair_job, head, follow[head["id"]], base, prefix): head["id"]
             for head in heads
         }
         for fut in as_completed(futures):
@@ -532,16 +531,15 @@ def run_pairs(heads, follow, base, workers, prefix=""):
     return out
 
 
-def run_chain(first, second, base, extra=None, extra_first=None, prefix="", tag=""):
+def run_chain(first, second, base, prefix=""):
     """Ticket 1 then ticket 2, same folder and API. Does not wipe ticket 1.
-    tag (e.g. "-replay") names a replay's traces and folder, so they do not overwrite the live run's.
 
     If the head has reliability.kill_after / fail_writes / hide_stored, apply the
     same prologue as run_sandboxed so confirmation-number pairs still share one desk.
     """
     rel = first.get("reliability") or {}
     start_world_clock()  # one clock for the pair: ticket 2 is handled after ticket 1, not back at the same moment
-    name = f"{first['id']}__{second['id']}{tag}"
+    name = f"{first['id']}__{second['id']}"
     box = Path(base["work_root"]) / name
     reset(box, base["seed_dir"])
     os.chmod(box, 0o700)
@@ -559,15 +557,14 @@ def run_chain(first, second, base, extra=None, extra_first=None, prefix="", tag=
         ensure_bot_writable(BOT.parent)
         if rel.get("kill_after"):
             ticket = dict(first["input"])
-            trace_path = new_trace(ctx["trace_dir"], f"{first['id']}{tag}-first")
+            trace_path = new_trace(ctx["trace_dir"], f"{first['id']}-first")
             run_bot_watch(
                 ticket, ctx["api_url"], ctx["timeout"], ctx["hook_dir"], trace_path,
-                box, rel["kill_after"], None if extra_first else first.get("prompt_cap_tokens"),
-                replay_hint(extra_first, first.get("facts") if first.get("facts_given") else ()),
+                box, rel["kill_after"], first.get("prompt_cap_tokens"),
             )
-        r1 = run_case(first, ctx, f"{first['id']}{tag}", extra_first)
+        r1 = run_case(first, ctx, first["id"])
         print_ticket(r1, prefix)
-        r2 = run_case(second, ctx, f"{second['id']}{tag}", extra)
+        r2 = run_case(second, ctx, second["id"])
         print_ticket(r2, prefix)
         return {first["id"]: r1, second["id"]: r2}
     finally:
@@ -575,212 +572,21 @@ def run_chain(first, second, base, extra=None, extra_first=None, prefix="", tag=
         stop_server(server)
 
 
-def plain_case(case):
-    """The ticket with the customer's information given: no behaviour, no goal change, and every fact in the bot's
-    system prompt (replay_hint) while the customer still answers when asked."""
-    out = {k: v for k, v in case.items() if k not in ("first_goal", "goal_terms")}
-    out["behavior"] = "baseline"
-    out["facts_given"] = True
-    return out
-
-
-def plain_replay(results, by_id, follow, base, workers, backend):
-    """Behaviour replay (RQ4, customer information given): a failed ticket that the full replay fixed runs again with
-    the customer's information given (plain_case) and no rule. Passing means the rule was not needed; failing means
-    it was."""
-    jobs, meta, pairs = [], {}, []
-    for r in results:
-        case = by_id[r["id"]]
-        if not replay_worthy(r) or not after_full(r) or isinstance(r.get("plain_replay"), dict):
-            continue
-        plain = plain_case(case)
-        if case.get("after"):
-            pairs.append((by_id[case["after"]], plain, r))
-        elif case["id"] in follow:
-            pairs.append((plain, follow[case["id"]], r))
-        else:
-            jobs.append((plain, f"{r['id']}-plain", None))
-            meta[f"{r['id']}-plain"] = r
-    done = [(meta[name], rr) for name, rr in run_pool(jobs, base, workers, prefix="PLAIN ").items()]
-    if backend in ("daytona", "modal") and pairs:
-        with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-            futs = [(pool.submit(_run_pair_job, first, second, base, None, None, "PLAIN ", "-plain"), r)
-                    for first, second, r in pairs]
-            done += [(r, fut.result()[r["id"]]) for fut, r in futs]
-    else:
-        done += [(r, run_chain(first, second, base, prefix="PLAIN ", tag="-plain")[r["id"]]) for first, second, r in pairs]
-    for r, rr in done:
-        lost = replay_lost(rr)
-        if lost:
-            r["plain_replay_lost"] = lost
-            r["plain_replay_lost_cost"] = {"usage": rr.get("usage"), "sandbox": rr.get("sandbox")}  # billed all the same
-            continue
-        r["plain_replay"] = {"passed": rr["passed"], "failures": rr["failures"], "bot_problem": rr["bot_problem"],
-                         "usage": rr.get("usage"), "sandbox": rr.get("sandbox")}
-
-
-def full_replay(results, by_id, follow, base, workers, backend, notes):
-    """Full replay (rule and customer information given), first: the rule note with the customer's information given
-    (plain_case), for every failed ticket. Failing means the bot cannot do it even with both given (execution), or
-    the ticket itself is wrong; then the rule and behaviour replays are not run (Rishi's order) and are marked
-    skipped, not failed. Passing means something was missing; the rule and behaviour replays then say which."""
-    jobs, meta, pairs = [], {}, []
-    for r in results:
-        if not replay_worthy(r) or r["id"] not in notes:
-            continue
-        case = by_id[r["id"]]
-        note, full = notes[r["id"]][1], plain_case(case)
-        # In a follow-up pair only the replayed ticket changes (customer information given, rule note); the other ticket runs as it
-        # did live, as in the rule and behaviour replays, so the verdict is about this ticket alone.
-        if case.get("after"):
-            pairs.append((by_id[case["after"]], full, r, note, None))
-        elif case["id"] in follow:
-            pairs.append((full, follow[case["id"]], r, None, note))
-        else:
-            jobs.append((full, f"{r['id']}-full", note))
-            meta[f"{r['id']}-full"] = r
-    done = [(meta[name], rr) for name, rr in run_pool(jobs, base, workers, prefix="FULL ").items()]
-    if backend in ("daytona", "modal") and pairs:
-        with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-            futs = [(pool.submit(_run_pair_job, first, second, base, extra, extra_first, "FULL ", "-full"), r)
-                    for first, second, r, extra, extra_first in pairs]
-            done += [(r, fut.result()[r["id"]]) for fut, r in futs]
-    else:
-        done += [(r, run_chain(first, second, base, extra=extra, extra_first=extra_first, prefix="FULL ",
-                               tag="-full")[r["id"]]) for first, second, r, extra, extra_first in pairs]
-    for r, rr in done:
-        lost = replay_lost(rr)
-        if lost:
-            r["full_replay_lost"] = lost
-            r["full_replay_lost_cost"] = {"usage": rr.get("usage"), "sandbox": rr.get("sandbox")}  # billed all the same
-            continue
-        r["full_replay"] = {"passed": rr["passed"], "failures": rr["failures"], "bot_problem": rr["bot_problem"],
-                         "usage": rr.get("usage"), "sandbox": rr.get("sandbox")}
-        if not rr["passed"]:
-            r["replays_skipped"] = "the full replay failed"
-
-
-def after_full(r):
-    """The rule and behaviour replays run only once the full replay passed (or was lost to us, then as before)."""
-    full = r.get("full_replay")
-    return (isinstance(full, dict) and full["passed"]) or bool(r.get("full_replay_lost"))
-
-
-REPLAY_VERDICTS = {
-    "prompt cap": "prompt cap: fixed once a replay ran without the ticket's token cap",
-    "knowledge": "missing knowledge: fixed by the rule only, which had not reached the model",
-    "application": "knowledge not applied: the rule had reached the model; fixed only when told it again",
-    "customer": "customer behaviour: fixed by the customer's information only",
-    "either": "either was enough: fixed by the rule, and by the customer's information",
-    "both": "needed both: fixed only with the rule and the customer's information",
-    "execution": "execution or ticket: fails even with the rule and the customer's information",
-}
-
-
-def replay_verdict(r, case):
-    """Which given information fixes a failed ticket: the rule (r), the customer's information (c), or both."""
-    if r.get("passed") or not replay_worthy(r):
-        return None
-    full = r.get("full_replay") if isinstance(r.get("full_replay"), dict) else None
-    if full and not full["passed"]:
-        return "execution"
-    rule = r.get("replay") if isinstance(r.get("replay"), dict) else None
-    if not rule or not isinstance(r.get("plain_replay"), dict):
-        return None
-    plain_passed = bool(r["plain_replay"]["passed"])
-    if r.get("prompt_cap_tokens") and "context overflow" in {b.get("blame") for b in r.get("blame") or []}:
-        # Replays run without the cap, so a pass says the cap was the problem, not the rule or the customer.
-        if rule["passed"] or plain_passed or (r.get("full_replay") or {}).get("passed"):
-            return "prompt cap"
-    if rule["passed"]:
-        if plain_passed:
-            return "either"
-        return "knowledge" if diagnose.replay_class(r)[1] == "lacked the rule" else "application"
-    if plain_passed:
-        return "customer"
-    return "both" if full else None
-
-
-def verdict_summary(results, by_id):
-    counts = {}
-    for r in results:
-        v = replay_verdict(r, by_id.get(r["id"], {}))
-        r["replay_verdict"] = v
-        if v:
-            counts[v] = counts.get(v, 0) + 1
-    return counts
-
-
-def verdict_lines(counts):
-    if not counts:
-        return []
-    lines = ["## Why failed tickets failed (replays)", "",
-             "Each failed ticket is replayed first with both the rule and the customer's information given (as "
-             "guidance in the bot's system prompt, not as customer text). If that fails, the bot cannot do it. If it passes, the ticket is replayed "
-             "with the rule only and with the customer's information only; which one fixes it says what was "
-             "missing.", "",
-             "| Verdict | Tickets |", "| --- | --- |"]
-    for k, label in REPLAY_VERDICTS.items():
-        if counts.get(k):
-            lines.append(f"| {label} | {counts[k]} |")
-    return lines + [""]
-
-
-def replay_worthy(r):
-    """A failed ticket a replay can tell us something about. Not ours, and the bot really ran: a crash or a
-    failed model call tests no rule. A crash only because the prompt went over the ticket's cap still is
-    worth it: the replay is uncapped, so it shows whether the bot knew the rule."""
-    if r["passed"] or ours_only(r):
-        return False
-    labels = {b["blame"] for b in r["blame"]}
-    if "model call failed" in labels:
-        return False
-    return not r["bot_problem"] or labels == {"context overflow"}
-
-
-def replay_lost(rr):
-    """Why a replay tells us nothing about the bot (customer model failed, provider down, our time limit), or ""."""
-    if not ours_only(rr):
-        return ""
-    return rr.get("customer_fault") or "; ".join(b.get("detail") or b["blame"] for b in rr.get("blame") or []) or "ours"
-
-
-def record_replay(r, rule_ids, note, rr):
-    """Keep the rule replay on the ticket. A replay lost to us is not counted (the ticket stays not replayed)."""
-    lost = replay_lost(rr)
-    if lost:
-        r["replay_lost"] = lost
-        r["replay_lost_cost"] = {"usage": rr.get("usage"), "sandbox": rr.get("sandbox")}  # billed all the same
-        return
-    diagnose.apply_replay(r["blame"], rr["passed"])
-    r["replay"] = {"rules": rule_ids, "note": note, "passed": rr["passed"], "usage": rr.get("usage"), "sandbox": rr.get("sandbox"),
-                   "failures": rr["failures"], "bot_problem": rr["bot_problem"]}
-
-
-REPLAY_KEYS = ("full_replay", "replay", "plain_replay")
-
-
 def cost_summary(results):
-    """What grading this stage cost: model tokens and dollars for the bot and the customer model, on the tickets and on
-    their replays, plus the Daytona sandboxes' life and cost. None for results graded before usage was recorded."""
+    """What grading this stage cost: model tokens and dollars for the bot and the customer model on the tickets, plus
+    the Daytona sandboxes' life and cost. None for results graded before usage was recorded."""
     rs = [r for r in results if isinstance(r, dict)]
     if not any(r.get("usage") for r in rs):
         return None
     use = lambda r, who: (r.get("usage") or {}).get(who)
-    # Replays lost to us were billed too, so their cost counts.
-    replays = [r[k] for r in rs for k in REPLAY_KEYS + tuple(f"{x}_lost_cost" for x in REPLAY_KEYS) if isinstance(r.get(k), dict)]
-    # A sandbox shared by a pair is split over its two results; a replay keeps only its own result, so it counts the
-    # whole sandbox.
+    # A sandbox shared by a pair is split over its two results.
     boxes = [r.get("sandbox") for r in rs if r.get("sandbox")]
-    replay_boxes = [x["sandbox"] for x in replays if x.get("sandbox")]
-    box_seconds = sum(b["seconds"] for b in boxes) + sum(b.get("whole_seconds", b["seconds"]) for b in replay_boxes)
-    box_usd = sum(b["usd"] for b in boxes) + sum(b.get("whole_usd", b["usd"]) for b in replay_boxes)
+    box_seconds = sum(b["seconds"] for b in boxes)
+    box_usd = sum(b["usd"] for b in boxes)
     out = {
         "bot": observe_usage.add(*[use(r, "bot") for r in rs]),
         "customer": observe_usage.add(*[use(r, "customer") for r in rs]),
-        "replay_bot": observe_usage.add(*[use(x, "bot") for x in replays]),
-        "replay_customer": observe_usage.add(*[use(x, "customer") for x in replays]),
-        "sandbox": {"runs": len(boxes) + len(replay_boxes), "seconds": round(box_seconds, 1), "usd": round(box_usd, 6)},
+        "sandbox": {"runs": len(boxes), "seconds": round(box_seconds, 1), "usd": round(box_usd, 6)},
     }
     out["usd"] = round(sum(v["usd"] for v in out.values()), 6)
     return out
@@ -863,21 +669,6 @@ def new_trace(trace_dir, name):
     return path
 
 
-def replay_hint(rule=None, facts=()):
-    """What a replay gives the bot, as guidance from the support team in its system prompt (added to every model
-    call by the trace hook), never as customer text: bots rightly distrust instructions in customer text, where
-    injection tickets hide them. The bot must still confirm the details with the customer before it acts."""
-    parts = [p for p in (
-        (rule or "").strip(),
-        ("What the customer has told us about this ticket:\n" + "\n".join(f"- {f}" for f in facts)) if facts else "",
-    ) if p]
-    if not parts:
-        return None
-    return ("Guidance from the support team for this ticket (not from the customer).\n\n" + "\n\n".join(parts)
-            + "\n\nStill confirm the details this ticket needs with the customer before you act, and act only on "
-              "what the customer confirms.")
-
-
 # The world's clock: the stage's "now" (task.toml WORLD_NOW, e.g. 2026-12-02T10:00:00Z, when its tickets were
 # created). Each ticket (a follow-up pair: once for both) starts the bot's clock there; it runs on from it.
 _clock = threading.local()
@@ -894,7 +685,7 @@ def start_world_clock():
     return _clock.offset
 
 
-def bot_env(api_url, hook_dir, trace, prompt_cap=None, hint=None):
+def bot_env(api_url, hook_dir, trace, prompt_cap=None):
     offset = getattr(_clock, "offset", None)
     if offset is None and os.environ.get("WORLD_NOW"):
         offset = start_world_clock()
@@ -910,8 +701,6 @@ def bot_env(api_url, hook_dir, trace, prompt_cap=None, hint=None):
     }
     if prompt_cap:
         env["BOT_PROMPT_CAP_TOKENS"] = str(int(prompt_cap))
-    if hint:
-        env["BOT_SYSTEM_HINT"] = hint  # the trace hook appends it to the bot's own system message on every model call
     if offset is not None:
         env["BOT_CLOCK_OFFSET"] = str(offset)  # the hook shifts the bot's clocks; bin/date does the shell's
         shim = Path(hook_dir) / "bin"
@@ -924,9 +713,9 @@ def bot_env(api_url, hook_dir, trace, prompt_cap=None, hint=None):
     return env
 
 
-def run_bot(ticket, api_url, timeout, hook_dir, trace, prompt_cap=None, hint=None):
+def run_bot(ticket, api_url, timeout, hook_dir, trace, prompt_cap=None):
     """Run the bot once. Returns (contract failures, stderr tail, parsed last output line or None)."""
-    env = bot_env(api_url, hook_dir, trace, prompt_cap, hint)
+    env = bot_env(api_url, hook_dir, trace, prompt_cap)
     try:
         proc = subprocess.Popen(
             bot_command(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -962,9 +751,9 @@ def run_bot(ticket, api_url, timeout, hook_dir, trace, prompt_cap=None, hint=Non
     return [], proc.stderr[-2000:], out
 
 
-def run_bot_watch(ticket, api_url, timeout, hook_dir, trace, data_dir, kill_after, prompt_cap=None, hint=None):
+def run_bot_watch(ticket, api_url, timeout, hook_dir, trace, data_dir, kill_after, prompt_cap=None):
     """Start the bot. If a matching write lands, kill it. Returns (failures, stderr, killed)."""
-    env = bot_env(api_url, hook_dir, trace, prompt_cap, hint)
+    env = bot_env(api_url, hook_dir, trace, prompt_cap)
     try:
         proc = subprocess.Popen(
             bot_command(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -1061,10 +850,10 @@ def order_ok(requests, steps):
     return True
 
 
-def column_results(case, passed, requests, bot_problem="", extra_text=None):
+def column_results(case, passed, requests, bot_problem=""):
     """End is the last ticket. Order is the only extra check; it does not change the score."""
     columns = {"end": bool(passed), "order": None}
-    if extra_text or bot_problem:
+    if bot_problem:
         return columns
     if case.get("order"):
         columns["order"] = order_ok(requests, case["order"])
@@ -1102,13 +891,8 @@ def timeout_message(budget, used, starts, last=None):
     return msg
 
 
-def run_case(case, ctx, name, extra_text=None):
-    """The customer speaks first. After each bot exit the customer may reply again.
-
-    On a replay, extra_text is the company rule. The conversation runs as on a live ticket, with the
-    customer model; the rule (and on a "customer information given" replay, the customer's facts) reaches the bot as
-    guidance in its system prompt on every start (replay_hint). The customer never sees it.
-    """
+def run_case(case, ctx, name):
+    """The customer speaks first. After each bot exit the customer may reply again."""
     rules_by_id = ctx["rules_by_id"]
     if not ctx.get("keep_state"):
         start_world_clock()  # a new ticket; the second ticket of a follow-up pair keeps the pair's clock
@@ -1125,10 +909,7 @@ def run_case(case, ctx, name, extra_text=None):
     brief = str(case.get("customer") or "").strip()
     facts = list(case.get("facts") or [])
     behavior = case.get("behavior")
-    policy = (extra_text or "").strip() or None
-    hint = replay_hint(policy, facts if case.get("facts_given") else ())
-    # Replay is uncapped. Live tickets use the case cap, if any.
-    prompt_cap = None if policy else case.get("prompt_cap_tokens")
+    prompt_cap = case.get("prompt_cap_tokens")
     history = []
     customer_usage = []  # each customer model call's tokens and cost
     bot_runs = []  # each start of the bot: wall-clock window and seconds (latency per customer message)
@@ -1142,14 +923,7 @@ def run_case(case, ctx, name, extra_text=None):
     failures, stderr = [], ""
     # The bot and the customer talk only through stdin and the bot's `reply`.
     # Nothing here writes to the ticket: only the bot changes tickets, through the API.
-    if brief and case.get("facts_given"):
-        # Replay with the customer's information given (plain_case): the facts reach the bot in its system prompt
-        # (hint); the customer opens with the opening as written and still answers when asked.
-        opener = ticket["message"] if case.get("verbatim_opening") else brief
-        turns.append({"reply": opener})
-        ticket["message"] = opener
-        history.append(("Customer", opener))
-    elif brief and case.get("verbatim_opening"):
+    if brief and case.get("verbatim_opening"):
         # The ticket text is the test (e.g. an injection): send it exactly as written.
         opener = ticket["message"]
         turns.append({"reply": opener})
@@ -1187,7 +961,7 @@ def run_case(case, ctx, name, extra_text=None):
         run_start = time.time()
         starts += 1
         failures, stderr, out = run_bot(
-            ticket, ctx["api_url"], remaining, ctx["hook_dir"], trace_path, prompt_cap, hint,
+            ticket, ctx["api_url"], remaining, ctx["hook_dir"], trace_path, prompt_cap,
         )
         last = time.monotonic() - started
         bot_runs.append({"start": round(run_start, 3), "end": round(time.time(), 3), "seconds": round(last, 2)})
@@ -1266,7 +1040,7 @@ def run_case(case, ctx, name, extra_text=None):
         # The conversation could not run as written: the ticket is ours, not the bot's.
         blame = [diagnose.blame_record("customer", [], "customer fault", customer_fault)]
     passed = not failures
-    columns = column_results(case, passed, requests, bot_problem, extra_text)
+    columns = column_results(case, passed, requests, bot_problem)
     return {
         "id": case["id"],
         "group": case.get("group", "normal"),
@@ -1305,7 +1079,7 @@ def run_case(case, ctx, name, extra_text=None):
 
 
 def prepare_run(args):
-    """What `run` and `replay` share: the bot, the data dirs, the LLM trace hook and the ticket runner's base."""
+    """What `run` needs: the bot, the data dirs, the LLM trace hook and the ticket runner's base."""
     global BOT, SERVER
     BOT, SERVER = Path(args.bot), Path(args.server)
     cases = load_json(args.cases)
@@ -1350,7 +1124,7 @@ def cmd_run(args):
     # Daytona: solos + reliability tickets each get their own sandbox, so fan out together.
     # Local: reliability tickets stay sequential after solos (they mutate the shared bot tree).
     first_wave = solo + (special if backend in ("daytona", "modal") else [])
-    got = run_pool([(case, case["id"], None) for case in first_wave], base, workers)
+    got = run_pool([(case, case["id"]) for case in first_wave], base, workers)
     got.update(run_pairs(heads, follow, base, workers))
     if backend not in ("daytona", "modal"):
         for case in special:
@@ -1361,99 +1135,7 @@ def cmd_run(args):
             got[case["id"]] = r
             print_ticket(r)
     results = [got[case["id"]] for case in cases]
-    if args.no_replay:
-        print("Replay skipped.")
-    if not args.no_replay:
-        run_replays(results, cases, follow, base, workers, backend)
-
     finish(results, cases, rules, BOT.parent, logs, baseline, self_report, bot_files, trace_dir)
-
-
-# Everything a replay writes on a result, cleared before the replays run again.
-REPLAY_FIELDS = REPLAY_KEYS + ("full_replay_lost", "replay_lost", "plain_replay_lost", "full_replay_lost_cost",
-                               "replay_lost_cost", "plain_replay_lost_cost", "replays_skipped", "replay_verdict")
-# Blame the grader sets after the checks (a watcher gap, the customer model): kept, not recomputed.
-KEPT_BLAME = ("trace lost", "customer fault")
-
-
-def cmd_replay(args):
-    """Replay a finished step's failed tickets again with this grader and the step's saved bot, keeping every live
-    result: each failed ticket's replays are cleared, its blame is recomputed from the saved checks (a replay can
-    relabel it), and the replays run as in `run`. Then the step's scores and report are rebuilt."""
-    cases, rules, logs, bot_files, self_report, baseline, trace_dir, base = prepare_run(args)
-    workers = getattr(args, "workers", WORKERS)
-    results = load_json(args.results)
-    by_id = {c["id"]: c for c in cases}
-    stale = [r["id"] for r in results if r["id"] not in by_id]
-    if stale:
-        sys.exit(f"results have tickets these cases do not: {', '.join(stale[:5])}")
-    for r in results:
-        for k in REPLAY_FIELDS:
-            r.pop(k, None)
-        if r["passed"] or not r.get("checks") or any(b.get("blame") in KEPT_BLAME for b in r.get("blame") or []):
-            continue
-        r["blame"] = diagnose.blame_case(by_id[r["id"]], r["checks"], base["rules_by_id"], r.get("model_calls") or [],
-                                         r.get("bot_problem") or "", base["stored"], r.get("bot_stderr_tail") or "")
-    _, _, follow, _ = split_cases(cases)
-    backend = _ticket_backend()
-    print(f"Replaying {sum(replay_worthy(r) for r in results)} failed tickets via {backend}, {workers} at a time.")
-    run_replays(results, cases, follow, base, workers, backend)
-    finish(results, cases, rules, BOT.parent, logs, baseline, self_report, bot_files, trace_dir)
-
-
-def run_replays(results, cases, follow, base, workers, backend):
-    """The RQ2 replays of the failed tickets, in Rishi's order: the full replay (rule and customer facts given) first;
-    the rule and behaviour replays only where it passed. Updates the results in place."""
-    # A replay is a new conversation from the ticket's own story, with the customer model.
-    by_id = {c["id"]: c for c in cases}
-    follow = {after: by_id[case["id"]] for after, case in follow.items()}
-    notes = {r["id"]: diagnose.replay_note(by_id[r["id"]], r["checks"], base["rules_by_id"])
-             for r in results if replay_worthy(r)}
-    # Full replay first (rule and customer given); the rule and behaviour replays only where it passed.
-    full_replay(results, by_id, follow, base, workers, backend, notes)
-    replay_jobs = []
-    replay_meta = {}
-    replay_pairs = []
-    for r in results:
-        if not replay_worthy(r) or not after_full(r) or isinstance(r.get("replay"), dict):
-            continue
-        rule_ids, note = notes[r["id"]]
-        case = by_id[r["id"]]
-        if case.get("after"):
-            replay_pairs.append((by_id[case["after"]], case, note, r, rule_ids))
-        elif case["id"] in follow:
-            replay_pairs.append((case, follow[case["id"]], note, r, rule_ids))
-        else:
-            replay_jobs.append((case, f"{r['id']}-replay", note))
-            replay_meta[f"{r['id']}-replay"] = (r, rule_ids, note)
-    replayed = run_pool(replay_jobs, base, workers, prefix="REPLAY ")
-    if backend in ("daytona", "modal") and replay_pairs:
-        with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-            futs = []
-            for first, second, note, r, rule_ids in replay_pairs:
-                extra = note if r["id"] == second["id"] else None
-                extra_first = note if r["id"] == first["id"] else None
-                futs.append((pool.submit(
-                    _run_pair_job, first, second, base, extra, extra_first, "REPLAY ", "-replay"
-                ), r, rule_ids, note))
-            for fut, r, rule_ids, note in futs:
-                pair = fut.result()
-                rr = pair[r["id"]]
-                record_replay(r, rule_ids, note, rr)
-    else:
-        for first, second, note, r, rule_ids in replay_pairs:
-            pair = run_chain(
-                first, second, base,
-                extra=note if r["id"] == second["id"] else None,
-                extra_first=note if r["id"] == first["id"] else None,
-                prefix="REPLAY ", tag="-replay",
-            )
-            rr = pair[r["id"]]
-            record_replay(r, rule_ids, note, rr)
-    for name, (r, rule_ids, note) in replay_meta.items():
-        rr = replayed[name]
-        record_replay(r, rule_ids, note, rr)
-    plain_replay(results, by_id, follow, base, workers, backend)
 
 
 def finish(results, cases, rules, bot_dir, logs, baseline, self_report, bot_files, trace_dir=None):
@@ -1518,9 +1200,6 @@ def finish(results, cases, rules, bot_dir, logs, baseline, self_report, bot_file
         scores["info"] = info
     if cost:
         scores["cost"] = cost
-    verdicts = verdict_summary(counted, {c["id"]: c for c in cases})
-    if verdicts:
-        scores["replay_verdicts"] = verdicts
     if docs:
         scores["docs"] = {k: v for k, v in docs.items()}
     (logs / "results.json").write_text(json.dumps(results, indent=2))
@@ -1528,8 +1207,7 @@ def finish(results, cases, rules, bot_dir, logs, baseline, self_report, bot_file
     (logs / "scores.json").write_text(json.dumps(scores, indent=2))
     (logs / "reward.txt").write_text(f"{reward:.4f}\n")
     (logs / "report.md").write_text(render_report(results, cases, card, bot_files, claims, subset, context, coverage, realization,
-                                                       attribution, taxonomy, correction, nl, docs=docs, info=info,
-                                                       verdicts=verdicts))
+                                                       attribution, taxonomy, correction, nl, docs=docs, info=info))
     if docs and docs.get("tickets"):
         print(f"Docs reached: recall {docs['recall']}, precision {docs['precision']} over {docs['tickets']} tickets")
     print(f"\n{passed}/{len(counted)} cases passed, reward {reward:.4f}" + (f" ({ours} failed because of us)" if ours else ""))
@@ -1539,13 +1217,7 @@ def finish(results, cases, rules, bot_dir, logs, baseline, self_report, bot_file
         else:
             print(f"Qcoverage {coverage['q_coverage']:.4f} across {coverage['n_scenarios']} scenarios")
     if attribution:
-        if attribution.get("mode") == "per_ticket":
-            print(f"Failed tickets {attribution['failed']}: lacked the rule {attribution['lacked_rule']}, "
-                  f"fixed when told {attribution['fixed_when_told']}, cannot apply {attribution['cannot_apply']}, "
-                  f"execution {attribution['execution']}; "
-                  f"passed with the customer's information given {attribution['plain_passed']}/{attribution['plain_replayed']}")
-        else:
-            print(f"Behaviour failures {attribution['behavior_failures']}, doc failures {attribution['doc_failures']}")
+        print(f"Behaviour failures {attribution['behavior_failures']}, doc failures {attribution['doc_failures']}")
     if realization and realization.get("mean_q_realization") is not None:
         print(f"Mean Qrealization {realization['mean_q_realization']:.4f}")
     print(f"Strict score {nl['strict_score']:.4f} ({nl['strict_breaches']} reply breach(es)); "
@@ -1554,8 +1226,6 @@ def finish(results, cases, rules, bot_dir, logs, baseline, self_report, bot_file
         print(f"Agent correction: {correction['tickets']} ticket(s) corrected, {correction['fixed']} still right")
     if taxonomy["records"]:
         print("Failed checks by party: " + ", ".join(f"{p} {n}" for p, n in taxonomy["by_party"].items()))
-    if ka.get("replayed"):
-        print(f"Qapplication {ka['Qapplication']:.4f} (replay {ka['replay_passed']}/{ka['replayed']})")
     print(f"Readable report: {logs / 'report.md'}")
 
 
@@ -1596,15 +1266,15 @@ def cmd_run_one(args):
         if head["id"] not in follow:
             raise SystemExit(f"no follow-up after {args.pair_head}")
         ensure_bot_writable(BOT.parent)
-        got = run_chain(head, follow[head["id"]], base, extra=args.extra, extra_first=args.extra_first)
+        got = run_chain(head, follow[head["id"]], base)
     else:
         if not args.case_id or args.case_id not in by_id:
             raise SystemExit(f"unknown case id: {args.case_id}")
         case = by_id[args.case_id]
         ensure_bot_writable(BOT.parent)
-        key = args.result_name or case["id"]
+        key = case["id"]
         try:
-            r = run_sandboxed(case, base, case["id"], args.extra)
+            r = run_sandboxed(case, base, case["id"])
         except Exception as exc:
             r = crashed_result(case, exc)
         got = {key: r}
@@ -1830,15 +1500,6 @@ def blame_sentence(r):
         if text + detail not in parts:
             parts.append(text + detail)
     return "; ".join(parts)
-
-
-def replay_sentence(r):
-    rp = r.get("replay")
-    if not rp:
-        return ""
-    if rp["passed"]:
-        return "When we put the rule on the ticket, the bot got it right."
-    return "When we put the rule on the ticket, the bot still got it wrong."
 
 
 def blame_summary(results):
@@ -2105,7 +1766,7 @@ def behavior_attribution(results):
         if r.get("scenario"):
             scenarios.setdefault(r["scenario"], []).append(r)
     if not scenarios:
-        return behavior_failure_split(results)
+        return None
     kinds = ("behavior_failures", "doc_failures", "no_control", "ours", "bot_errors", "handled", "noisy")
     out = {**{k: 0 for k in kinds}, "by_behavior": {}, "by_scenario": []}
     for scenario, rows in sorted(scenarios.items()):
@@ -2142,51 +1803,6 @@ def behavior_attribution(results):
             out[kind] += len(row[kind])
         out["by_scenario"].append(row)
     return out if out["by_scenario"] else None
-
-
-def behavior_failure_split(results):
-    """One behaviour per ticket: what each failed ticket says when replayed with the rule given.
-    lacked_rule  passed once told, and the rule had not reached the model (knowledge);
-    fixed_when_told / cannot_apply  the rule had reached the model, or the bot fails even when told:
-                  the behaviour or applying the rule is the problem;
-    execution  the full replay (rule and customer's information given) failed too, so the other replays were skipped;
-    ours / bot_errors  lost to us, or a crash / no model call, so no rule was tested;
-    plain_replayed / plain_passed  failed tickets run again with the customer's information given and no rule (after the full
-                  replay), and how many then passed: the behaviour cost those tickets (RQ4)."""
-    kinds = ("failed", "ours", "bot_errors", "lacked_rule", "fixed_when_told", "cannot_apply", "execution", "not_replayed",
-             "plain_replayed", "plain_passed")
-    by_behavior = {}
-    for r in results:
-        b = r.get("behavior")
-        if not b or r.get("scenario"):
-            continue
-        row = by_behavior.setdefault(b, {"tickets": 0, **{k: 0 for k in kinds}})
-        row["tickets"] += 1
-        if r.get("passed"):
-            continue
-        row["failed"] += 1
-        owner = run_owner(r)
-        if owner == "us":
-            row["ours"] += 1
-        elif owner == "bot" and not isinstance(r.get("replay"), dict):
-            # A crash over the prompt cap is replayed (uncapped), so it is classed by its replay below.
-            row["bot_errors"] += 1
-        elif isinstance(r.get("replay"), dict):
-            _, reason = diagnose.replay_class(r)
-            row[{"lacked the rule": "lacked_rule", "fixed when told": "fixed_when_told",
-                 "cannot apply": "cannot_apply"}[reason]] += 1
-        elif isinstance(r.get("full_replay"), dict) and not r["full_replay"].get("passed"):
-            row["execution"] += 1
-        else:
-            row["not_replayed"] += 1
-        if isinstance(r.get("plain_replay"), dict):
-            row["plain_replayed"] += 1
-            row["plain_passed"] += bool(r["plain_replay"].get("passed"))
-    if not by_behavior:
-        return None
-    ordered = {b: by_behavior[b] for b in sorted(by_behavior, key=_behavior_key)}
-    return {"mode": "per_ticket", "by_behavior": ordered,
-            **{k: sum(r[k] for r in ordered.values()) for k in ("tickets",) + kinds}}
 
 
 INFO_TYPES = {1: "API only", 2: "customer's facts", 3: "API call from the customer's info",
@@ -2316,22 +1932,6 @@ def taxonomy_lines(taxonomy):
 def attribution_lines(attribution):
     if not attribution:
         return []
-    if attribution.get("mode") == "per_ticket":
-        lines = ["## Failures by customer behaviour", "",
-                 "Each failed ticket was replayed with the rule stated plainly. Lacked the rule = passed once told, "
-                 "the rule had not reached the model (knowledge). Fixed when told / cannot apply = the rule had reached "
-                 "the model, or the bot fails even when told (the behaviour or applying the rule). Execution = the full "
-                 "replay, with the rule and the customer's information given, failed too. Ours and bot errors "
-                 "tested no rule. Plain customer = a ticket that failed even when told the rule, run again with a plain "
-                 "customer and no rule; passing then means the behaviour cost the ticket.", "",
-                 "| Behaviour | Tickets | Failed | Lacked the rule | Fixed when told | Cannot apply | Execution | Ours "
-                 "| Bot errors | Passed with the customer's information given |",
-                 "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
-        for b, row in attribution["by_behavior"].items():
-            plain = f"{row['plain_passed']}/{row['plain_replayed']}" if row.get("plain_replayed") else "–"
-            lines.append(f"| {BEHAVIOR_NAMES.get(b, b)} | {row['tickets']} | {row['failed']} | {row['lacked_rule']} | "
-                         f"{row['fixed_when_told']} | {row['cannot_apply']} | {row['execution']} | {row['ours']} | {row['bot_errors']} | {plain} |")
-        return lines + [""]
     lines = ["## Behaviour or docs?", "",
              "Each scenario's normal ticket is the control (same bot, same docs). A variant that fails while "
              "the control passes is a behaviour failure; if the control fails on a rule too, the rule itself was "
@@ -2443,7 +2043,6 @@ def design_text(claims):
         text = design.get(key) or "not stated"
         lines.append(f"**{label}:** {text}")
     return lines
-
 
 
 def claim_lines(claims):
@@ -2725,7 +2324,7 @@ def design_lines(claims):
 
 def render_report(results, cases, card=None, bot_files=(), claims=None, subset=None, context=None,
                   coverage=None, realization=None, attribution=None, taxonomy=None, correction=None, nl=None, docs=None,
-                  info=None, verdicts=None):
+                  info=None):
     by_id = {c["id"]: c for c in cases}
     lines = design_lines(claims)
     lines += subset_lines(subset)
@@ -2737,7 +2336,6 @@ def render_report(results, cases, card=None, bot_files=(), claims=None, subset=N
     lines += attribution_lines(attribution)
     lines += taxonomy_lines(taxonomy)
     lines += info_lines(info)
-    lines += verdict_lines(verdicts)
     lines += agent_correction_lines(correction)
     lines += nl_lines(nl)
     lines += group_lines(results)
@@ -2778,8 +2376,7 @@ GENERAL_LABEL_RULES = set()
 
 def missing_owner_rules(case, rules):
     """Every field a ticket checks needs one of the rules that decide it (a rule's "checks") on the ticket: the
-    replay note, blame and Qknowledge read the ticket's rules, so a missing one leaves the deciding rule out of the
-    replay and blames the wrong rule."""
+    blame and Qknowledge read the ticket's rules, so a missing one blames the wrong rule."""
     def owners(key):
         return [rid for rid, r in rules.items() if any(fnmatch.fnmatchcase(key, p) for p in r.get("checks", []))]
     have = set(case.get("rules", []))
@@ -2875,9 +2472,6 @@ def cmd_check(args):
             checks = diagnose.failed_checks(case, state, requests, seed, lookup, calls, model_requests=this_requests, all_requests=fixture.get("requests", []))
             got = sorted({b["blame"] for b in diagnose.blame_case(
                 case, checks, rules_by_id, calls, fixture.get("bot_problem", ""), fixture.get("stored"))})
-            if "replay_passed" in fixture:
-                got = sorted({b["blame"] for b in diagnose.apply_replay(
-                    [{"blame": g} for g in got], fixture["replay_passed"])})
             want = sorted(fixture["expect_blame"])
             ok = got == want
             print(f"{'ok ' if ok else 'BAD'} blame {fixture['case']:8} {fixture['name']:32} want={want} got={got}")
@@ -2905,19 +2499,9 @@ def main():
     run.add_argument("--bot-timeout", type=int, default=240)
     run.add_argument("--rules", default="/tests/rules.json")
     run.add_argument("--app", default="/app")
-    run.add_argument("--no-replay", action="store_true", help="skip the RQ2 replay of failed tickets")
     run.add_argument("--workers", type=int, default=WORKERS, help="tickets to run at once")
     run.add_argument("--bot", default=str(BOT))
     run.add_argument("--server", default=str(SERVER))
-
-    rep = sub.add_parser("replay", help="replay a finished step's failed tickets again (live results kept)")
-    rep.add_argument("--results", required=True, help="the step's results.json")
-    for flag, default in (("--cases", "/tests/cases.json"), ("--seed", "/tests/seed"), ("--data", "/srv/data"),
-                          ("--logs", "/logs/verifier"), ("--rules", "/tests/rules.json"), ("--app", "/app"),
-                          ("--bot", str(BOT)), ("--server", str(SERVER))):
-        rep.add_argument(flag, default=default)
-    rep.add_argument("--bot-timeout", type=int, default=240)
-    rep.add_argument("--workers", type=int, default=WORKERS, help="tickets to run at once")
 
     one = sub.add_parser("run-one", help="run a single ticket or follow-up pair (sandbox worker)")
     one.add_argument("--cases", default="/tests/cases.json")
@@ -2931,9 +2515,6 @@ def main():
     one.add_argument("--server", default=str(SERVER))
     one.add_argument("--case-id", help="solo or reliability ticket id")
     one.add_argument("--pair-head", help="first ticket id of a follow-up pair")
-    one.add_argument("--extra", default=None, help="text appended to the (second) ticket message")
-    one.add_argument("--extra-first", default=None, help="text appended to the pair head message")
-    one.add_argument("--result-name", default=None, help="key for the result dict (replay uses <id>-replay)")
     one.add_argument("--out", default="/tmp/ticket_result.json")
 
     check = sub.add_parser("check")
@@ -2945,7 +2526,7 @@ def main():
     check.add_argument("--blame-fixtures")
 
     args = parser.parse_args()
-    {"run": cmd_run, "replay": cmd_replay, "run-one": cmd_run_one, "check": cmd_check}[args.cmd](args)
+    {"run": cmd_run, "run-one": cmd_run_one, "check": cmd_check}[args.cmd](args)
 
 
 if __name__ == "__main__":

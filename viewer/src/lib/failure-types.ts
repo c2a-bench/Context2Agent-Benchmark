@@ -153,7 +153,7 @@ export function rollup(tickets: Ticket[]): Rollup {
   return r;
 }
 
-/** The small file publish-run uploads next to tickets.json: the landing chart's split, without the tickets. */
+/** The small summary kept next to tickets.json: the landing chart's split, without the tickets. */
 export function failureSummary(tickets: Ticket[], failedInScore: number, total: number) {
   const r = withGap(rollup(tickets), failedInScore);
   const round = (m: Record<string, number>) => Object.fromEntries(Object.entries(m).map(([k, v]) => [k, Math.round(v * 100) / 100]));

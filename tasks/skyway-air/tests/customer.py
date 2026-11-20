@@ -3,7 +3,6 @@
 The opening and the fact list are a private note. The builder never sees them.
 The customer says the opening first. It uses the list only when support asks.
 It hears only what the bot puts in `reply`; nothing it says is written to the ticket.
-Replay does not use this customer; the verifier puts the rule in the stdin JSON.
 It does not see the company docs or the right answer. If the call fails, the
 ticket is left out of the score.
 
@@ -34,7 +33,7 @@ Opening:
 
 Facts you may use if support asks:
 {facts}
-{policy_block}
+
 If support asks for something not in the opening or the facts, say you don't know.
 Your agreement is not a fact you have to look up: if support asks you to confirm or approve a step or a charge that does what you asked for, say yes, unless your facts say you object to it.
 If support states a specific detail about your problem that contradicts your opening or facts (for example a different date, flight, booking number, amount or name), correct it in your reply. A question from support is not something to correct.
@@ -47,15 +46,6 @@ Set "switched" to true only in the message where you drop an earlier, different 
 Set "done" to true when support has handled your request, or has clearly told you it cannot be done, and you have nothing more to ask: this message ends the conversation, so make it a short closing reply. Otherwise false. How you behave (above) comes first: while it tells you to keep asking or to push back, do not set "done"."""
 
 LIVE_RULE = "Do not mention ticket categories or ticket labels. Do not guess how the company should file the ticket."
-
-POLICY_BLOCK = """
-Company policy you must send to support, word for word:
-{policy}
-"""
-
-POLICY_RULE = """When asked to send the company policy, send that policy text word for word and nothing else.
-After you have sent it, you may repeat it if support asks. Do not invent a different policy.
-"""
 
 # How the customer behaves on a ticket (scripts/behavior/types.json; each ticket has one).
 # Empty string = the default customer. The facts and the right filing never change.
@@ -91,16 +81,14 @@ def behavior_block(behavior):
     return f"How you write and behave (this comes before the rules above where they differ):\n{rule}\n" if rule else ""
 
 
-def prompt(opening, facts, policy=None, behavior=None, first_goal=None):
+def prompt(opening, facts, behavior=None, first_goal=None):
     lines = [f"- {line}" for line in facts if str(line).strip()]
-    policy = (policy or "").strip()
     return SYSTEM.format(
         opening=opening.strip(),
         facts="\n".join(lines) if lines else "- You have nothing else to add.",
-        policy_block=POLICY_BLOCK.format(policy=policy) if policy else "",
         behavior_block=behavior_block(behavior).replace("{first_goal}", (first_goal or "").strip()),
-        extra_rule=POLICY_RULE if policy else LIVE_RULE,
-        reply_shape="your message" if policy else "one or two sentences",
+        extra_rule=LIVE_RULE,
+        reply_shape="one or two sentences",
     )
 
 
@@ -123,15 +111,15 @@ def judge(raw):
             "switched": data.get("switched") is True, "done": data.get("done") is True}
 
 
-def ask(opening, thread, timeout=None, facts=None, policy=None, behavior=None, first_goal=None):
-    """One customer message. No temperature. Opening, facts, optional policy/behavior are private context."""
+def ask(opening, thread, timeout=None, facts=None, behavior=None, first_goal=None):
+    """One customer message. No temperature. Opening, facts and behavior are private context."""
     model = os.environ.get("CUSTOMER_MODEL") or os.environ.get("BOT_MODEL") or "openai/gpt-5.6-sol"
     import litellm
     try:
         response = litellm.completion(
             model=model,
             messages=[
-                {"role": "system", "content": prompt(opening, facts or [], policy, behavior=behavior, first_goal=first_goal)},
+                {"role": "system", "content": prompt(opening, facts or [], behavior=behavior, first_goal=first_goal)},
                 {"role": "user", "content": thread},
             ],
             **({"timeout": max(1, int(timeout))} if timeout else {}),
@@ -157,13 +145,6 @@ def self_check():
     text = prompt("My flight was cancelled.", ["The booking is SK1234."])
     assert "My flight was cancelled." in text and "SK1234" in text
     assert "How you write and behave" not in text
-    replay = prompt(
-        "My flight was cancelled.",
-        ["The booking is SK1234."],
-        "Company policy that applies to this ticket: Refund the unused fare.",
-    )
-    assert "Refund the unused fare." in replay
-    assert "word for word" in replay
     for behavior, word in (("frustration", "frustrated"), ("person_request", "manager"), ("self_correction", "wrong"),
                            ("exception_request", "skip"), ("on_request", "as little"), ("urgency_mismatch", "tone")):
         text = prompt("My flight was cancelled.", ["The booking is SK1234."], behavior=behavior)

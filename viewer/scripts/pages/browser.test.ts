@@ -52,7 +52,8 @@ for (const base of ["/", "/Context2Agent-Benchmark/"]) {
       await expect(page).toHaveURL(/f=other.py/);
       // Stage changes preserve other query filters inside the router hash.
       await page.goto(`${server.pagesUrl}#/runs/${runKey}/research/acquisition?stage=0&pick=none`);
-      await page.locator("#stage-select").selectOption("1");
+      await page.locator("#stage-select").click();
+      await page.locator('[data-slot="dropdown-menu-radio-item"][data-value="1"]').click();
       await expect(page).toHaveURL(/stage=1&pick=none/);
       // A blog → landing section link must not clobber the HashRouter route.
       await page.goto(`${server.pagesUrl}#/blog`);

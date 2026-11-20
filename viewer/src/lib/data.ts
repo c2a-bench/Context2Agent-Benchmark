@@ -2,10 +2,11 @@ import type { BuildEvent, BuildsData, CasesData, CodeData, Doc, DocsData, Meta, 
 import type { JobSummary, PublishedIndex, TaskSummary } from "./data-types";
 import { parseRunKey } from "./data-types";
 import { track } from "./loading";
-import { canonicalDomain, createDatasetLoader, type DatasetRelease } from "./dataset-v2";
+import { publicAsset } from "./assets";
+import { createDatasetLoader, type DatasetRelease } from "./dataset-v2";
 
 export type { JobSummary, TaskSummary, PublishedIndex } from "./data-types";
-export { runKey, parseRunKey, DEFAULT_TASK, OLD_NAMES, JOB_FILES } from "./data-types";
+export { runKey, parseRunKey, DEFAULT_TASK, JOB_FILES } from "./data-types";
 
 /** Published mode reads a public, commit-pinned Hugging Face dataset; local dev reads jobs via /api. */
 export function isPublishedMode() {
@@ -16,10 +17,14 @@ export function isPublishedMode() {
 }
 
 let dataset: ReturnType<typeof createDatasetLoader> | null = null;
+function publishedConfig() {
+  const config = JSON.parse(import.meta.env.VITE_DATA_RELEASE || "null") as { release: DatasetRelease; urls: { benchmark: string; runs: string } } | null;
+  if (!config || config.release.schemaVersion !== 2) throw new Error("The two-repository dataset release is not configured");
+  return config;
+}
 function publishedDataset() {
   if (!dataset) {
-    const config = JSON.parse(import.meta.env.VITE_DATA_RELEASE || "null") as { release: DatasetRelease; urls: { benchmark: string; runs: string } } | null;
-    if (!config || config.release.schemaVersion !== 2) throw new Error("The two-repository dataset release is not configured");
+    const config = publishedConfig();
     const url = (side: "benchmark" | "runs", file: string) => `${config.urls[side]}/${file}`;
     dataset = createDatasetLoader({ release: config.release,
       read: <T>(side: "benchmark" | "runs", file: string) => {
@@ -89,8 +94,22 @@ const CATALOG_TTL_MS = 60_000;
 type Settled<T> = Promise<T> & { status?: string; value?: T };
 let catalog: { at: number; promise: Settled<PublishedIndex>; refreshing: boolean } | null = null;
 
+/** The landing data committed with the site (scripts/build-landing.ts): the catalog and each run's scores in one small
+ *  file, so the landing page needs no Hugging Face request. Used only when it is for the pinned runs commit. */
+type Landing = { runsRevision: string; benchmarkRevision: string; index: PublishedIndex; metas: Record<string, unknown> };
+let landing: Promise<Landing | null> | null = null;
+function committedLanding(): Promise<Landing | null> {
+  return (landing ??= fetch(publicAsset("landing.json"))
+    .then((res) => (res.ok ? (res.json() as Promise<Landing>) : null))
+    .then((l) => (l && l.runsRevision === publishedConfig().release.runs.revision && l.benchmarkRevision === publishedConfig().release.benchmark.revision ? l : null))
+    .catch(() => { landing = null; return null; })); // a failed load is retried next time; a stale file is not refetched
+}
+/** A run's scores for the landing graphs: from the committed file, else the run's meta.json on Hugging Face. */
+export const getLandingMeta = (key: string) =>
+  isPublishedMode() ? committedLanding().then((l) => (l?.metas[key] as Meta | undefined) ?? getMeta(key)) : getMeta(key);
+
 function fetchIndex(): Promise<PublishedIndex> {
-  if (isPublishedMode()) return track(publishedDataset().index());
+  if (isPublishedMode()) return track(committedLanding().then((l) => l?.index ?? publishedDataset().index()));
   const url = "/api/index.json";
   return track(
     fetch(url, { cache: isPublishedMode() ? "default" : "no-cache" }).then((res) => {
@@ -154,14 +173,14 @@ export const listTasks = (): Promise<TaskSummary[]> =>
  *  time and sorts first ("…-relabel" > "…"), so it stands for that run. */
 export const listJobs = (task: string): Promise<JobSummary[]> =>
   fromIndex(`jobs:${task}`, (index) =>
-    [...(index.tasks.find((t) => t.id === (isPublishedMode() ? canonicalDomain(task) : task))?.jobs ?? [])].sort(
+    [...(index.tasks.find((t) => t.id === task)?.jobs ?? [])].sort(
       (a, b) => (b.started ?? "").localeCompare(a.started ?? "") || b.id.localeCompare(a.id),
     ));
 
 /** Published URLs already contain the immutable HF commit. No moving branch or cache-busting query is needed. */
 function runFile<T>(key: string, file: string): Promise<T> {
   const parsed = parseRunKey(key), job = parsed.job;
-  const task = isPublishedMode() ? canonicalDomain(parsed.task) : parsed.task;
+  const task = parsed.task;
   if (!isPublishedMode()) return remoteJson<T>(`${task}/${job}/${file}`);
   const loader = publishedDataset();
   const read = (): Promise<unknown> => {

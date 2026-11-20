@@ -43,7 +43,7 @@ export function ArchPicker({ runs }: { runs: JobSummary[] }) {
   };
   return (
     <>
-      <button ref={button} type="button" onClick={toggle} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+      <button ref={button} type="button" onClick={toggle} className="inline-flex items-center gap-1 text-sm font-medium text-foreground underline decoration-border underline-offset-4 hover:decoration-current">
         Choose architecture ({runs.length}) <ChevronDown className={cn("size-3.5", at && "rotate-180")} />
       </button>
       {at &&

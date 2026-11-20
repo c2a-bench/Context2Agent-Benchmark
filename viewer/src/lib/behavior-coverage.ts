@@ -83,7 +83,7 @@ export const CATEGORY_ORDER = [
 
 /** Per-ticket format: one customer behavior subcategory per ticket (scripts/behavior/types.json). */
 export const BEHAVIORS: Record<string, { label: string; family: string }> = {
-  baseline: { label: "Baseline", family: "Baseline" },
+  baseline: { label: "Plain customer", family: "Baseline" },
   on_request: { label: "On request", family: "Information exchange" },
   incremental: { label: "Incremental", family: "Information exchange" },
   underspecified: { label: "Underspecified", family: "Ambiguity" },
@@ -100,6 +100,11 @@ export const BEHAVIORS: Record<string, { label: string; family: string }> = {
 };
 
 export const BEHAVIOR_ORDER = Object.keys(BEHAVIORS);
+
+/** How a group is shown: the plain customer's group is "Baseline" in the data (the grader's by_family keys). */
+export function familyLabel(f: string): string {
+  return f === "Baseline" ? "Plain customer" : f;
+}
 
 export const FAMILY_ORDER = [...new Set(Object.values(BEHAVIORS).map((b) => b.family))];
 

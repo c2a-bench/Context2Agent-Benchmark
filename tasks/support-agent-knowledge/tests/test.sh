@@ -15,10 +15,6 @@ chmod -R a+rwX /app/bot
 # Fixed S across all knowledge conditions: always the shared stage-0 suite.
 cases_dir=/tests
 status=0
-replay_args=()
-if [ "${REPLAY:-1}" != "1" ]; then
-  replay_args=(--no-replay)
-fi
 python3 /tests/verify.py run --cases "$cases_dir/cases.json" --seed /tests/seed --rules "$cases_dir/rules.json" \
-  --workers "${VERIFIER_WORKERS:-$(nproc)}" "${replay_args[@]}" || status=$?
+  --workers "${VERIFIER_WORKERS:-$(nproc)}" || status=$?
 exit "$status"

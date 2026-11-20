@@ -6,8 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { NotFound } from "@/pages/not-found";
 import { TopLoader } from "@/components/top-loader";
 import { SectionScroll } from "@/components/section-scroll";
-import { canonicalDomain } from "@/lib/dataset-v2";
-import { parseRunKey } from "@/lib/data-types";
 import "@fontsource-variable/newsreader";
 import "./fonts.css";
 import "./globals.css";
@@ -31,26 +29,14 @@ function PageTips() {
   return <TipRoot key={useLocation().key} />;
 }
 
-function CanonicalJobLayout() {
-  const { job = "" } = useParams(), location = useLocation();
-  const parsed = parseRunKey(job), canonical = `${canonicalDomain(parsed.task)}.${parsed.job}`;
-  if (job !== canonical) return <Navigate to={`${location.pathname.replace(/^\/runs\/[^/]+/, `/runs/${canonical}`)}${location.search}${location.hash}`} replace />;
-  return <JobLayout />;
-}
-function CanonicalTaskRuns() {
-  const { task = "" } = useParams(), location = useLocation();
-  const canonical = canonicalDomain(task);
-  return canonical === task ? <TaskRuns /> : <Navigate to={`/t/${canonical}${location.search}${location.hash}`} replace />;
-}
-
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/blog" element={<Blog />} />
       <Route path="/blog/:slug" element={<Navigate to="/blog" replace />} />
-      <Route path="/t/:task" element={<CanonicalTaskRuns />} />
-      <Route path="/runs/:job" element={<CanonicalJobLayout />}>
+      <Route path="/t/:task" element={<TaskRuns />} />
+      <Route path="/runs/:job" element={<JobLayout />}>
         <Route index element={<ToResearch />} />
         <Route path="overview" element={<ToResearch />} />
         {["acquisition", "architecture", "behavior", "evolution"].map((p) => (

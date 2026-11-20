@@ -2,14 +2,7 @@
 
 export const DEFAULT_TASK = "redwood-inference";
 
-/** Task folders were renamed; old run links still open. */
-export const OLD_NAMES: Record<string, string> = {
-  "support-agent-customer": "redwood-inference",
-  "support-agent-sourcegraph": "sourcegraph",
-  "support-agent-beacon-observability": "meridian-telemetry",
-};
-
-/** A run is addressed as "<task>.<job>" (for example sourcegraph.2026-10-05__10-20-04).
+/** A run is addressed as "<task>.<job>" (for example skyway-air.2026-11-14__07-45-58).
  *  A bare job id means the default task, so older links keep working. */
 export function runKey(task: string, job: string) {
   return `${task}.${job}`;
@@ -19,7 +12,7 @@ export function parseRunKey(key: string): { task: string; job: string } {
   if (!/^[\w.-]+$/.test(key)) throw new Error(`bad run ${key}`);
   const dot = key.indexOf(".");
   const named = dot > 0 ? key.slice(0, dot) : DEFAULT_TASK;
-  const task = OLD_NAMES[named] ?? named;
+  const task = named;
   const job = dot > 0 ? key.slice(dot + 1) : key;
   return { task, job };
 }
@@ -52,7 +45,7 @@ export type JobSummary = {
   buildMinutes?: number[];
   /** The builder's thinking setting from its logs: Codex reasoning_effort ("default" when unset), Claude Code effort. */
   thinking?: string | null;
-  /** skyway-arch: the architecture the run was given (the name of its file in tasks/skyway-arch/architectures). */
+  /** Skyway: the architecture the run was given (the name of its file in tasks/skyway-air/architectures). */
   architecture?: string | null;
   /** Published runs: when the run was last uploaded (its files' version in their addresses). */
   publishedAt?: string;
@@ -82,7 +75,7 @@ export type JobSummary = {
   }[];
 };
 
-/** Catalog stored at <prefix>/index.json on Blob. */
+/** The run catalog: each task and its runs. */
 export type PublishedIndex = {
   updatedAt: string;
   prefix: string;

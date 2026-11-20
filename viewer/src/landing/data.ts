@@ -2,15 +2,13 @@
  * Data for the landing page: the latest finished run of every builder model on the current ticket version,
  * plus the per-run meta.json of the Redwood runs (ticket types, failure groups, rule recall, architecture,
  * latency and tokens are not in the catalog).
- * ponytail: 8 meta.json fetches (~140 KB each) on page load; move the few fields into index.json at publish time
- * when the builder count grows.
  */
 import { olderThan } from "@/lib/leaderboard";
-import { getMeta, listJobs, listTasks, type JobSummary } from "@/lib/data";
+import { getLandingMeta, listJobs, listTasks, type JobSummary } from "@/lib/data";
 
 export const ENV = { redwood: "redwood-inference", packs: "support-agent-knowledge", skyway: "skyway-air", skywayArch: "skyway-air" } as const;
 
-/** Skyway with the architecture fixed per run: tasks/skyway-arch/architectures/<id>.md, by its heading. */
+/** Skyway with the architecture fixed per run: tasks/skyway-air/architectures/<id>.md, by its heading. */
 export const SKYWAY_ARCH: Record<string, string> = {
   "graph-query": "Knowledge graph + graph queries",
   "prompt-workflows": "Prompts and workflows, no retrieval",
@@ -110,7 +108,7 @@ export type MetaStage = {
   latency?: { ticket?: { median?: number | null } | null } | null;
   cost?: { bot?: { in?: number | null; usd?: number | null } | null } | null;
 };
-/** Failed tickets by who was to blame (lib/failure-types.ts failureSummary). publish-run adds it to meta.json; absent on runs published before it. */
+/** Failed tickets by who was to blame (lib/failure-types.ts failureSummary). The runs dataset has it on every run. */
 export type FailureSummary = { failed: number; total: number; parties: Record<string, number>; groups: Record<string, number> };
 type LooseMeta = { scores: Record<string, MetaStage>; failure_summary?: FailureSummary };
 
@@ -121,7 +119,7 @@ export function loadMetas(keys: string[]) {
   let p = metaCache.get(id);
   if (!p) {
     // Start the fetches after render: getMeta reports to the top loader, which must not update while Home renders.
-    p = Promise.resolve().then(() => Promise.all(keys.map((k) => getMeta(k) as unknown as Promise<LooseMeta>)));
+    p = Promise.resolve().then(() => Promise.all(keys.map((k) => getLandingMeta(k) as unknown as Promise<LooseMeta>)));
     metaCache.set(id, p);
   }
   return p;

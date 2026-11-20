@@ -1,7 +1,7 @@
 """Count tokens the same way the report does (characters / 4) and refuse an oversized bot call.
 
 Used only when BOT_PROMPT_CAP_TOKENS is set on the bot process. The customer
-model never sees this. Replay does not set the env.
+model never sees this.
 """
 
 import json

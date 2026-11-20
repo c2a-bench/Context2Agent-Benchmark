@@ -273,7 +273,6 @@ def source_split(summary):
     return ", ".join(f"{round(100 * summary[k] / total)}% {names[k]}" for k in ("model", "code", "text") if summary[k])
 
 
-
 # ---------- labels a rule assigns ----------
 
 # A ticket must carry exactly the rule-assigned labels its case expects: an extra one is a
@@ -535,16 +534,6 @@ def blame_record(check, rules, label, detail="", side=None):
     return {"check": check, "rules": rules, "blame": label, "detail": detail, "side": side or BLAME_SIDE[label]}
 
 
-def apply_replay(blame, replay_passed):
-    """If the bot follows the rule once it is stated plainly in the ticket, it had the rule and buried it."""
-    if replay_passed:
-        for b in blame:
-            if b["blame"] in ("misapplied rule", "chose trap doc"):
-                b["blame"] = "rule buried"
-                b["side"] = BLAME_SIDE["rule buried"]
-    return blame
-
-
 def llm_provider_down(*parts):
     """True only when the LLM provider itself did not answer. A local API connection failure stays on the bot."""
     blob = " ".join(str(part or "") for part in parts).lower()
@@ -622,17 +611,6 @@ def blame_case(case, checks, rules_by_id, calls, bot_problem, stored=None, stder
             side = BUILDER
         out.append(blame_record(check["key"], rule_ids, label, detail, side))
     return out
-
-
-def replay_note(case, checks, rules_by_id):
-    """The rule text the RQ2 replay gives the bot: verify.replay_hint wraps it, and the trace hook appends it to the
-    end of the bot's own system message on every model call."""
-    ids = []
-    for check in checks:
-        if check.get("kind") == "guessed":
-            continue  # the pack's docs do not give this rule, and the ticket must not use it (verify.pack_cases)
-        ids += [r for r in candidate_rules(case, check, rules_by_id) if r not in ids]
-    return ids, "Company policy that applies to this ticket: " + " ".join(rules_by_id[r]["rule"] for r in ids)
 
 
 # ---------- the subset of R the bot kept ----------
@@ -754,7 +732,7 @@ EMBEDDING_CALL = re.compile(r"\ba?embedding\s*\(")
 
 
 def embeddings_in_code(bot_dir):
-    """Python files under the bot that call (a)embedding(. A code check, used for the RQ3 class
+    """Python files under the bot that call (a)embedding(. A code check, used for the architecture class
     only when a run has no runtime trace to count real embedding calls."""
     out = []
     for p in sorted(Path(bot_dir).rglob("*.py")):
@@ -1011,7 +989,7 @@ def load_self_report(path):
     return value if isinstance(value, dict) else "ARCHITECTURE.json is not a JSON object"
 
 
-# ----- RQ2 knowledge acquisition vs runtime realization (quantitative) -----
+# ----- knowledge acquisition vs runtime realization (quantitative) -----
 ACQUISITION_BLAMES = frozenset({
     "not kept", "not retrieved", "retrieval", "no tools",
 })
@@ -1025,22 +1003,8 @@ BLAME_BUCKETS = (("acquisition", ACQUISITION_BLAMES), ("runtime", RUNTIME_BLAMES
                  ("bot_failure", BOT_FAILURE_BLAMES), ("harness", HARNESS_BLAMES))
 
 
-def replay_class(r):
-    """What a replay (the rule stated plainly in the ticket) says about one failed ticket.
-    Passed and the rule had not reached the model: the bot lacked the knowledge (acquisition).
-    Passed although the rule (or a trap doc) had reached the model: fixed when told (runtime).
-    Failed even with the rule given: it cannot apply the rule (runtime)."""
-    labels = {b.get("blame") for b in r.get("blame") or [] if isinstance(b, dict)}
-    if not r["replay"].get("passed"):
-        return "runtime_realization_failure", "cannot apply"
-    # Over the prompt cap the model call was refused, so the rule never reached the model either.
-    if labels & (ACQUISITION_BLAMES | {"context overflow"}):
-        return "knowledge_acquisition_failure", "lacked the rule"
-    return "runtime_realization_failure", "fixed when told"
-
-
 def knowledge_application_summary(results, subset=None):
-    """Explicit-context replay separates acquisition vs runtime realization failures."""
+    """Failed tickets' blame records, counted by label, side and bucket."""
     def _count_map(items):
         out = {}
         for x in items:
@@ -1050,9 +1014,6 @@ def knowledge_application_summary(results, subset=None):
         return out
 
     failed = [r for r in results if isinstance(r, dict) and not r.get("passed")]
-    replayed = [r for r in failed if isinstance(r.get("replay"), dict)]
-    replay_passed = [r for r in replayed if r["replay"].get("passed")]
-    replay_failed = [r for r in replayed if not r["replay"].get("passed")]
 
     blame_labels, sides = [], []
     for r in failed:
@@ -1065,18 +1026,8 @@ def knowledge_application_summary(results, subset=None):
     # Figure 1 buckets: one record per failed check, over every blame record.
     buckets = {name: sum(by_blame.get(k, 0) for k in labels) for name, labels in BLAME_BUCKETS}
     blame_total = sum(by_blame.values())
-    n_rep, n_rp, n_rf = len(replayed), len(replay_passed), len(replay_failed)
-    classes = [replay_class(r) for r in replayed]
-    n_acq = sum(c == "knowledge_acquisition_failure" for c, _ in classes)
     out = {
         "failed": len(failed),
-        "replayed": n_rep,
-        "replay_passed": n_rp,
-        "replay_failed": n_rf,
-        "Qapplication": (n_rp / n_rep) if n_rep else None,
-        "frac_knowledge_acquisition_failure": (n_acq / n_rep) if n_rep else None,
-        "frac_runtime_realization_failure": ((n_rep - n_acq) / n_rep) if n_rep else None,
-        "replay_reasons": _count_map(reason for _, reason in classes),
         "by_blame": by_blame,
         "by_side": by_side,
         "blame_records": blame_total,
@@ -1088,20 +1039,6 @@ def knowledge_application_summary(results, subset=None):
         "frac_blame_runtime": (buckets["runtime"] / blame_total) if blame_total else None,
         "frac_blame_bot_failure": (buckets["bot_failure"] / blame_total) if blame_total else None,
         "frac_blame_harness": (buckets["harness"] / blame_total) if blame_total else None,
-        "tickets": [
-            {
-                "id": r.get("id"),
-                "replay_passed": bool(r["replay"].get("passed")),
-                "rules": r["replay"].get("rules") or [],
-                "class": cls,
-                "reason": reason,
-                "blame": sorted({
-                    b.get("blame") for b in (r.get("blame") or [])
-                    if isinstance(b, dict) and b.get("blame")
-                }),
-            }
-            for r, (cls, reason) in zip(replayed, classes)
-        ],
     }
     if subset and isinstance(subset, dict):
         rules = int(subset.get("rules") or 0)

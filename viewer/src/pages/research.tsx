@@ -195,9 +195,9 @@ export function useRunSummary() {
       <>
       {complete?.qk != null && kCond.length > 1 && (
         <ChartCard
-          title="Score drop vs. complete docs, by knowledge condition"
+          title="How much each packaging costs"
           how={`Score = tickets passed ÷ tickets for the agent built from one pack; every pack is graded on the same ${complete.total} tickets. Drop = complete-docs score − this pack's score, so a dot right of zero is a pack that scored below the complete one.`}
-          subtitle={`Drop = complete-docs score − this pack's score on the same tickets; right of zero = worse than the complete pack (complete docs ${complete.qk.toFixed(2)}, ${complete.passed}/${complete.total}). One build per pack, so one ticket moves a score by ${(1 / (complete.total || 1)).toFixed(3)}.`}
+          subtitle={`How much lower each packaging scored than the complete docs (${complete.qk.toFixed(2)}, ${complete.passed}/${complete.total}) on the same tickets. Right of zero = worse. One ticket moves a score by ${(1 / (complete.total || 1)).toFixed(3)}.`}
           table={
             <table className="w-full text-sm">
               <thead className="border-b text-left text-xs text-muted-foreground">
@@ -333,7 +333,7 @@ export function useRunSummary() {
         <ChartCard
           title={`Time per step · whole run ${fmtMin(timing.total_min)} min`}
           how="From Harbor's result.json: build = the step's agent_execution (start to finish), grade = its verifier run. The whole run is the trial's start to finish, so it also holds setup and the gaps between steps."
-          subtitle={`Build = the builder agent working on the agent; grade = the agent answering every ticket with the customer model, then grading and replays. Setup (installing the builder) ${fmtMin(timing.setup_min)} min; the whole run also includes the short gaps between steps. From Harbor's result.json.`}
+          subtitle={`Build = the builder agent working on the agent; grade = the agent answering every ticket with the customer model, then grading. Setup (installing the builder) ${fmtMin(timing.setup_min)} min; the whole run also includes the short gaps between steps. From Harbor's result.json.`}
           table={
             <table className="w-full text-sm">
               <thead className="border-b text-left text-xs text-muted-foreground">
@@ -477,7 +477,7 @@ export default function OverviewPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
-      <h1 className="text-xl font-semibold tracking-tight">Overview</h1>
+      <h1 className="font-heading text-3xl font-normal tracking-tight">Overview</h1>
       <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
         The whole run, every stage added up. Each card says what is counted.
       </p>
@@ -578,26 +578,21 @@ export default function OverviewPage() {
         </Card>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Link href={`/runs/${job}/tickets`} className="group flex items-center justify-between gap-6 rounded-xl border bg-card px-6 py-8 hover:border-foreground/30 sm:px-8 sm:py-10">
-          <div>
-            <div className="font-sans text-2xl font-semibold tracking-tight group-hover:underline">See Trajectories</div>
-            <p className="mt-2 max-w-xl font-sans text-sm leading-relaxed text-muted-foreground">
-              Read any of the {allAnswerable} tickets: the full conversation and what the agent did, or how the grader defines the ticket
-              (customer facts, rules, pass criteria).
-            </p>
-          </div>
-          <ArrowRight className="size-6 shrink-0 text-muted-foreground group-hover:text-foreground" />
-        </Link>
-        <Link href={`/runs/${job}/research/architecture`} className="group flex items-center justify-between gap-6 rounded-xl border bg-card px-6 py-8 hover:border-foreground/30 sm:px-8 sm:py-10">
-          <div>
-            <div className="font-sans text-2xl font-semibold tracking-tight group-hover:underline">See Agent design</div>
-            <p className="mt-2 max-w-xl font-sans text-sm leading-relaxed text-muted-foreground">
-              How the agent the builder made gets its knowledge, how fast it replies, and the code it wrote, stage by stage.
-            </p>
-          </div>
-          <ArrowRight className="size-6 shrink-0 text-muted-foreground group-hover:text-foreground" />
-        </Link>
+      {/* where to go next: the tickets, the agent, how it was built */}
+      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        {[
+          { href: `/runs/${job}/tickets`, title: "See Trajectories", text: `Read any of the ${allAnswerable} tickets: the full conversation and what the agent did, or how the grader defines the ticket.` },
+          { href: `/runs/${job}/research/architecture`, title: "See Agent design", text: "How the agent gets its knowledge, how fast it replies, and the code it wrote, stage by stage." },
+          { href: `/runs/${job}/build`, title: "See build logs", text: "How the builder made the agent at each stage: its commands, its messages and what each build cost." },
+        ].map((c) => (
+          <Link key={c.href} href={c.href} className="group flex items-center justify-between gap-4 rounded-xl border bg-card px-6 py-7 hover:border-foreground/30">
+            <div>
+              <div className="font-sans text-xl font-semibold tracking-tight group-hover:underline">{c.title}</div>
+              <p className="mt-2 font-sans text-sm leading-relaxed text-muted-foreground">{c.text}</p>
+            </div>
+            <ArrowRight className="size-5 shrink-0 text-muted-foreground group-hover:text-foreground" />
+          </Link>
+        ))}
       </div>
     </div>
   );

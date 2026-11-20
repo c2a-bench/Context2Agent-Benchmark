@@ -3,7 +3,6 @@
 The opening and the fact list are a private note. The builder never sees them.
 The customer says the opening first. It uses the list only when support asks.
 It hears only what the bot puts in `reply`; nothing it says is written to the ticket.
-Replay does not use this customer; the verifier puts the rule in the stdin JSON.
 It does not see the company docs or the right answer. If the call fails, the
 ticket is left out of the score.
 
@@ -27,7 +26,7 @@ Opening:
 
 Facts you may use if support asks:
 {facts}
-{policy_block}
+
 If support asks for something not in the opening or the facts, say you don't know.
 You see only what support writes to you. "Support did not reply." means support sent you nothing since your last message.
 {behavior_block}
@@ -35,15 +34,6 @@ You see only what support writes to you. "Support did not reply." means support 
 Reply with only a JSON object: {{"reply": "{reply_shape}"}}"""
 
 LIVE_RULE = "Do not mention priority codes, team names, or ticket labels. Do not guess how the company should file the ticket."
-
-POLICY_BLOCK = """
-Company policy you must send to support, word for word:
-{policy}
-"""
-
-POLICY_RULE = """When asked to send the company policy, send that policy text word for word and nothing else.
-After you have sent it, you may repeat it if support asks. Do not invent a different policy.
-"""
 
 # Persona overlays for the user-behavior stage. Empty string = default customer.
 BEHAVIOR_RULES = {
@@ -85,16 +75,14 @@ def behavior_block(behavior):
     return f"How you write and behave:\n{rule}\n" if rule else ""
 
 
-def prompt(opening, facts, policy=None, behavior=None):
+def prompt(opening, facts, behavior=None):
     lines = [f"- {line}" for line in facts if str(line).strip()]
-    policy = (policy or "").strip()
     return SYSTEM.format(
         opening=opening.strip(),
         facts="\n".join(lines) if lines else "- You have nothing else to add.",
-        policy_block=POLICY_BLOCK.format(policy=policy) if policy else "",
         behavior_block=behavior_block(behavior),
-        extra_rule=POLICY_RULE if policy else LIVE_RULE,
-        reply_shape="your message" if policy else "one or two sentences",
+        extra_rule=LIVE_RULE,
+        reply_shape="one or two sentences",
     )
 
 
@@ -116,15 +104,15 @@ def judge(raw):
     return {"reply": " ".join(reply.split())}
 
 
-def ask(opening, thread, timeout=None, facts=None, policy=None, behavior=None):
-    """One customer message. No temperature. Opening, facts, optional policy/behavior are private context."""
+def ask(opening, thread, timeout=None, facts=None, behavior=None):
+    """One customer message. No temperature. Opening, facts and behavior are private context."""
     model = os.environ.get("CUSTOMER_MODEL") or os.environ.get("BOT_MODEL") or "openai/gpt-5.6-sol"
     import litellm
     try:
         response = litellm.completion(
             model=model,
             messages=[
-                {"role": "system", "content": prompt(opening, facts or [], policy, behavior=behavior)},
+                {"role": "system", "content": prompt(opening, facts or [], behavior=behavior)},
                 {"role": "user", "content": thread},
             ],
             **({"timeout": max(1, int(timeout))} if timeout else {}),
@@ -146,13 +134,6 @@ def self_check():
     text = prompt("Our service is slower than normal.", ["The pool is in us-east."])
     assert "Our service is slower than normal." in text and "us-east" in text
     assert "How you write and behave" not in text
-    replay = prompt(
-        "Our service is slower than normal.",
-        ["The pool is in us-east."],
-        "Company policy that applies to this ticket: Set priority P1.",
-    )
-    assert "Set priority P1." in replay
-    assert "word for word" in replay
     escalate = prompt(
         "Our service is slower than normal.",
         ["The pool is in us-east."],
