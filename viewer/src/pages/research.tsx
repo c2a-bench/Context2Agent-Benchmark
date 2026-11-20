@@ -195,9 +195,9 @@ export function useRunSummary() {
       <>
       {complete?.qk != null && kCond.length > 1 && (
         <ChartCard
-          title="Score drop vs. complete docs, by knowledge condition"
+          title="How much each packaging costs"
           how={`Score = tickets passed ÷ tickets for the agent built from one pack; every pack is graded on the same ${complete.total} tickets. Drop = complete-docs score − this pack's score, so a dot right of zero is a pack that scored below the complete one.`}
-          subtitle={`Drop = complete-docs score − this pack's score on the same tickets; right of zero = worse than the complete pack (complete docs ${complete.qk.toFixed(2)}, ${complete.passed}/${complete.total}). One build per pack, so one ticket moves a score by ${(1 / (complete.total || 1)).toFixed(3)}.`}
+          subtitle={`How much lower each packaging scored than the complete docs (${complete.qk.toFixed(2)}, ${complete.passed}/${complete.total}) on the same tickets. Right of zero = worse. One ticket moves a score by ${(1 / (complete.total || 1)).toFixed(3)}.`}
           table={
             <table className="w-full text-sm">
               <thead className="border-b text-left text-xs text-muted-foreground">
