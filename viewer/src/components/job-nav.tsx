@@ -88,12 +88,10 @@ export function BackBar({ job }: { job: string }) {
   const stage = search.get("stage");
   const back = `/runs/${job}/research/${parent}${stage ? `?stage=${stage}` : ""}`;
   return (
-    <div className="border-b bg-muted/30">
-      <div className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-1.5 font-sans text-xs">
-        <Link href={back} className="link-text">← {tab.label}</Link>
-        <span className="text-muted-foreground">/</span>
-        <span className="font-medium">{title}</span>
-      </div>
+    <div className="flex items-center gap-3 border-b bg-muted/30 px-6 py-1.5 font-sans text-xs">
+      <Link href={back} className="link-text">← {tab.label}</Link>
+      <span className="text-muted-foreground">/</span>
+      <span className="font-medium">{title}</span>
     </div>
   );
 }

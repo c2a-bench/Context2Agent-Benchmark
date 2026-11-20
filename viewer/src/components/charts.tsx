@@ -462,8 +462,13 @@ export function StageColumns({ columns, inkFirst = true, yMax = 1, onPick, picke
             return (
               <div key={c.key} className="flex w-full min-w-0 max-w-20 flex-col items-center">
                 <div className="flex flex-col justify-end whitespace-nowrap text-center font-sans text-[10.5px] tabular-nums text-muted-foreground" style={{ height: head }}>
-                  {c.sub && <span className="text-[11px] font-medium text-foreground">{c.sub}</span>}
-                  <span>{c.top}</span>
+                  {/* a phone shows only the first word ("61%"): the full lines would run into the next column */}
+                  {c.sub && (
+                    <span className="text-[11px] font-medium text-foreground">
+                      {c.sub.split(" ")[0]}<span className="max-sm:hidden"> {c.sub.split(" ").slice(1).join(" ")}</span>
+                    </span>
+                  )}
+                  <span className="max-sm:hidden">{c.top}</span>
                 </div>
                 <div className="flex w-full items-end" style={{ height: COLUMN_H }}>
                   <div className="flex w-full flex-col-reverse gap-[2px]" style={{ height: stack }}>

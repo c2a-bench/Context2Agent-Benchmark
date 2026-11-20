@@ -333,7 +333,7 @@ export function useRunSummary() {
         <ChartCard
           title={`Time per step · whole run ${fmtMin(timing.total_min)} min`}
           how="From Harbor's result.json: build = the step's agent_execution (start to finish), grade = its verifier run. The whole run is the trial's start to finish, so it also holds setup and the gaps between steps."
-          subtitle={`Build = the builder agent working on the agent; grade = the agent answering every ticket with the customer model, then grading and replays. Setup (installing the builder) ${fmtMin(timing.setup_min)} min; the whole run also includes the short gaps between steps. From Harbor's result.json.`}
+          subtitle={`Build = the builder agent working on the agent; grade = the agent answering every ticket with the customer model, then grading. Setup (installing the builder) ${fmtMin(timing.setup_min)} min; the whole run also includes the short gaps between steps. From Harbor's result.json.`}
           table={
             <table className="w-full text-sm">
               <thead className="border-b text-left text-xs text-muted-foreground">
