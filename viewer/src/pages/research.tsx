@@ -578,26 +578,21 @@ export default function OverviewPage() {
         </Card>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Link href={`/runs/${job}/tickets`} className="group flex items-center justify-between gap-6 rounded-xl border bg-card px-6 py-8 hover:border-foreground/30 sm:px-8 sm:py-10">
-          <div>
-            <div className="font-sans text-2xl font-semibold tracking-tight group-hover:underline">See Trajectories</div>
-            <p className="mt-2 max-w-xl font-sans text-sm leading-relaxed text-muted-foreground">
-              Read any of the {allAnswerable} tickets: the full conversation and what the agent did, or how the grader defines the ticket
-              (customer facts, rules, pass criteria).
-            </p>
-          </div>
-          <ArrowRight className="size-6 shrink-0 text-muted-foreground group-hover:text-foreground" />
-        </Link>
-        <Link href={`/runs/${job}/research/architecture`} className="group flex items-center justify-between gap-6 rounded-xl border bg-card px-6 py-8 hover:border-foreground/30 sm:px-8 sm:py-10">
-          <div>
-            <div className="font-sans text-2xl font-semibold tracking-tight group-hover:underline">See Agent design</div>
-            <p className="mt-2 max-w-xl font-sans text-sm leading-relaxed text-muted-foreground">
-              How the agent the builder made gets its knowledge, how fast it replies, and the code it wrote, stage by stage.
-            </p>
-          </div>
-          <ArrowRight className="size-6 shrink-0 text-muted-foreground group-hover:text-foreground" />
-        </Link>
+      {/* where to go next: the tickets, the agent, how it was built */}
+      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        {[
+          { href: `/runs/${job}/tickets`, title: "See Trajectories", text: `Read any of the ${allAnswerable} tickets: the full conversation and what the agent did, or how the grader defines the ticket.` },
+          { href: `/runs/${job}/research/architecture`, title: "See Agent design", text: "How the agent gets its knowledge, how fast it replies, and the code it wrote, stage by stage." },
+          { href: `/runs/${job}/build`, title: "See build logs", text: "How the builder made the agent at each stage: its commands, its messages and what each build cost." },
+        ].map((c) => (
+          <Link key={c.href} href={c.href} className="group flex items-center justify-between gap-4 rounded-xl border bg-card px-6 py-7 hover:border-foreground/30">
+            <div>
+              <div className="font-sans text-xl font-semibold tracking-tight group-hover:underline">{c.title}</div>
+              <p className="mt-2 font-sans text-sm leading-relaxed text-muted-foreground">{c.text}</p>
+            </div>
+            <ArrowRight className="size-5 shrink-0 text-muted-foreground group-hover:text-foreground" />
+          </Link>
+        ))}
       </div>
     </div>
   );

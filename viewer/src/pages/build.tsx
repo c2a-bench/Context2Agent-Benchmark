@@ -25,41 +25,30 @@ export default function BuildPage() {
   const i = Math.min(Math.max(Number(q.s ?? 0) || 0, 0), builds.stages.length - 1);
   const stage = builds.stages[i];
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-stretch gap-1.5 overflow-x-auto border-b px-6 py-3">
-        {builds.stages.map((s) => {
-          return (
-            <Link key={s.index} href={`?s=${s.index}`} className={cn("min-w-40 rounded-lg border px-3 py-1.5 text-xs transition-colors hover:bg-muted", s.index === i && "border-foreground bg-muted")}>
-              <div className="flex items-center gap-1.5 font-medium">
-                {label(s)} build
-              </div>
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto grid max-w-5xl gap-6 px-6 py-8 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
+        {/* the stages: a column that stays in view on wide screens, a row to swipe on a phone */}
+        <nav aria-label="Stages" className="flex gap-1.5 overflow-x-auto lg:sticky lg:top-6 lg:flex-col lg:self-start lg:overflow-visible">
+          {builds.stages.map((s) => (
+            <Link key={s.index} href={`?s=${s.index}`} className={cn("shrink-0 rounded-lg border px-3 py-2 text-xs transition-colors hover:bg-muted lg:w-full", s.index === i && "border-foreground bg-muted")}>
+              <div className="font-medium">{label(s)} build</div>
               <div className="text-muted-foreground tabular-nums">
-                {s.format ? `${money(s.summary.cost)} · ${s.summary.commands} cmds` : "no log"}
+                {s.format ? `${money(s.summary.cost)} · ${s.summary.commands} commands` : "no log"}
               </div>
             </Link>
-          );
-        })}
+          ))}
+        </nav>
+        <div className="min-w-0">
+          <Summary job={job} stage={stage} harness={builds.harness} />
+          {stage.format ? (
+            <Suspense key={stage.index} fallback={<p className="py-8 text-sm text-muted-foreground">Loading the build log…</p>}>
+              <Timeline job={job} stage={stage} />
+            </Suspense>
+          ) : (
+            <p className="py-8 text-sm text-muted-foreground">No builder log was kept for this step.</p>
+          )}
+        </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <Summary job={job} stage={stage} harness={builds.harness} />
-        {stage.format ? (
-          <Suspense key={stage.index} fallback={<p className="px-6 py-8 text-sm text-muted-foreground">Loading the build log…</p>}>
-            <Timeline job={job} stage={stage} />
-          </Suspense>
-        ) : (
-          <p className="px-6 py-8 text-sm text-muted-foreground">No builder log was kept for this step.</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Stat({ k, v, sub }: { k: string; v: string; sub?: string }) {
-  return (
-    <div className="min-w-0 border-t pt-2">
-      <div className="text-xs text-muted-foreground">{k}</div>
-      <div className="text-lg font-medium tabular-nums">{v}</div>
-      {sub && <div className="truncate text-xs text-muted-foreground">{sub}</div>}
     </div>
   );
 }
@@ -68,35 +57,41 @@ function Summary({ job, stage, harness }: { job: string; stage: BuildStage; harn
   const s = stage.summary;
   const tok = s.tokens;
   const cached = tok?.input && tok.cached ? Math.round((100 * tok.cached) / tok.input) : null;
+  const facts = [
+    `${money(s.cost)}`,
+    s.calls != null && `${num(s.calls)} model calls`,
+    s.commands != null && `${num(s.commands)} commands${s.failed ? ` (${s.failed} failed)` : ""}`,
+    tok?.input != null && `${num(tok.input)} tokens in${cached != null ? ` (${cached}% cached)` : ""}`,
+    tok?.output != null && `${num(tok.output)} out`,
+  ].filter(Boolean);
   return (
-    <section className="border-b px-6 py-5">
+    <section>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="text-base font-semibold">{label(stage)}: how the builder built the agent</h2>
+        <h2 className="font-heading text-2xl font-normal tracking-tight">{label(stage)} build</h2>
         <span className="text-xs text-muted-foreground">{[harness, s.model, s.thinking && `${s.thinking} thinking`].filter(Boolean).join(" · ")}</span>
-        <Link href={`/runs/${job}/code?v=s${stage.step.match(/^stage(\d+)$/)?.[1] ?? stage.index}`} className="link-text ml-auto text-xs">The agent it left →</Link>
+        <Link href={`/runs/${job}/code?v=s${stage.step.match(/^stage(\d+)$/)?.[1] ?? stage.index}`} className="link-text ml-auto text-xs">The agent it left</Link>
       </div>
+      <p className="mt-2 text-sm text-muted-foreground tabular-nums">{facts.join(" · ")}</p>
       {s.error && <p className="mt-3 rounded-md border px-3 py-2 text-sm">The build stopped with {s.error}.</p>}
-      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <Stat k="Cost" v={money(s.cost)} />
-        <Stat k="Model calls" v={num(s.calls)} />
-        <Stat k="Commands" v={num(s.commands)} sub={s.failed ? `${s.failed} failed` : undefined} />
-        <Stat k="Tokens out" v={num(tok?.output)} />
-        <Stat k="Tokens in" v={num(tok?.input)} sub={cached != null ? `${cached}% cached` : undefined} />
-      </div>
-      {Object.keys(s.tools ?? {}).length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {Object.entries(s.tools ?? {}).map(([name, n]) => (
-            <span key={name} className="rounded-full bg-muted px-2 py-0.5 font-mono text-[11px]">{name} · {n}</span>
-          ))}
-        </div>
-      )}
-      {s.last && (
-        <div className="mt-4">
-          <div className="text-xs text-muted-foreground">The builder's last message</div>
-          <p className="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 px-3 py-2 text-sm">{s.last}</p>
-        </div>
-      )}
+      {s.last && <LastMessage text={s.last} />}
     </section>
+  );
+}
+
+/** The builder's closing message: three lines, with a toggle to read it all. */
+function LastMessage({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const long = text.split("\n").length > 3 || text.length > 300;
+  return (
+    <div className="mt-4 rounded-lg border bg-muted/30 px-4 py-3">
+      <div className="text-xs text-muted-foreground">The builder&apos;s last message</div>
+      <p className={cn("mt-1 whitespace-pre-wrap break-words text-sm", !open && "line-clamp-3")}>{text}</p>
+      {long && (
+        <button type="button" onClick={() => setOpen(!open)} className="mt-1 text-xs underline decoration-border underline-offset-4 hover:decoration-current">
+          {open ? "Show less" : "Show all"}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -116,8 +111,8 @@ function Timeline({ job, stage }: { job: string; stage: BuildStage }) {
   }, [events, filter, term]);
   const count = (f: Filter) => (f === "all" ? events.length : f === "failed" ? events.filter((e) => e.e).length : events.filter((e) => e.k === f).length);
   return (
-    <section className="px-6 py-4">
-      <div className="sticky top-0 z-10 -mx-6 flex flex-wrap items-center gap-2 border-b bg-background/95 px-6 py-2 backdrop-blur">
+    <section className="mt-8">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b bg-background/95 py-2 backdrop-blur">
         {FILTERS.map(([f, name]) => (
           <button key={f} type="button" onClick={() => setFilter(f)}
             className={cn("rounded-full border px-2.5 py-1 text-xs", filter === f ? "border-foreground bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}>
@@ -153,6 +148,33 @@ function FullText({ job, refId }: { job: string; refId: string }) {
   return <pre className="mt-1 max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-md border bg-muted/30 p-2 font-mono text-[12px]">{text}</pre>;
 }
 
+/** What a tool call did, in one readable line: the shell command(s), or the file it read, wrote or edited, or the
+ *  helper it used. Builders log calls in their own shapes (Codex wraps shell commands in exec_command({cmd: …});
+ *  Claude Code and pi send {command} or {file_path, content}); the raw input stays one click away. */
+type Said = { verb: string; target: string; body?: string; shell?: boolean };
+const unq = (s: string) => { try { return JSON.parse(`"${s}"`) as string; } catch { return s; } };
+function describe(e: BuildEvent): Said {
+  const name = e.n ?? "tool";
+  const raw = e.x ?? "";
+  let o: Record<string, unknown> | null = null;
+  try { const v = JSON.parse(raw); if (v && typeof v === "object") o = v as Record<string, unknown>; } catch { /* a plain string, or cut short */ }
+  const str = (k: string) => (typeof o?.[k] === "string" ? (o[k] as string) : (raw.match(new RegExp(`"${k}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)`))?.[1] && unq(raw.match(new RegExp(`"${k}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)`))![1])) || "");
+  // Codex: JavaScript that calls exec_command({cmd: "…"}) once or several times.
+  const input = str("input");
+  const cmds = [...(input || raw).matchAll(/exec_command\(\{\s*cmd\s*:\s*\\?"((?:[^"\\]|\\.)*?)\\?"\s*[,}]/g)].map((m) => unq(unq(m[1])));
+  if (cmds.length) return { verb: "$", target: cmds[0], body: cmds.join("\n"), shell: true };
+  const command = str("command") || str("cmd");
+  if (/^(bash|shell|exec|exec_command|run)$/i.test(name) || (!o && raw && /^(bash|shell)$/i.test(name))) return { verb: "$", target: (command || raw).split("\n")[0], body: command || raw, shell: true };
+  const path = str("file_path") || str("path");
+  if (/^read$/i.test(name) && path) return { verb: "Read", target: path };
+  if (/^write$/i.test(name) && path) return { verb: "Write", target: path, body: str("content") };
+  if (/^(edit|multiedit)$/i.test(name) && path) return { verb: "Edit", target: path, body: str("new_string") || str("newText") };
+  if (/^agent$/i.test(name)) return { verb: "Sub-agent", target: str("description") || "a helper agent", body: str("prompt") };
+  if (/^monitor$/i.test(name)) return { verb: "Wait", target: str("description") || command, body: command };
+  if (command) return { verb: name, target: command.split("\n")[0], body: command, shell: true };
+  return { verb: name, target: path || str("description") || str("query") || "" };
+}
+
 function Event({ job, e }: { job: string; e: BuildEvent }) {
   if (e.k === "say") {
     return (
@@ -177,28 +199,55 @@ function Event({ job, e }: { job: string; e: BuildEvent }) {
       </li>
     );
   }
+  const d = describe(e);
   const lines = (e.o ?? "").split("\n").length;
+  const more = !!d.body && d.body.trim() !== d.target.trim();
   return (
-    <li className="flex gap-3 py-3">
+    <li className="flex gap-3 py-2.5">
       {e.e ? <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" /> : <Terminal className="mt-0.5 size-4 shrink-0 text-muted-foreground" />}
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="rounded bg-muted px-1.5 py-0.5 font-mono">{e.n ?? "tool"}</span>
-          {e.d != null && <span className="text-muted-foreground tabular-nums">{e.d}s</span>}
-          {e.e && <span className="font-medium text-red-600 dark:text-red-400">failed</span>}
+        {/* one line: what it did */}
+        <div className="flex min-w-0 items-baseline gap-2">
+          <span className={cn("shrink-0 font-mono text-xs", d.shell ? "text-muted-foreground" : "rounded bg-muted px-1.5 py-0.5")}>{d.verb}</span>
+          <span className="min-w-0 truncate font-mono text-[12.5px]" title={d.target}>{d.target || "—"}</span>
+          {e.e && <span className="shrink-0 text-xs font-medium text-red-600 dark:text-red-400">failed</span>}
         </div>
-        {e.x && <pre className="mt-1.5 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-md border bg-muted/30 p-2 font-mono text-[12px]">{e.x}</pre>}
-        {e.ri && <Full job={job} refId={e.ri} what="input" />}
-        {e.o != null && (
-          <details className="mt-1.5 group">
-            <summary className="flex cursor-pointer select-none items-center gap-1 text-xs text-muted-foreground">
-              <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" /> Output · {lines} line{lines === 1 ? "" : "s"}
-            </summary>
-            <pre className="mt-1 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-md border p-2 font-mono text-[12px]">{e.o || "(no output)"}</pre>
-            {e.r && <Full job={job} refId={e.r} what="output" />}
-          </details>
-        )}
+        {/* folded: the whole command or file text, the output, the raw call */}
+        <Folds
+          job={job}
+          parts={[
+            ...(more ? [{ key: "body", label: d.shell ? `whole command · ${d.body!.split("\n").length} lines` : `content · ${d.body!.split("\n").length} lines`, text: d.body! }] : []),
+            ...(e.o != null ? [{ key: "out", label: `output · ${lines} line${lines === 1 ? "" : "s"}`, text: e.o || "(no output)", fullRef: e.r }] : []),
+          ]}
+          raw={e.ri}
+        />
       </div>
     </li>
+  );
+}
+
+/** The folded parts of a call (its whole command or file text, its output): toggles on one line, the open one below. */
+function Folds({ job, parts, raw }: { job: string; parts: { key: string; label: string; text: string; fullRef?: string }[]; raw?: string }) {
+  const [open, setOpen] = useState<string | null>(null);
+  if (!parts.length && !raw) return null;
+  const shown = parts.find((p) => p.key === open);
+  return (
+    <div className="mt-1">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {parts.map((p) => (
+          <button key={p.key} type="button" onClick={() => setOpen(open === p.key ? null : p.key)} aria-expanded={open === p.key}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+            <ChevronRight className={cn("size-3.5 transition-transform", open === p.key && "rotate-90")} /> {p.label}
+          </button>
+        ))}
+        {raw && <Full job={job} refId={raw} what="raw call" />}
+      </div>
+      {shown && (
+        <>
+          <pre className="mt-1 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-md border bg-muted/30 p-2 font-mono text-[12px]">{shown.text}</pre>
+          {shown.fullRef && <Full job={job} refId={shown.fullRef} what="output" />}
+        </>
+      )}
+    </div>
   );
 }
