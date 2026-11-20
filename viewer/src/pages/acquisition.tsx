@@ -1,10 +1,10 @@
-import { use, useState } from "react";
+import { use, useEffect, useRef } from "react";
 import { ChevronRight } from "lucide-react";
 import { useSearchParams } from "react-router";
 import { currentSearchParams, useJob } from "@/lib/route";
 import { getMeta, getTickets } from "@/lib/data";
-import { ALL, ScopeChip, StageBar, stageName, useStage } from "@/components/stage-select";
-import { TextLink } from "@/components/link";
+import { ALL, StageBar, stageName, useStage } from "@/components/stage-select";
+import Link, { TextLink } from "@/components/link";
 import { ChartCard, Defined, Legend, StageColumns, TipRow, type Segment, type StageColumn } from "@/components/charts";
 import { PARTY_COLOR, PARTY_HINT, PARTY_LABEL } from "@/lib/parties";
 import { defOf, groupDef, NONE, PARTIES, rollup, specRank, under, withGap, type Rollup } from "@/lib/failure-types";
@@ -83,7 +83,7 @@ function ByStage({ meta, per }: { meta: Meta; per: { st: number; r: Rollup; tota
   const legend: Segment[] = keys.map((k) => ({ key: k, label: k === NONE ? PARTY_LABEL.none : PARTY_LABEL[k], value: Math.round(10 * per.reduce((a, x) => a + (x.r.parties[k] ?? 0), 0)) / 10, color: colorOf(k) }));
   return (
     <ChartCard
-      className="mt-10"
+      className="mt-20"
       title="Failed tickets, by stage"
       how="Each bar is a stage. Its height is the stage's failed tickets ÷ the stage's tickets, so a taller bar means more of that stage failed. The colours say whose responsibility the failures were; a ticket blamed on two parties counts half in each."
       subtitle="A taller bar is a stage where more tickets failed. The label above each bar is the pass rate. To look at one stage, pick it in the Stage menu at the top."
@@ -127,7 +127,7 @@ function Row({ level, label, def, n, failed, color, id, picked, onPick }: RowPro
       aria-pressed={picked}
       title={`${label}: ${fmt(v)} of ${Math.round(failed)} failed tickets`}
       className={cn(
-        "grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded px-2 py-1.5 text-left font-sans outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)_auto]",
+        "grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded px-2 py-1.5 text-left font-sans outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[minmax(0,1fr)_8rem_auto]",
         picked && "bg-muted ring-1 ring-foreground/40",
         level === 0 && "mt-2 first:mt-0",
       )}
@@ -141,7 +141,6 @@ function Row({ level, label, def, n, failed, color, id, picked, onPick }: RowPro
       </span>
       <span className={cn("text-right text-xs tabular-nums max-sm:col-start-2 max-sm:row-start-1 sm:col-start-3", level === 2 ? "text-muted-foreground" : "font-medium text-foreground")}>
         {pct(n, failed)}
-        <ChevronRight className="ml-1.5 inline size-3.5 align-[-2px] text-blue-600 dark:text-blue-400" aria-hidden />
       </span>
     </button>
   );
@@ -185,10 +184,10 @@ function Breakdown({ r, pick, onPick }: { r: Rollup; pick: string | null; onPick
   );
   return (
     <ChartCard
-      className="mt-10"
+      className="mt-0"
       title="What went wrong"
       how={`Three levels: who is responsible (party), what kind of problem (group), and the specific problem (type). Each failed ticket counts once, split evenly between the parties it is blamed on and then between that party's types, so the parts add up to the ${Math.round(failed)} failed tickets. Each bar is its share of all failed tickets in this scope. Click a row to list its tickets.`}
-      subtitle="Each bar is a type's share of all failed tickets in this scope; the party and group above it show their totals. Click any row to see the tickets behind it."
+      subtitle="Click a row to see its tickets."
       table={table}
     >
       <div>
@@ -216,51 +215,59 @@ function Breakdown({ r, pick, onPick }: { r: Rollup; pick: string | null; onPick
 
 /** 4. The failed tickets behind the picked row (or all of them). */
 function TicketList({ meta, tickets, job, stage, pick, pickLabel, counted }: { meta: Meta; tickets: Ticket[]; job: string; stage: number | typeof ALL; pick: string | null; pickLabel: string; /** failed tickets the scores count here (for the picked row, or all) */ counted: number }) {
-  const [all, setAll] = useState(false);
   const rows = tickets
     .filter((t) => !t.passed)
     .map((t) => ({ t, leaves: rollup([t]).info }))
     .filter(({ leaves }) => !pick || Object.keys(leaves).some((k) => under(k, pick)));
-  const shown = all ? rows : rows.slice(0, 8);
+  const here = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (pick && window.innerWidth < 1024) here.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [pick]);
   const link = `/runs/${job}/tickets?result=failed${stage === ALL ? "" : `&stage=${stage}`}${pick ? `&pick=${encodeURIComponent(pick)}` : ""}`;
   // Failures the score counts but this publication has no ticket record for (older runs): say so instead of listing fewer.
   const unlisted = pick && pick !== NONE ? 0 : Math.round(counted) - rows.length;
   return (
-    <section className="mt-10">
+    <section ref={here} className="scroll-mt-28">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="font-sans text-base font-semibold tracking-tight">
-          {pick ? `Tickets: ${pickLabel}` : "Failed tickets"} <span className="font-normal text-muted-foreground">({rows.length})</span>
+        <h2 className="font-sans text-[15px] font-semibold tracking-tight">
+          {pick ? pickLabel : "All failed tickets"} <span className="font-normal text-muted-foreground">({rows.length})</span>
         </h2>
-        <TextLink href={link}>Open them in Trajectories</TextLink>
+        <TextLink href={link} className="font-sans text-xs">Open in Trajectories</TextLink>
       </div>
-      {!rows.length && <p className="mt-3 font-sans text-sm text-muted-foreground">No tickets here.</p>}
       {unlisted > 0 && (
         <p className="mt-3 font-sans text-xs text-muted-foreground">
           {unlisted} failed {unlisted === 1 ? "ticket" : "tickets"} counted in the scores {unlisted === 1 ? "has" : "have"} no ticket record in this publication, so {unlisted === 1 ? "it is" : "they are"} not listed.
         </p>
       )}
-      <ul className="mt-3 divide-y divide-border/60 rounded-lg border">
-        {shown.map(({ t, leaves }) => (
-          <li key={t.key} className="flex flex-col gap-1 px-3 py-2 font-sans text-sm sm:flex-row sm:items-baseline sm:gap-3">
-            <TextLink href={`/runs/${job}/tickets?stage=${t.stage}&t=${encodeURIComponent(t.id)}`}>{t.id}</TextLink>
-            {stage === ALL && <span className="self-start"><ScopeChip>{stageName(meta, t.stage)}</ScopeChip></span>}
-            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={t.title}>{t.title}</span>
-            <span className="flex flex-wrap gap-1">
-              {Object.values(leaves).map((l) => (
-                <span key={l.key} className="inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px]">
-                  <span className="size-2 rounded-sm" style={{ background: colorOf(l.party) }} />
-                  {l.type}
-                </span>
-              ))}
-            </span>
+      {/* a fixed height, so picking another row never moves the page */}
+      <ul className="mt-3 divide-y divide-border/60 overflow-y-auto rounded-lg border max-lg:max-h-[70vh] lg:h-[min(70vh,560px)]">
+        {rows.map(({ t, leaves }) => (
+          <li key={t.key}>
+            <Link href={`/runs/${job}/tickets?stage=${t.stage}&t=${encodeURIComponent(t.id)}`} className="group/t flex items-center gap-3 px-3 py-2 font-sans outline-none hover:bg-muted/60 focus-visible:bg-muted/60">
+              <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="font-mono text-[13px] font-medium">{t.id}</span>
+                {stage === ALL && <span className="text-xs text-muted-foreground">{stageName(meta, t.stage)}</span>}
+                {/* the failure types only when listing every type; under a picked type they would repeat it */}
+                {!pick && Object.values(leaves).map((l) => (
+                  <span key={l.key} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <span className="size-2 rounded-sm" style={{ background: colorOf(l.party) }} />
+                    {l.type}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-0.5 truncate text-xs text-muted-foreground" title={t.title}>{t.title}</div>
+              </div>
+              {/* opens the ticket: the conversation and what the agent did */}
+              <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground group-hover/t:text-foreground">
+                <span className="hidden group-hover/t:inline">Open</span>
+                <ChevronRight className="size-4" aria-hidden />
+              </span>
+            </Link>
           </li>
         ))}
+        {!rows.length && <li className="px-3 py-2 font-sans text-sm text-muted-foreground">No tickets here.</li>}
       </ul>
-      {rows.length > 8 && (
-        <button type="button" onClick={() => setAll(!all)} className="mt-2 font-sans text-xs text-muted-foreground hover:text-foreground">
-          {all ? "Show fewer" : `Show all ${rows.length}`}
-        </button>
-      )}
     </section>
   );
 }
@@ -295,15 +302,17 @@ function FactGradedFailureAnalysis() {
   return (
     <div>
       <div className="mx-auto max-w-5xl px-6 pt-10">
-        <h1 className="font-sans text-xl font-semibold tracking-tight">Failure analysis</h1>
+        <h1 className="font-heading text-3xl font-normal tracking-tight">Failure analysis</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Why tickets failed, and whose responsibility it was: the builder (what it built), the agent (what it did) or our test setup.</p>
       </div>
       <StageBar meta={meta} stage={stage} onChange={set} allowAll className="mt-6" note="Everything below follows this." />
       <div className="mx-auto max-w-5xl px-6 pb-12">
         <Headline r={cur} total={total} scope={label} />
         {stage === ALL && <ByStage meta={meta} per={per} />}
-        <Breakdown r={cur} pick={pick} onPick={onPick} />
-        <TicketList meta={meta} tickets={scoped} job={job} stage={stage} pick={pick} pickLabel={pickLabel} counted={pick === NONE ? cur.leaves[NONE] ?? 0 : cur.failed} />
+        <div className="mt-20 grid items-start gap-10 lg:grid-cols-2">
+          <Breakdown r={cur} pick={pick} onPick={onPick} />
+          <TicketList meta={meta} tickets={scoped} job={job} stage={stage} pick={pick} pickLabel={pickLabel} counted={pick === NONE ? cur.leaves[NONE] ?? 0 : cur.failed} />
+        </div>
       </div>
     </div>
   );

@@ -114,6 +114,17 @@ html:not(.dark) .lp { --bg: #ffffff; --surface: #ffffff; --ink: #0c1016; }
 .lp .seg button { height: 34px; padding: 0 14px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--muted); }
 .lp .seg button[aria-pressed="true"] { background: var(--bg); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
 
+/* Breadcrumb in the nav (run pages): one line, scrolls sideways on a narrow screen rather than wrapping. */
+.lp-crumbs { display: flex; flex: 1 1 auto; min-width: 0; align-items: center; gap: 8px; overflow-x: auto; white-space: nowrap;
+  font-size: 15px; font-weight: 500; scrollbar-width: none; }
+.lp-crumbs::-webkit-scrollbar { display: none; }
+.lp-nav .lp-crumbs { justify-content: safe center; } /* in the nav: centred, where the section links are on other pages */
+.lp-crumbs a { color: color-mix(in srgb, var(--ink) 60%, transparent); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; transition: color 160ms, text-decoration-color 160ms; }
+.lp-crumbs a:hover { color: var(--ink); text-decoration-color: currentColor; }
+.lp-crumbs .here { color: var(--ink); }
+.lp-crumb-sep { color: var(--line); }
+/* On a phone the nav keeps only the logo and icons (as on the main site); the run page shows its own line. */
+@media (max-width: 639px) { .lp-crumbs { font-size: 14px; gap: 6px; } .lp-nav .lp-crumbs { display: none; } }
 .lp-nav { position: fixed; inset: 0 0 auto 0; height: var(--nav); z-index: 30; background: var(--bg); border-bottom: 1px solid var(--line); }
 
 .lp .tip {

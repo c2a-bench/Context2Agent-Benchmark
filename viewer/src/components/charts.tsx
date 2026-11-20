@@ -16,12 +16,14 @@ let setPageTip: ((t: Tip) => void) | null = null;
 export function TipRoot() {
   const [tip, setTip] = useState<Tip>(null);
   const el = useRef<HTMLDivElement>(null);
-  const [top, setTop] = useState<number | null>(null);
-  // Below the pointer when it fits, else above it, so a tooltip near the window's bottom is never cut off.
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  // Below and right of the pointer when it fits; else above and/or left of it, so it is never cut off by the window.
   useLayoutEffect(() => {
-    if (!tip || !el.current) return setTop(null);
-    const h = el.current.offsetHeight;
-    setTop(tip.y + 14 + h <= window.innerHeight - 8 ? tip.y + 14 : Math.max(8, tip.y - 10 - h));
+    if (!tip || !el.current) return setPos(null);
+    const h = el.current.offsetHeight, w = el.current.offsetWidth;
+    const top = tip.y + 14 + h <= window.innerHeight - 8 ? tip.y + 14 : Math.max(8, tip.y - 10 - h);
+    const left = tip.x + 12 + w <= window.innerWidth - 8 ? tip.x + 12 : Math.max(8, tip.x - 12 - w);
+    setPos({ left, top });
   }, [tip]);
   useEffect(() => {
     setPageTip = setTip;
@@ -36,9 +38,9 @@ export function TipRoot() {
   return createPortal(
     <div
       role="tooltip"
-      className="pointer-events-none fixed z-50 min-w-40 rounded-md border bg-popover px-3 py-2 font-sans text-xs font-normal normal-case tracking-normal text-popover-foreground shadow-md"
+      className="pointer-events-none fixed z-50 max-w-80 min-w-40 rounded-md border bg-popover px-3 py-2 font-sans text-xs font-normal normal-case tracking-normal text-popover-foreground shadow-md"
       ref={el}
-      style={{ left: Math.max(8, Math.min(tip.x + 12, window.innerWidth - 320)), top: top ?? tip.y + 14, visibility: top == null ? "hidden" : "visible" }}
+      style={{ left: pos?.left ?? tip.x + 12, top: pos?.top ?? tip.y + 14, visibility: pos == null ? "hidden" : "visible" }}
     >
       {tip.body}
     </div>,
@@ -71,7 +73,7 @@ export function TipRow({ color, value, label }: { color?: string; value: ReactNo
   return (
     <div className="flex items-center gap-2">
       {color && <span className="h-0.5 w-3 shrink-0 rounded-full" style={{ background: color }} />}
-      <span className="font-semibold tabular-nums">{value}</span>
+      <span className="font-semibold whitespace-nowrap tabular-nums">{value}</span>
       <span className="text-muted-foreground">{label}</span>
     </div>
   );
@@ -98,7 +100,7 @@ export function ChartCard({
 }) {
   const [asTable, setAsTable] = useState(false);
   return (
-    <section className={cn("mt-14", scope?.stage && "-ml-4 border-l-2 border-foreground/30 pl-4", className)}>
+    <section className={cn("mt-20", scope?.stage && "-ml-4 border-l-2 border-foreground/30 pl-4", className)}>
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-sans text-[15px] font-semibold tracking-tight">
           {title}
@@ -460,8 +462,13 @@ export function StageColumns({ columns, inkFirst = true, yMax = 1, onPick, picke
             return (
               <div key={c.key} className="flex w-full min-w-0 max-w-20 flex-col items-center">
                 <div className="flex flex-col justify-end whitespace-nowrap text-center font-sans text-[10.5px] tabular-nums text-muted-foreground" style={{ height: head }}>
-                  {c.sub && <span className="text-[11px] font-medium text-foreground">{c.sub}</span>}
-                  <span>{c.top}</span>
+                  {/* a phone shows only the first word ("61%"): the full lines would run into the next column */}
+                  {c.sub && (
+                    <span className="text-[11px] font-medium text-foreground">
+                      {c.sub.split(" ")[0]}<span className="max-sm:hidden"> {c.sub.split(" ").slice(1).join(" ")}</span>
+                    </span>
+                  )}
+                  <span className="max-sm:hidden">{c.top}</span>
                 </div>
                 <div className="flex w-full items-end" style={{ height: COLUMN_H }}>
                   <div className="flex w-full flex-col-reverse gap-[2px]" style={{ height: stack }}>
