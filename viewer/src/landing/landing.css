@@ -118,6 +118,7 @@ html:not(.dark) .lp { --bg: #ffffff; --surface: #ffffff; --ink: #0c1016; }
 .lp-crumbs { display: flex; flex: 1 1 auto; min-width: 0; align-items: center; gap: 8px; overflow-x: auto; white-space: nowrap;
   font-size: 15px; font-weight: 500; scrollbar-width: none; }
 .lp-crumbs::-webkit-scrollbar { display: none; }
+.lp-nav .lp-crumbs { justify-content: safe center; } /* in the nav: centred, where the section links are on other pages */
 .lp-crumbs a { color: color-mix(in srgb, var(--ink) 60%, transparent); text-decoration: none; transition: color 160ms; }
 .lp-crumbs a:hover { color: var(--ink); }
 .lp-crumbs .here { color: var(--ink); }

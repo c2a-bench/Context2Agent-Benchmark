@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router";
 import { stepLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -29,17 +31,19 @@ export function useStage(meta: Meta, allowAll = false, defaultAll = false): { st
 }
 
 /** The stage dropdown: a sticky bar at the top of a tab that says which sections follow it. */
-export function StageBar({ meta, stage, onChange, allowAll = false, className, note }: { meta: Meta; stage: number | typeof ALL; onChange: (s: number | typeof ALL) => void; allowAll?: boolean; className?: string; /** replaces the default "sections tagged…" line */ note?: React.ReactNode }) {
-  return (
-    <div className={cn("sticky top-0 z-10 border-b bg-background/95 backdrop-blur", className)}>
-      {/* on the pages' width, so it lines up with the tabs and the content */}
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-1 px-6 py-2.5">
-      <label htmlFor="stage-select" className="font-sans text-sm font-semibold">Stage</label>
+/** The stage picker of a page with stages. It sits at the end of the run's tab bar (#run-bar-slot, in job-layout), so
+ *  it stays in view without a band of its own; on its own (no slot) it shows in place. */
+export function StageBar({ meta, stage, onChange, allowAll = false, className }: { meta: Meta; stage: number | typeof ALL; onChange: (s: number | typeof ALL) => void; allowAll?: boolean; className?: string; note?: React.ReactNode }) {
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => setSlot(document.getElementById("run-bar-slot")), []);
+  const picker = (
+    <label className={cn("flex items-center gap-2 py-1.5 font-sans text-xs", !slot && className)}>
+      <span className="text-muted-foreground">Stage</span>
       <select
         id="stage-select"
         value={String(stage)}
         onChange={(e) => onChange(e.target.value === ALL ? ALL : Number(e.target.value))}
-        className="rounded-md border bg-background px-2 py-1 font-sans text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="rounded-md border bg-background px-2 py-1 font-sans text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {allowAll && <option value={ALL}>All stages</option>}
         {meta.stages.map((s) => {
@@ -52,16 +56,9 @@ export function StageBar({ meta, stage, onChange, allowAll = false, className, n
           );
         })}
       </select>
-      <span className="font-sans text-xs text-muted-foreground">
-        {note ?? (
-          <>
-            Sections tagged <ScopeChip>{stage === ALL ? "All stages" : stageName(meta, stage)}</ScopeChip> follow this; the others always add up every stage.
-          </>
-        )}
-      </span>
-      </div>
-    </div>
+    </label>
   );
+  return slot ? createPortal(picker, slot) : picker;
 }
 
 /** Tag on a section header: which stage(s) its numbers are for. */

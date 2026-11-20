@@ -54,7 +54,7 @@ export function JobNav({ job, meta }: { job: string; meta: Meta }) {
   const keep = stage && (stage === "all" || meta.stages.includes(Number(stage))) ? `?stage=${stage}` : "";
   const tabs = TABS.filter((t) => t.slug !== "rq5" || hasKnowledgeConditions(meta));
   return (
-    <nav className="-mx-3 flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none]" aria-label="Run">
+    <nav className="-mx-3 flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none] max-sm:basis-full" aria-label="Run">
       {tabs.map((t) => (
         <Link
           key={t.label}
