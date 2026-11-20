@@ -295,7 +295,7 @@ function FactGradedFailureAnalysis() {
   return (
     <div>
       <div className="mx-auto max-w-5xl px-6 pt-10">
-        <h1 className="font-sans text-xl font-semibold tracking-tight">Failure analysis</h1>
+        <h1 className="font-heading text-3xl font-normal tracking-tight">Failure analysis</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Why tickets failed, and whose responsibility it was: the builder (what it built), the agent (what it did) or our test setup.</p>
       </div>
       <StageBar meta={meta} stage={stage} onChange={set} allowAll className="mt-6" note="Everything below follows this." />

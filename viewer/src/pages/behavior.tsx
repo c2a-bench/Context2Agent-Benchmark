@@ -383,7 +383,7 @@ export default function BehaviorPage() {
   if (stages.length && rows.every((r) => !r.coverage)) {
     return (
       <div className="mx-auto max-w-5xl px-6 py-12">
-        <h1 className="text-xl font-semibold tracking-tight">Behavioral coverage</h1>
+        <h1 className="font-heading text-3xl font-normal tracking-tight">Behavioral coverage</h1>
         <p className="mt-4 text-sm text-muted-foreground">This run has no customer-behavior tickets, so RQ4 does not apply.</p>
       </div>
     );
@@ -391,7 +391,7 @@ export default function BehaviorPage() {
   if (!stages.length || !rows.length) {
     return (
       <div className="mx-auto max-w-5xl px-6 py-12">
-        <h1 className="text-xl font-semibold tracking-tight">Behavioral coverage</h1>
+        <h1 className="font-heading text-3xl font-normal tracking-tight">Behavioral coverage</h1>
         <p className="mt-4 font-mono text-sm text-muted-foreground">
           stages=[] scores={"{"}
           {"}"} — no verifier numbers in meta.json for this run.
@@ -452,7 +452,7 @@ export default function BehaviorPage() {
   return (
     <div>
       <div className="mx-auto max-w-5xl px-6 pt-10">
-        <h1 className="font-sans text-xl font-semibold tracking-tight">Customer types</h1>
+        <h1 className="font-heading text-3xl font-normal tracking-tight">Customer types</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
           Every ticket has one way the customer behaves (plain, vague, pushy, frustrated, …). The right handling is the same
           for all of them, so a lower pass rate for one type means that type trips the agent up.

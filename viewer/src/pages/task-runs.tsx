@@ -6,7 +6,7 @@ import { listJobs, listTasks } from "@/lib/data";
 import { agentName } from "@/lib/agent-name";
 import { FOCUS, architectureGroups, offLeaderboard } from "@/lib/leaderboard";
 import { ArchPicker, pooledRate } from "@/components/arch-picker";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteNav } from "@/landing/nav";
 import { Badge } from "@/components/ui/badge";
 
 const short = (m: string | null) => (m ? m.split("/").pop() : "—");
@@ -58,10 +58,11 @@ export default function TaskRuns() {
     const groups = architectureGroups(all, FOCUS.find((f) => f.id === task)?.current);
     if (groups.length) return <ArchitectureRuns name={info.name} groups={groups} />;
     return (
+        <>
+        <SiteNav />
         <main className="mx-auto w-full max-w-6xl px-6 py-10">
-            <ThemeToggle className="fixed top-4 right-6 z-30 border bg-background shadow-sm" />
             <Link href="/" className="link-text text-sm">← Companies</Link>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">{info.name}</h1>
+            <h1 className="mt-2 font-heading text-4xl font-normal tracking-tight">{info.name}</h1>
             <p className="mt-1 text-sm text-muted-foreground">Runs in tasks/{task}/jobs, newest first. Click a run to replay its tickets and the agent’s code.</p>
             {jobs.some((j) => offLeaderboard(task, j, all)) && (
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -107,6 +108,7 @@ export default function TaskRuns() {
             )}
 
         </main>
+        </>
     );
 }
 
@@ -117,10 +119,11 @@ function ArchitectureRuns({ name, groups }: { name: string; groups: ReturnType<t
     const [sort, setSort] = useState<Sort>(SORT_DEFAULT);
     const costOf = (runs: typeof groups[number]["runs"]) => { const c = runs.map((r) => r.cost).filter((x): x is number => x != null); return c.length ? c.reduce((a, x) => a + x, 0) : null; };
     return (
+        <>
+        <SiteNav />
         <main className="mx-auto w-full max-w-6xl px-6 py-10">
-            <ThemeToggle className="fixed top-4 right-6 z-30 border bg-background shadow-sm" />
             <Link href="/" className="link-text text-sm">← Companies</Link>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">{name}</h1>
+            <h1 className="mt-2 font-heading text-4xl font-normal tracking-tight">{name}</h1>
             <p className="mt-1 text-sm text-muted-foreground">Each row is one builder model's run of the whole environment: one agent per architecture. Choose an architecture to open its run; inside, the header switches between them.</p>
             <div className="mt-6 overflow-x-auto rounded-xl border">
                 <table className="w-full text-sm">
@@ -150,5 +153,6 @@ function ArchitectureRuns({ name, groups }: { name: string; groups: ReturnType<t
                 </table>
             </div>
         </main>
+        </>
     );
 }

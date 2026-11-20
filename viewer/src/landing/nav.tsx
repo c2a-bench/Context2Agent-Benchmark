@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { publicAsset } from "@/lib/assets";
+import "./landing.css";
 
 export const CONTRIBUTING = "https://github.com/c2a-bench/c2a-bench/blob/main/CONTRIBUTING.md";
 
@@ -50,6 +51,12 @@ export function Nav({ slotRef, dividerRef }: { slotRef?: React.RefObject<HTMLSpa
       </div>
     </header>
   );
+}
+
+/** The main site's nav on the other pages (run viewer, runs tables): it keeps the landing's colours and fonts (.lp)
+ *  and takes its height in the page, since the nav itself is fixed to the top. */
+export function SiteNav() {
+  return <div className="lp shrink-0" style={{ height: "var(--nav)" }}><Nav /></div>;
 }
 
 const GH = "https://github.com/c2a-bench/c2a-bench";

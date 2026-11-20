@@ -8,7 +8,7 @@ import { FOCUS, architectureRuns, passRate } from "@/lib/leaderboard";
 import { agentName } from "@/lib/agent-name";
 import { BackBar, JobNav } from "@/components/job-nav";
 import { DocProvider } from "@/components/doc-sheet";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteNav } from "@/landing/nav";
 
 /** For a run with a fixed architecture (Skyway): which one it is, and a switch to this model's other ones. */
 function ArchSwitch({ job }: { job: string }) {
@@ -53,8 +53,8 @@ export default function JobLayout() {
   const short = (m: string | null) => (m ? m.split("/").pop() : "unknown");
   return (
     <div className="flex h-screen flex-col">
-      <header className="relative flex flex-wrap items-center gap-x-8 gap-y-2 border-b pt-3.5 pr-14 pb-3.5 pl-4 sm:pr-16 sm:pl-6">
-        <Link href="/" className="text-sm font-semibold">C2A</Link>
+      <SiteNav />
+      <header className="flex flex-wrap items-center gap-x-8 gap-y-2 border-b px-4 pt-3.5 pb-3.5 sm:px-6">
         <div className="min-w-0">
           <div className="truncate font-mono text-xs">{meta.job}</div>
           <div className="text-[11px] text-muted-foreground">
@@ -63,8 +63,6 @@ export default function JobLayout() {
         </div>
         <Suspense fallback={null}><ArchSwitch job={job} /></Suspense>
         <JobNav job={job} meta={meta} />
-        {/* always at the top right, even when the header wraps onto more lines */}
-        <ThemeToggle className="absolute top-3.5 right-4 sm:right-6" />
       </header>
       <BackBar job={job} />
       <div className="min-h-0 flex-1">

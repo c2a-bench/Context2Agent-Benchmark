@@ -149,7 +149,7 @@ export default function Rq1Page() {
     : [];
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
-      <h1 className="text-xl font-semibold tracking-tight">Scores by stage</h1>
+      <h1 className="font-heading text-3xl font-normal tracking-tight">Scores by stage</h1>
       <p className="mt-2 max-w-3xl text-sm text-muted-foreground">How many tickets the agent gets right after each build, and whether it keeps up when the docs change.</p>
       <ChartCard
         className="mt-10"
