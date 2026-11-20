@@ -1,4 +1,5 @@
 import { use, useEffect, useRef } from "react";
+import { ChevronRight } from "lucide-react";
 import { useSearchParams } from "react-router";
 import { currentSearchParams, useJob } from "@/lib/route";
 import { getMeta, getTickets } from "@/lib/data";
@@ -242,7 +243,8 @@ function TicketList({ meta, tickets, job, stage, pick, pickLabel, counted }: { m
       <ul className="mt-3 divide-y divide-border/60 overflow-y-auto rounded-lg border max-lg:max-h-[70vh] lg:h-[min(70vh,560px)]">
         {rows.map(({ t, leaves }) => (
           <li key={t.key}>
-            <Link href={`/runs/${job}/tickets?stage=${t.stage}&t=${encodeURIComponent(t.id)}`} className="block px-3 py-2 font-sans outline-none hover:bg-muted/60 focus-visible:bg-muted/60">
+            <Link href={`/runs/${job}/tickets?stage=${t.stage}&t=${encodeURIComponent(t.id)}`} className="group/t flex items-center gap-3 px-3 py-2 font-sans outline-none hover:bg-muted/60 focus-visible:bg-muted/60">
+              <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="font-mono text-[13px] font-medium">{t.id}</span>
                 {stage === ALL && <span className="text-xs text-muted-foreground">{stageName(meta, t.stage)}</span>}
@@ -255,6 +257,12 @@ function TicketList({ meta, tickets, job, stage, pick, pickLabel, counted }: { m
                 ))}
               </div>
               <div className="mt-0.5 truncate text-xs text-muted-foreground" title={t.title}>{t.title}</div>
+              </div>
+              {/* opens the ticket: the conversation and what the agent did */}
+              <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground group-hover/t:text-foreground">
+                <span className="hidden group-hover/t:inline">Open</span>
+                <ChevronRight className="size-4" aria-hidden />
+              </span>
             </Link>
           </li>
         ))}
