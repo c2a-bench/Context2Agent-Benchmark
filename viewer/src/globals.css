@@ -189,18 +189,13 @@
 }
 
 /* Text links: the text colour with the Observe.AI yellow underline, so a link reads as a link in both themes
-   (yellow text would be unreadable on white); a light yellow wash on hover. */
+   (yellow text would be unreadable on white). */
 @utility link-text {
   color: var(--link);
   text-decoration-line: underline;
   text-decoration-thickness: 2px;
   text-decoration-color: var(--link-line);
   text-underline-offset: 4px;
-  border-radius: 2px;
-  transition: background-color 120ms;
-  &:hover {
-    background-color: color-mix(in srgb, var(--link-line) 22%, transparent);
-  }
 }
 
 @layer base {
