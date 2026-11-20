@@ -4,7 +4,7 @@ import { parseRelease, releaseUrl } from "./data/release";
 import { createDatasetLoader } from "../src/lib/dataset-v2";
 
 const { values } = parseArgs({ options: { url: { type: "string" }, manifest: { type: "string", default: "datasets/production.json" }, "data-only": { type: "boolean" }, help: { type: "boolean" } } });
-if (values.help) console.log("Usage: npm run smoke:pages -- --url https://c2a-bench.github.io/Context2Agent-Benchmark/ [--manifest FILE] [--data-only]\nChecks the two pinned public datasets, JSONL/legacy UI projections, CORS, and Pages assets. No tokens used.");
+if (values.help) console.log("Usage: npm run smoke:pages -- --url https://c2abench.com/ [--manifest FILE] [--data-only]\nChecks the two pinned public datasets, JSONL/legacy UI projections, CORS, and Pages assets. No tokens used.");
 else {
   try {
     if (!values.url) throw new Error("--url is required");

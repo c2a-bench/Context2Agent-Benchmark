@@ -141,7 +141,6 @@ export function ArchTypes({ runs, order }: { runs: ArchRun[]; order: string[] })
           ))}
         </tbody>
       </table>
-      <p className="label muted mt-2">A stronger blue means more tickets passed.</p>
     </div>
   );
 }
@@ -354,7 +353,7 @@ export function frontier(points: [number, number][]): [number, number][] {
 }
 
 /** The region a frontier point already beats: higher cost, lower pass rate. Dominated on a builder chart; the feasible-but-worse set on a tradeoff chart. */
-function worseRegion(front: [number, number][], X: (v: number) => number, Y: (v: number) => number, right: number, bottom: number) {
+export function worseRegion(front: [number, number][], X: (v: number) => number, Y: (v: number) => number, right: number, bottom: number) {
   if (!front.length) return "";
   const d = [`M${X(front[0][0])},${bottom}`, `L${X(front[0][0])},${Y(front[0][1])}`];
   for (let i = 1; i < front.length; i++) d.push(`L${X(front[i][0])},${Y(front[i - 1][1])}`, `L${X(front[i][0])},${Y(front[i][1])}`);

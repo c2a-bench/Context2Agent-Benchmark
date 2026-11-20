@@ -56,10 +56,10 @@ for (const base of ["/", "/Context2Agent-Benchmark/"]) {
       await expect(page).toHaveURL(/stage=1&pick=none/);
       // A blog → landing section link must not clobber the HashRouter route.
       await page.goto(`${server.pagesUrl}#/blog`);
-      await page.locator("nav[aria-label=Sections]").getByRole("link", { name: "Results", exact: true }).click();
-      await expect(page).toHaveURL(/#\/#results$/);
-      await expect(page.locator("#results")).toBeAttached();
-      await expect.poll(() => page.locator("#results").evaluate((el) => Math.abs(el.getBoundingClientRect().top))).toBeLessThan(250);
+      await page.locator("nav[aria-label=Main]").getByRole("link", { name: "Viewer", exact: true }).click();
+      await expect(page).toHaveURL(/#\/#environments$/);
+      await expect(page.locator("#environments")).toBeAttached();
+      await expect.poll(() => page.locator("#environments").evaluate((el) => Math.abs(el.getBoundingClientRect().top))).toBeLessThan(250);
       assert.ok(server.requests.some((uri) => uri.startsWith(`${base}monaco/vs/`)), "Monaco should load under Pages base");
       assert.ok(server.requests.some((uri) => uri.startsWith(`${base}assets/json-worker-`)), "large replay JSON should load through the worker");
       assert.ok(server.dataRequests.some((uri) => uri.endsWith("/code.json")), "worker must fetch data cross-origin with CORS");

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local-hf": "node scripts/dev-local-hf.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "postinstall": "node scripts/copy-monaco.mjs",
