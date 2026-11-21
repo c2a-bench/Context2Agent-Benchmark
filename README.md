@@ -149,12 +149,13 @@ The site is built with fixed commits of both datasets (`viewer/datasets/producti
 reaches it. After new runs (or a new benchmark version) are on Hugging Face's `main`:
 
 ```bash
-cd viewer && npm run pin:production    # also regenerates public/landing.json
+cd viewer && npm run pin:production    # also regenerates public/landing.json and public/doc-index/
 ```
 
 It looks up both datasets' latest commits, checks without a token that every run points to that exact benchmark commit
-(and with `--full`, every file's SHA-256), and writes `production.json`. Commit and push it: the Pages workflow
-rebuilds and deploys the site. Runs must be linked to the benchmark commit they are scored against before they are
+(and with `--full`, every file's SHA-256), and writes `production.json`. When the benchmark commit changed, it also
+rebuilds the doc index (`public/doc-index/<commit>/`, each doc's place in its `docs.json`, so the site fetches one doc
+at a time). Commit and push these files: the Pages workflow rebuilds and deploys the site. Runs must be linked to the benchmark commit they are scored against before they are
 published; the command refuses otherwise.
 
 - [Viewer, publishing tools, and deployment setup](viewer/README.md)

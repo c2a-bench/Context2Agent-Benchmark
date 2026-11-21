@@ -4,15 +4,19 @@
  * index and fetches one doc's bytes (an HTTP range request) when it is opened, instead of a whole docs.json (Skyway's
  * first stage is 43 MB).
  *
- *   npx tsx scripts/build-doc-index.ts <bench folder> <bench commit> [out dir]
+ *   npm run build:doc-index                                    # the pinned bench, from Hugging Face (pin:production runs it)
+ *   npx tsx scripts/build-doc-index.ts <bench folder> [out dir]  # the pinned bench, from a local copy
  *
- * <bench folder> is a local copy of observeai/c2a-bench at <bench commit> (its inventory.json must match the pinned
- * one in datasets/production.json). Writes <out dir>/<bench commit>/<domain>.json (default public/doc-index).
+ * Writes <out dir>/<bench commit>/<domain>.json (default public/doc-index) for the benchmark commit pinned in
+ * datasets/production.json, after checking the bench's inventory.json against the pinned one. Indexes of other
+ * commits are removed. From Hugging Face it does nothing when the pinned commit's index is already there.
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { docView, type DocEntry } from "../src/lib/dataset-v2";
+import { parseRelease, releaseUrl } from "./data/release";
 import type { Doc } from "../src/lib/types";
 
 /** [start, end, title, status, updated, author, source, born, edited]: byte range of the entry, then its listing. */
@@ -51,19 +55,31 @@ export function entryRanges(buf: Buffer): Map<string, [number, number]> {
   }
 }
 
-function main() {
-  const [bench, revision, outDir = "public/doc-index"] = process.argv.slice(2);
-  if (!bench || !/^[a-f0-9]{40}$/.test(revision ?? "")) throw new Error("usage: build-doc-index.ts <bench folder> <bench commit> [out dir]");
-  const pinned = JSON.parse(readFileSync("datasets/production.json", "utf8"));
-  const inventory = createHash("sha256").update(readFileSync(path.join(bench, "inventory.json"))).digest("hex");
-  if (pinned.benchmark?.revision === revision && pinned.benchmark?.inventorySha256 !== inventory) throw new Error("this bench folder is not the pinned benchmark");
-  mkdirSync(path.join(outDir, revision), { recursive: true });
-  for (const domain of pinned.domains as string[]) {
-    const task = JSON.parse(readFileSync(path.join(bench, domain, "task.json"), "utf8"));
+async function main() {
+  const [bench, outDir = "public/doc-index"] = process.argv.slice(2);
+  const pinned = parseRelease(JSON.parse(readFileSync("datasets/production.json", "utf8")));
+  const revision = pinned.benchmark.revision;
+  const dir = path.join(outDir, revision);
+  if (!bench && pinned.domains.every((d) => existsSync(path.join(dir, `${d}.json`)))) {
+    console.log(`doc index for ${revision.slice(0, 7)} is already there`);
+    return;
+  }
+  // a file of the pinned bench, from the local copy or from Hugging Face
+  const read = async (file: string): Promise<Buffer> => {
+    if (bench) return readFile(path.join(bench, file));
+    const res = await fetch(`${releaseUrl(pinned.benchmark)}/${file}`, { signal: AbortSignal.timeout(300_000) });
+    if (!res.ok) throw new Error(`${res.status} for ${file}`);
+    return Buffer.from(await res.arrayBuffer());
+  };
+  const inventory = createHash("sha256").update(await read("inventory.json")).digest("hex");
+  if (pinned.benchmark.inventorySha256 !== inventory) throw new Error("this bench is not the pinned benchmark (inventory.json differs)");
+  mkdirSync(dir, { recursive: true });
+  for (const domain of pinned.domains) {
+    const task = JSON.parse((await read(`${domain}/task.json`)).toString("utf8"));
     const file: DocIndexFile = { format: 1, revision, stages: {} };
     let n = 0;
     for (const s of task.stages as { index: number }[]) {
-      const buf = readFileSync(path.join(bench, domain, "stages", String(s.index), "docs.json"));
+      const buf = await read(`${domain}/stages/${s.index}/docs.json`);
       const parsed = JSON.parse(buf.toString("utf8")) as Record<string, DocEntry | Doc>;
       const rows: Record<string, DocIndexRow> = {};
       for (const [p, [start, end]] of entryRanges(buf)) {
@@ -75,10 +91,12 @@ function main() {
       if (Object.keys(rows).length !== Object.keys(parsed).length) throw new Error(`${domain}/${s.index}: entries missing`);
       file.stages[String(s.index)] = rows; n += Object.keys(rows).length;
     }
-    const out = path.join(outDir, revision, `${domain}.json`);
+    const out = path.join(dir, `${domain}.json`);
     writeFileSync(out, JSON.stringify(file));
     console.log(`${domain}: ${n} docs -> ${out} (${Math.round(Buffer.byteLength(JSON.stringify(file)) / 1024)} KB)`);
   }
+  // the site only reads the pinned commit's index
+  for (const old of readdirSync(outDir)) if (old !== revision && /^[a-f0-9]{40}$/.test(old)) { rmSync(path.join(outDir, old), { recursive: true }); console.log(`removed the old index ${old.slice(0, 7)}`); }
 }
 
-if (process.argv[1] && import.meta.url.endsWith(path.basename(process.argv[1]))) main();
+if (process.argv[1] && import.meta.url.endsWith(path.basename(process.argv[1]))) await main();
