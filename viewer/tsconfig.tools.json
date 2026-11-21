@@ -9,6 +9,7 @@
     "scripts/dataset-selection.ts",
     "scripts/smoke-pages.ts",
     "scripts/verify-migration.ts",
-    "scripts/pin-release.ts"
+    "scripts/pin-release.ts",
+    "scripts/build-doc-index.ts"
   ]
 }

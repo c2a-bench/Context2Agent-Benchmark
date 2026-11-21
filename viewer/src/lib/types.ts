@@ -451,7 +451,9 @@ export type Transition = {
 };
 export type CodeData = { stages: CodeStage[]; transitions: Transition[] };
 
-export type Doc = { title: string; status: string; updated: string; author: string; text: string; ref?: string; chars?: number; source: "slack" | "confluence"; born: number; edited: number | null };
+export type Doc = { title: string; status: string; updated: string; author: string; text: string; ref?: string; chars?: number; source: "slack" | "confluence"; born: number; edited: number | null;
+  /** From the doc index (no text yet): the stage whose docs.json holds the entry, and its byte range there. */
+  at?: { stage: number; start: number; end: number } };
 export type DocsData = Record<string, Record<string, Doc>>;
 
 /** Tokens and dollars summed over model calls; unpriced = calls litellm had no price for (not in usd). */

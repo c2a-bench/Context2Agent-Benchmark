@@ -53,7 +53,7 @@ export function ruleView(r: RuleRow) {
   return { text: r.rule, real: r.sources, traps: r.decoys, quote: r.evidence[0] ?? "", trap_quote: r.trap_evidence[0] ?? "" };
 }
 type RuleChangeStub = { id: string; status: string; what?: string | null; diff?: unknown };
-type DocEntry = { born: number; edited: number | null; file?: Record<string, unknown>; text?: string };
+export type DocEntry = { born: number; edited: number | null; file?: Record<string, unknown>; text?: string };
 
 // The display text of a doc was first built in Python, so field values that are not text read as Python prints them.
 const hex = (c: number, n: number) => c.toString(16).padStart(n, "0");
@@ -128,7 +128,15 @@ export function makeLeaderboardRow(run: RunRecord, stages: StageRecord[]): Leade
 export const TEXT_SHARD = 3;
 
 type Reader = <T>(side: "benchmark" | "runs", file: string) => Promise<T>;
-export function createDatasetLoader(options: { release: DatasetRelease; read: Reader; text: (side: "runs", file: string) => Promise<string>; allowPending?: boolean }) {
+/** The doc index (scripts/build-doc-index.ts): per stage, each doc's byte range in that stage's docs.json and its
+ *  listing [start, end, title, status, updated, author, source, born, edited]. */
+export type DocIndexRow = [number, number, string, string, string, string, Doc["source"], number | null, number | null];
+export type DocIndexFile = { format: 1; revision: string; stages: Record<string, Record<string, DocIndexRow>> };
+export function createDatasetLoader(options: { release: DatasetRelease; read: Reader; text: (side: "runs", file: string) => Promise<string>; allowPending?: boolean;
+  /** The doc index of a domain, or null; with readRange, docs are listed from it and fetched one at a time. */
+  docIndex?: (domain: string) => Promise<DocIndexFile | null>;
+  /** Bytes [start, end) of a file, as text (an HTTP range request). */
+  readRange?: (side: "benchmark", file: string, start: number, end: number) => Promise<string> }) {
   const { release, read } = options;
   const promises = new Map<string, Promise<unknown>>();
   const memo = <T>(key: string, fn: () => Promise<T>): Promise<T> => {
@@ -166,7 +174,7 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
   const changes = (domain: string, n: number) => memo(`changes:${domain}/${n}`, async (): Promise<StageChanges> => {
     const c = await stageChanges(domain, n);
     if (!c.rule_changes.length) return c;
-    const [byId, d] = await Promise.all([rules(domain, n), docs(domain)]);
+    const [byId, d] = await Promise.all([rules(domain, n), docList(domain)]);
     const at = d[String(n)] ?? {};
     const ref = (path: string) => ({ path, title: at[path]?.title, status: at[path]?.status, updated: at[path]?.updated });
     const rule_changes = (c.rule_changes as unknown as RuleChangeStub[]).map((stub) => {
@@ -213,6 +221,31 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
     }
     return output;
   });
+  const docIndex = (domain: string) => memo(`docindex:${domain}`, async () => (options.docIndex && options.readRange ? options.docIndex(domain).catch(() => null) : null));
+  /** Every doc of every stage, as docs() but without the texts: from the doc index when there is one (a doc's text is
+   *  fetched by doc() when it is opened), else docs() itself. */
+  const docList = (domain: string) => memo(`doclist:${domain}`, async (): Promise<DocsData> => {
+    const idx = await docIndex(domain);
+    if (!idx) return docs(domain);
+    let effective: Record<string, Doc> = {};
+    const output: DocsData = {};
+    for (const s of (await task(domain)).stages) {
+      const change = await stageChanges(domain, s.index);
+      const delta = Object.fromEntries(Object.entries(idx.stages[String(s.index)] ?? {}).map(([p, [start, end, title, status, updated, author, source, born, edited]]) =>
+        [p, { title, status, updated, author, source, born: born ?? 0, edited, text: "", at: { stage: s.index, start, end } } satisfies Doc]));
+      effective = s.docs_mode === "snapshot" ? { ...delta } : { ...effective, ...delta };
+      for (const key of change.deleted) delete effective[key];
+      output[String(s.index)] = effective;
+    }
+    return output;
+  });
+  /** One doc as the builder saw it at stage n, with its text: only that doc's bytes when the index has it. */
+  const doc = (domain: string, n: number, p: string) => memo(`doc:${domain}/${n}/${p}`, async (): Promise<Doc | null> => {
+    const row = (await docList(domain))[String(n)]?.[p];
+    if (!row?.at) return row ?? null;
+    const e = JSON.parse(await options.readRange!("benchmark", `${domain}/stages/${row.at.stage}/docs.json`, row.at.start, row.at.end)) as DocEntry | Doc;
+    return "born" in e && !("title" in e) ? docView(p, e as DocEntry) : (e as Doc);
+  });
   const code = (domain: string, job: string) => memo(`code:${domain}/${job}`, async (): Promise<CodeData> => {
     const r = await run(domain, job), stages: CodeData["stages"] = [], transitions: Transition[] = [];
     for (let i = 0; i < r.stages.length; i++) {
@@ -253,5 +286,5 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
     if (typeof shard[ref] !== "string") throw new Error(`Missing content ${ref}`);
     return shard[ref];
   });
-  return { index, task, run, stage, definitions, results, meta, interactions, docs, changes, code, cases, builds, events, text };
+  return { index, task, run, stage, definitions, results, meta, interactions, docs, docList, doc, changes, code, cases, builds, events, text };
 }
