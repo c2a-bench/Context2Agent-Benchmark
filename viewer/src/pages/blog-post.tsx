@@ -12,7 +12,7 @@ import { Nav, RepoLinks } from "@/landing/nav";
 import { publicAsset } from "@/lib/assets";
 import { POSTS, postDate } from "@/blog/posts";
 import { LandingFigure, Seg, type FigureEnv, type FigureName } from "@/pages/home";
-import { TicketViewer, BehaviourViewer } from "@/blog/viewers";
+import { TicketViewer, BehaviourViewer, CustomerTypeViewer } from "@/blog/viewers";
 import "@/landing/landing.css";
 
 /** `skyway` (with its own caption) gives the figure a Redwood / Skyway toggle; the figure opens on Redwood. */
@@ -61,6 +61,14 @@ const VIEWERS: Record<string, { kicker: string; title: string; caption?: string;
     href: "/#environments",
     link: "See the environments",
     View: BehaviourViewer,
+  },
+  "customer-types": {
+    kicker: "Across every run",
+    title: "Pass rate and customer recall by customer behavior",
+    caption: "Pooled over every Redwood Inference and Skyway Air run. Pass rate is the share of tickets passed; customer recall is the share of the customer's facts the agent got them to share. Switch between them above the chart.",
+    href: "/#environments",
+    link: "See the environments",
+    View: CustomerTypeViewer,
   },
 };
 

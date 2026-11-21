@@ -20,7 +20,8 @@
     "test:data": "tsx --test scripts/data/*.test.ts",
     "test:pages": "tsx --test scripts/pages/*.test.ts",
     "pin:production": "tsx scripts/pin-production.ts && npm run build:landing",
-    "build:landing": "tsx scripts/build-landing.ts"
+    "build:landing": "tsx scripts/build-landing.ts",
+    "customer-types": "tsx scripts/customer-types.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",

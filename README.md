@@ -1,3 +1,5 @@
+<img width="6400" height="3600" alt="Option C · Ticket field" src="https://github.com/user-attachments/assets/f07fd8d2-0d03-4332-8f08-53ba3a4c9a5c" />
+
 # C2A Bench
 
 C2A (Context to Agent) tests how well an AI model builds a customer support agent from a company's internal docs, and
