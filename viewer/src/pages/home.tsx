@@ -234,11 +234,11 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact, env: fixe
               ? "Share of all Skyway tickets each builder's agents passed."
               : "Share of all Redwood tickets each builder's agent passed, over the six stages. Every agent runs on the same model; only the builder differs.",
             points: sky ? [
-              <><b>Build reliability directly affects performance.</b> Gemini ranked second on completed stages but fell to fourth due to failed builds.</>,
-              <><b>Asking the right questions improves outcomes.</b> The weakest builder's agents asked no questions on half their tickets, compared to 30% for other builders.</>,
+              <><b>Failed builds hurt the overall score.</b> Gemini ranked second on stages where its agent ran, but failed builds dropped it to fourth overall.</>,
+              <><b>Asking the customer for missing details matters.</b> The weakest builder&apos;s agents collected only 48% of the facts that only the customer knew, compared with 61% to 74% for the other builders.</>,
             ] : [
-              <><b>The first build is not where builders separate; updates are.</b> One builder checked file dates instead of content, missed new pages, and fell to last place for three stages.</>,
-              <><b>Testing new constraints prevents failures.</b> When a prompt size limit was added, two builders missed it and lost 20% of their tickets.</>,
+              <><b>Updates separate the builders more than the first build.</b> One builder checked file dates instead of file contents, missed newly added pages, and stayed in last place for three stages.</>,
+              <><b>Testing new limits prevents failures.</b> When a prompt size limit was added in stage 4, two builders missed it completely and failed 21% of the stage, and a third still failed 8% on the same limit.</>,
             ],
             chart: (
               <>
@@ -261,11 +261,11 @@ function Results({ redwood, metas, skyway, skywayMetas, bare, compact, env: fixe
               ? "Cost is what one build cost the builder, averaged over its architectures."
               : "Cost is what the builder spent on the whole run.",
             points: sky ? [
-              <><b>A bigger budget doesn't guarantee a better agent.</b> Two builders with the same spend finish 17 points apart.</>,
-              <><b>At scale, spend starts to matter.</b> Unlike on Redwood, the top spender leads and the cheapest builder comes last.</>,
+              <><b>Spending more to build does not guarantee a better agent.</b> Two builders spent almost the same amount per build and finished 17 percentage points apart.</>,
+              <><b>On a large doc set, build spend starts to matter.</b> Unlike on Redwood, the highest spender finishes first and the lowest spender finishes last.</>,
             ] : [
-              <><b>A costlier build doesn't mean a better agent.</b> The cheapest builder ranks among the best.</>,
-              <><b>A cheap build can produce an expensive agent.</b> Two builders with nearly the same score built agents that differ threefold in model calls per ticket.</>,
+              <><b>A more expensive build does not mean a better agent.</b> The cheapest builder finishes near the top.</>,
+              <><b>A cheap build can create an expensive agent.</b> Two builders with almost the same score built agents that differ by 3× in model calls per ticket.</>,
             ],
             chart: (
               <CostScatter
@@ -370,11 +370,11 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact, e
             title: "Why tickets failed",
             body: "Every failed ticket is traced to a cause, and every cause to the builder or the agent.",
             points: !Object.values(all).some((v) => v > 0) ? [] : sky ? [
-              <><b>Scale shifts failures to the build.</b> With 10,000 pages, more rule details are lost before the agent ever sees a ticket.</>,
-              <><b>Agents act before they ask.</b> Missing customer information is a leading cause of failure.</>,
+              <><b>Large doc sets cause more build failures.</b> With over 10,000 pages, builders lose more rule details before the agent ever sees a ticket.</>,
+              <><b>Agents act before asking.</b> Failing to ask the customer for missing details is one of the main reasons tickets fail.</>,
             ] : [
-              <><b>Capturing knowledge is largely solved; applying it is not.</b> Most failures happen with the right rule already in the agent.</>,
-              <><b>Under ambiguity, agents guess rather than ask.</b> An unclear ticket gets a default setting, an early close or a handoff instead of a clarifying question.</>,
+              <><b>Finding the rule is easier than using it.</b> Most failed tickets happen even when the right rule is already in the agent&apos;s files.</>,
+              <><b>When a ticket is unclear, agents guess instead of asking.</b> Instead of asking a follow-up question, they pick a default value, close the ticket early, or hand it off.</>,
             ],
             note: "A failed ticket can have more than one reason, so bars show each reason's share of all reasons found. A stage where the agent never started counts all its tickets as built wrong.",
             chart: <ReasonBars rows={[{ label: sky ? "All runs" : "All builders", parts: all, bold: true }, ...rows]} focus={focus ? FOCUS_REASON[focus] : null} />,
@@ -383,11 +383,11 @@ function Failures({ redwood, metas, skyway, skywayMetas, focus, bare, compact, e
             title: "Rule recall vs pass rate",
             body: "An agent built with all the rules can still fail to apply them to a ticket. Each mark is one builder's agent at one stage: how many of the rules its tickets needed were in the agent's files, against the share of tickets it passed.",
             points: sky ? [
-              <><b>Retrieval, not storage, is the bottleneck.</b> Carrying every document gives full rule recall, not correct answers.</>,
-              <><b>The most complete agent is not the most accurate.</b> The builder whose agents held 99% of the rules passed fewer tickets than three builders holding 88%.</>,
+              <><b>Finding the right rule at runtime is harder than storing it.</b> Keeping every document gives high rule recall, but it does not produce correct answers on its own.</>,
+              <><b>Keeping the most rules does not mean the highest score.</b> The builder whose agents kept 99% of the rules still scored lower overall than two builders whose agents kept 88%.</>,
             ] : [
-              <><b>Having the rule is not applying it.</b> Near-complete rule recall still leaves a quarter of tickets failed.</>,
-              <><b>Knowledge no longer separates the builders.</b> Six of seven held every rule their tickets needed, yet their pass rates still range from 73% to 80%.</>,
+              <><b>Having the rule does not mean using it.</b> Even with nearly 100% rule recall, agents still fail about 25% of tickets.</>,
+              <><b>Having the rules does not separate the builders.</b> Six builders kept 98% to 100% of the rules their completed stages needed, yet their overall pass rates still ranged from 60% to 80%.</>,
             ],
             note: "The shaded band is rule recall below 0.9.",
             chart: <RecallScatter points={points} height={340} />,
@@ -485,8 +485,8 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                     title: "Which design passes most",
                     body: <>The share of Skyway tickets each design passed, combined over the {builders.length} builders. The dashed line is the average.</>,
                     points: [
-                      <><b>Retrieval is optional when the rules are compact.</b> A prompt-only design matches the graph and wiki designs.</>,
-                      <><b>Index search over raw documents is the weakest approach.</b></>,
+                      <><b>Search is not required when the rules fit in prompts.</b> The prompts-and-workflows design scores as well as the knowledge graph and wiki designs.</>,
+                      <><b>Searching raw documents with an index scores lowest.</b> Index search over raw documents finishes last among all six designs.</>,
                     ],
                     chart: barsChart,
                   },
@@ -494,8 +494,8 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                     title: "What each design costs",
                     body: <>Pass rate against what a ticket costs the agent, or how long it takes: one mark per design, pooled over the {builders.length} builders that built it. The dashed line is the Pareto frontier.</>,
                     points: [
-                      <><b>Agent cost scales with context size.</b> Concise wiki notes are the cheapest to answer from.</>,
-                      <><b>Stable prompts are cheap to reuse.</b> Prompt-only agents read the most per ticket yet stay mid-priced, thanks to caching.</>,
+                      <><b>Shorter notes keep runtime costs low.</b> Agents that read short wiki notes cost the least per ticket.</>,
+                      <><b>Prompt caching keeps prompt-only designs affordable.</b> Prompt-only agents send a lot of text per ticket, but stay mid-priced because the repeated prompt is cached.</>,
                     ],
                     note: "Cost is the agent's model spend per ticket; time is the median time to finish a ticket, over the stages where the agent ran.",
                     chart: <ArchTradeoff runs={pooledDesigns(arch, order)} order={order} />,
@@ -505,8 +505,8 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                     title: "Which designs hold up as the docs change",
                     body: <>Each line joins a design's pass rate at the first stage to the last, after {lastStage} rounds of doc changes. Blue held up or rose; red fell.</>,
                     points: [
-                      <><b>Agents improve as the docs evolve.</b> Builders fill gaps as the docs change, so four of six designs end higher than they started.</>,
-                      <><b>One instruction can undo a design.</b> A single builder told its graph agent to "search once, then act"; the agent stopped asking customers and its score halved.</>,
+                      <><b>Most designs improve over time.</b> As builders fix gaps across updates, four of the six designs finish higher in stage 5 than in stage 0.</>,
+                      <><b>One bad prompt rule can break a design.</b> One builder told its knowledge-graph agent to &quot;search once, then act&quot;, and its score dropped by half (53% to 26%).</>,
                     ],
                     chart: <SlopeChart left="Stage 0" right={`Stage ${lastStage}`} rows={slope} />,
                   },
@@ -514,8 +514,8 @@ function Architecture({ runs, metas, bare, compact }: { runs: JobSummary[]; meta
                     title: "Which tickets each design gets right",
                     body: "Tickets split by what they test: a rule that is new at that stage, a rule from before that didn't change, or one that changed.",
                     points: [
-                      <><b>Changed rules are the hardest tickets.</b> Five of six designs pass fewer of them than of new or unchanged rules.</>,
-                      <><b>Compiled knowledge absorbs change better than raw documents.</b> Designs that read the original docs lose 11 to 13 points on changed rules compared with new ones; graph, wiki and prompt designs lose 3 to 6.</>,
+                      <><b>Changed rules are usually the hardest tickets.</b> Four of the six designs score lower on changed rules than on both new and unchanged rules.</>,
+                      <><b>Compiled notes handle rule changes better than raw documents.</b> Designs that read the raw documents drop 11 to 13 percentage points on changed rules compared with new rules, while graph, wiki, and prompt designs drop 3 to 7 points.</>,
                     ],
                     chart: <ArchTypes runs={arch} order={order} />,
                   },
@@ -563,8 +563,8 @@ function Packs({ packs, bare }: { packs: Builder[]; bare?: boolean }) {
               title: "How changed docs move the score",
               body: "Each bar shows how one builder's score changed on that version of the docs, compared with its score on the complete docs. The large number is the typical change across builders.",
               points: [
-                <><b>Missing information is the real risk.</b> When a fact the tickets need is removed, every builder scores lower: agents fill the gap with a guess instead of handing the ticket to a person.</>,
-                <><b>Messy docs are not.</b> Split, contradictory or noisy pages barely change the score: builders recognise outdated pages and agents skip irrelevant ones.</>,
+                <><b>Missing rules cause the biggest drop.</b> When a needed rule is removed, every builder scores lower because agents guess an answer instead of leaving the field alone or handing the ticket off.</>,
+                <><b>Messy docs rarely hurt the score.</b> Split, conflicting, or noisy pages barely change pass rates on average because builders filter out old pages, though builders that copy noisy pages into prompts still pay much more at runtime.</>,
               ],
               note: "Same tickets in every pack; only the docs change.",
               chart: <ChangePanels panels={panels} />,

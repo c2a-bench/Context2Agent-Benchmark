@@ -21,7 +21,7 @@ models, and six agent architectures. All runs, tickets, and transcripts are publ
 
 ## Inside the benchmark
 
-In this benchmark we ask a builder to build a customer support agent for a company and score the builder based on the performance of the customer support agent. Our goal is to evaluate differnt LLMs for the builder job.
+In this benchmark we ask a builder to build a customer support agent for a company and score the builder based on the performance of the customer support agent. Our goal is to evaluate different LLMs for the builder job.
 
 1. **Business context.** A company's knowledge is spread across knowledge management systems, CRMs, LMS, email, and
    UCaaS systems. Any one ticket needs several facts that live in different places. This is the builder's starting point. 
