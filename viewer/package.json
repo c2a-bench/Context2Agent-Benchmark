@@ -19,8 +19,9 @@
     "check:tools": "tsc --project tsconfig.tools.json --noEmit",
     "test:data": "tsx --test scripts/data/*.test.ts",
     "test:pages": "tsx --test scripts/pages/*.test.ts",
-    "pin:production": "tsx scripts/pin-production.ts && npm run build:landing",
+    "pin:production": "tsx scripts/pin-production.ts && npm run build:landing && npm run build:doc-index",
     "build:landing": "tsx scripts/build-landing.ts",
+    "build:doc-index": "tsx scripts/build-doc-index.ts",
     "customer-types": "tsx scripts/customer-types.ts"
   },
   "dependencies": {

@@ -3,7 +3,7 @@ import type { JobSummary, PublishedIndex, TaskSummary } from "./data-types";
 import { parseRunKey } from "./data-types";
 import { track } from "./loading";
 import { publicAsset } from "./assets";
-import { createDatasetLoader, type DatasetRelease } from "./dataset-v2";
+import { createDatasetLoader, type DatasetRelease, type DocIndexFile } from "./dataset-v2";
 
 export type { JobSummary, TaskSummary, PublishedIndex } from "./data-types";
 export { runKey, parseRunKey, DEFAULT_TASK, JOB_FILES } from "./data-types";
@@ -32,6 +32,16 @@ function publishedDataset() {
         return memo(target, () => track((BIG_FILE.test(target) ? viaWorker(target) : fetchJson(target)) as Promise<T>));
       },
       text: (side, file) => memo(url(side, file), () => track(fetch(url(side, file)).then((res) => { if (!res.ok) throw new Error(`Failed to load ${file}`); return res.text(); }))),
+      // The doc index ships with the site, per pinned bench commit (scripts/build-doc-index.ts); none = whole docs.json.
+      docIndex: (domain) => memo(`docindex:${domain}`, () => fetch(publicAsset(`doc-index/${config.release.benchmark.revision}/${domain}.json`))
+        .then((res) => (res.ok ? (res.json() as Promise<DocIndexFile>) : null)).catch(() => null)),
+      // One doc's bytes: an HTTP range request (a server that ignores it sends the whole file; then cut it here).
+      readRange: (side, file, start, end) => memo(`${url(side, file)}#${start}-${end}`, () => track(
+        fetch(url(side, file), { headers: { Range: `bytes=${start}-${end - 1}` } }).then(async (res) => {
+          if (!res.ok) throw new Error(`Failed to load ${file}`);
+          const bytes = new Uint8Array(await res.arrayBuffer());
+          return new TextDecoder().decode(res.status === 206 ? bytes : bytes.subarray(start, end));
+        }))),
     });
   }
   return dataset;
@@ -187,7 +197,7 @@ function runFile<T>(key: string, file: string): Promise<T> {
     switch (file) {
       case "meta.json": return loader.meta(task, job);
       case "code.json": return loader.code(task, job);
-      case "docs.json": return loader.docs(task);
+      case "docs.json": return loader.docList(task);
       case "cases.json": return loader.cases(task, job);
       case "tickets.json": return loader.interactions(task, job).then((rows) => rows.filter((r) => !r.passed));
       case "passed.json": return loader.interactions(task, job).then((rows) => rows.filter((r) => r.passed));
@@ -202,6 +212,19 @@ function runFile<T>(key: string, file: string): Promise<T> {
   return memo(`v2:${task}/${job}/${file}`, () => track(read()) as Promise<T>);
 }
 
+/** Start loading what a run's first page needs, without the loading bar: called when a run link is hovered or focused,
+ *  so the page is usually ready by the click. The page's own requests then reuse these. */
+export function prefetchRun(key: string, page = "") {
+  if (!isPublishedMode()) return;
+  let parsed: { task: string; job: string };
+  try { parsed = parseRunKey(key); } catch { return; }
+  const loader = publishedDataset();
+  const { task, job } = parsed;
+  const wanted: Promise<unknown>[] = [loader.meta(task, job), loader.interactions(task, job), loader.cases(task, job)];
+  if (page === "code") wanted.push(loader.code(task, job));
+  if (page === "build") wanted.push(loader.builds(task, job));
+  for (const p of wanted) p.catch(() => {});
+}
 export const getMeta = (key: string) => runFile<Meta>(key, "meta.json");
 // The runtime agent is "the agent" on screen; the grader's own text still says "bot". Only prose fields are reworded,
 // never keys or values the viewer matches on (side "bot", party "Bot", labels, ids).
@@ -247,8 +270,8 @@ export const getLogText = (key: string, ref: string): Promise<string> =>
 
 /** One doc as the builder saw it in that stage, or null (its text from the shards when the run keeps texts there). */
 export const getDoc = (key: string, stage: number, path: string): Promise<Doc | null> =>
-  memo(`doc:${key}:${stage}:${path}`, () =>
-    getDocs(key).then(async (d) => {
-      const doc = d[String(stage)]?.[path] ?? null;
-      return doc && doc.text == null && doc.ref ? { ...doc, text: await getText(key, doc.ref) } : doc;
-    }));
+  memo(`doc:${key}:${stage}:${path}`, async () => {
+    // Published: only this doc's bytes (doc index); else the run's docs.json.
+    const doc = isPublishedMode() ? await publishedDataset().doc(parseRunKey(key).task, stage, path) : (await getDocs(key))[String(stage)]?.[path] ?? null;
+    return doc && doc.text == null && doc.ref ? { ...doc, text: await getText(key, doc.ref) } : doc;
+  });

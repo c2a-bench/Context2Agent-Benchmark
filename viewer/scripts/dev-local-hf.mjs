@@ -16,6 +16,16 @@ createServer((req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   if (!file.startsWith(root + path.sep) || !statSync(file, { throwIfNoEntry: false })?.isFile()) { res.statusCode = 404; return res.end(); }
   res.setHeader("Content-Type", file.endsWith(".json") ? "application/json" : "text/plain");
+  res.setHeader("Accept-Ranges", "bytes");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range");
+  // A byte range (one doc out of a big docs.json), as Hugging Face serves it.
+  const range = /^bytes=(\d+)-(\d+)$/.exec(req.headers.range ?? "");
+  if (range) {
+    const size = statSync(file).size, start = Number(range[1]), end = Math.min(Number(range[2]), size - 1);
+    res.statusCode = 206;
+    res.setHeader("Content-Range", `bytes ${start}-${end}/${size}`);
+    return createReadStream(file, { start, end }).pipe(res);
+  }
   createReadStream(file).pipe(res);
 }).listen(0, "127.0.0.1", function () {
   const port = this.address().port; // any free port
