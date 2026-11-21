@@ -212,6 +212,19 @@ function runFile<T>(key: string, file: string): Promise<T> {
   return memo(`v2:${task}/${job}/${file}`, () => track(read()) as Promise<T>);
 }
 
+/** Start loading what a run's first page needs, without the loading bar: called when a run link is hovered or focused,
+ *  so the page is usually ready by the click. The page's own requests then reuse these. */
+export function prefetchRun(key: string, page = "") {
+  if (!isPublishedMode()) return;
+  let parsed: { task: string; job: string };
+  try { parsed = parseRunKey(key); } catch { return; }
+  const loader = publishedDataset();
+  const { task, job } = parsed;
+  const wanted: Promise<unknown>[] = [loader.meta(task, job), loader.interactions(task, job), loader.cases(task, job)];
+  if (page === "code") wanted.push(loader.code(task, job));
+  if (page === "build") wanted.push(loader.builds(task, job));
+  for (const p of wanted) p.catch(() => {});
+}
 export const getMeta = (key: string) => runFile<Meta>(key, "meta.json");
 // The runtime agent is "the agent" on screen; the grader's own text still says "bot". Only prose fields are reworded,
 // never keys or values the viewer matches on (side "bot", party "Bot", labels, ids).

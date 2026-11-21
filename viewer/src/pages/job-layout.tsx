@@ -3,7 +3,7 @@ import { Suspense, use, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useJob } from "@/lib/route";
 import Link from "@/components/link";
-import { getMeta, listJobs, listTasks, parseRunKey } from "@/lib/data";
+import { getMeta, listJobs, listTasks, parseRunKey, prefetchRun } from "@/lib/data";
 import { FOCUS, architectureGroups, architectureRuns, leaderboardRuns, passRate } from "@/lib/leaderboard";
 import type { JobSummary } from "@/lib/data";
 import { agentName } from "@/lib/agent-name";
@@ -28,7 +28,7 @@ function modelRuns(task: string, jobs: JobSummary[], arch?: string | null): JobS
 }
 
 /** A breadcrumb part that is also a switch: the current choice with a chevron, opening a list with the others. */
-function CrumbSelect({ label, value, options, onPick }: { label: string; value: string; options: { value: string; text: string; meta?: string }[]; onPick: (v: string) => void }) {
+function CrumbSelect({ label, value, options, onPick, onHover }: { label: string; value: string; options: { value: string; text: string; meta?: string }[]; onPick: (v: string) => void; onHover?: (v: string) => void }) {
   const current = options.find((o) => o.value === value);
   return (
     <DropdownMenu>
@@ -45,7 +45,7 @@ function CrumbSelect({ label, value, options, onPick }: { label: string; value: 
           <DropdownMenuLabel>{label}</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={value} onValueChange={(v) => onPick(String(v))}>
             {options.map((o) => (
-              <DropdownMenuRadioItem key={o.value} value={o.value}>
+              <DropdownMenuRadioItem key={o.value} value={o.value} onMouseEnter={() => onHover?.(o.value)} onFocus={() => onHover?.(o.value)}>
                 <span className="flex-1">{o.text}</span>
                 {o.meta && <span className="text-xs text-muted-foreground tabular-nums">{o.meta}</span>}
               </DropdownMenuRadioItem>
@@ -93,6 +93,7 @@ function Crumbs({ job }: { job: string }) {
         value={models.find((r) => model(r.builder.model) === model(me.builder.model))!.key}
         options={models.map((r) => ({ value: r.key, text: model(r.builder.model), meta: `${pct(r)}%` }))}
         onPick={(next) => go(next, model(jobs.find((j) => j.key === next)?.builder.model))}
+        onHover={prefetchRun}
       />
       {me.architecture && (
         <>
@@ -102,6 +103,7 @@ function Crumbs({ job }: { job: string }) {
             value={me.key}
             options={archs.map((r) => ({ value: r.key, text: r.architecture ?? "run", meta: `${pct(r)}%` }))}
             onPick={(next) => go(next, jobs.find((j) => j.key === next)?.architecture ?? "run")}
+            onHover={prefetchRun}
           />
         </>
       )}

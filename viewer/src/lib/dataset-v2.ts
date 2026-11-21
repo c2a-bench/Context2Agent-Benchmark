@@ -145,6 +145,7 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
   };
   const task = (domain: string) => memo(`task:${domain}`, () => read<BenchmarkTask>("benchmark", `${domain}/task.json`));
   const run = (domain: string, job: string) => memo(`run:${domain}/${job}`, async () => {
+    void task(domain).catch(() => {}); // every run page needs the task too: fetch both at once
     const value = await read<RunRecord>("runs", `${domain}/${job}/run.json`);
     if (value.domain !== domain || value.job !== job || value.benchmark.repository !== release.benchmark.repository || value.benchmark.inventorySha256 !== release.benchmark.inventorySha256 || (value.benchmark.revision !== release.benchmark.revision && !(options.allowPending && value.benchmark.revision === null))) throw new Error(`Benchmark provenance mismatch for ${domain}/${job}`);
     return value;
@@ -156,14 +157,15 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
   /** The rules of stage n: what stages up to n add or change, by id. */
   const rules = (domain: string, n: number) => memo(`rules:${domain}/${n}`, async () => {
     const out = new Map<string, RuleRow>();
-    for (const s of (await task(domain)).stages.filter((s) => s.index <= n)) {
-      if (await has(domain, s.index, "rules.json")) for (const r of await read<RuleRow[]>("benchmark", `${domain}/stages/${s.index}/rules.json`)) out.set(r.id, r);
-    }
+    // every stage's file at once, then applied in stage order
+    const files = await Promise.all((await task(domain)).stages.filter((s) => s.index <= n).map(async (s) =>
+      (await has(domain, s.index, "rules.json")) ? read<RuleRow[]>("benchmark", `${domain}/stages/${s.index}/rules.json`) : []));
+    for (const rows of files) for (const r of rows) out.set(r.id, r);
     return out;
   });
   const definitions = (domain: string, n: number) => memo(`cases:${domain}/${n}`, async () => {
-    const s = await stageOf(domain, n), byId = await rules(domain, n);
-    const rows = await read<BenchmarkCase[]>("benchmark", s.files ? `${domain}/stages/${s.tests_from ?? n}/test.json` : `${domain}/stages/${n}/cases.json`);
+    const s = await stageOf(domain, n);
+    const [byId, rows] = await Promise.all([rules(domain, n), read<BenchmarkCase[]>("benchmark", s.files ? `${domain}/stages/${s.tests_from ?? n}/test.json` : `${domain}/stages/${n}/cases.json`)]);
     return rows.map((c) => caseView({ ...c, rules: c.rules.map((r) => byId.has(r.id) ? { ...ruleView(byId.get(r.id)!), ...r } : r) } as BenchmarkCase));
   });
   const results = (domain: string, job: string, n: number) => memo(`results:${domain}/${job}/${n}`, () => read<ResultRecord[]>("runs", `${domain}/${job}/stages/${n}/results.json`));
@@ -229,8 +231,10 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
     if (!idx) return docs(domain);
     let effective: Record<string, Doc> = {};
     const output: DocsData = {};
-    for (const s of (await task(domain)).stages) {
-      const change = await stageChanges(domain, s.index);
+    const stages = (await task(domain)).stages;
+    const changeOf = await Promise.all(stages.map((s) => stageChanges(domain, s.index)));
+    for (const [i, s] of stages.entries()) {
+      const change = changeOf[i];
       const delta = Object.fromEntries(Object.entries(idx.stages[String(s.index)] ?? {}).map(([p, [start, end, title, status, updated, author, source, born, edited]]) =>
         [p, { title, status, updated, author, source, born: born ?? 0, edited, text: "", at: { stage: s.index, start, end } } satisfies Doc]));
       effective = s.docs_mode === "snapshot" ? { ...delta } : { ...effective, ...delta };
@@ -248,9 +252,10 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
   });
   const code = (domain: string, job: string) => memo(`code:${domain}/${job}`, async (): Promise<CodeData> => {
     const r = await run(domain, job), stages: CodeData["stages"] = [], transitions: Transition[] = [];
+    const loaded = await Promise.all(r.stages.map((n) => Promise.all([stage(domain, job, n), read<StageCode>("runs", `${domain}/${job}/stages/${n}/code.json`), changes(domain, n)])));
     for (let i = 0; i < r.stages.length; i++) {
       const n = r.stages[i];
-      const [s, c, b] = await Promise.all([stage(domain, job, n), read<StageCode>("runs", `${domain}/${job}/stages/${n}/code.json`), changes(domain, n)]);
+      const [s, c, b] = loaded[i];
       stages.push({ stage: n, score: { passed: s.score.passed, total: s.score.total }, builder: s.builder, files: c.files, knowledge: c.knowledge });
       if (i) transitions.push({ from: r.stages[i - 1], to: n, docChanges: b.changes, newDocs: b.new_docs, ruleChanges: b.rule_changes, files: c.changes.files, knowledge: c.changes.knowledge });
     }
@@ -259,10 +264,11 @@ export function createDatasetLoader(options: { release: DatasetRelease; read: Re
   const cases = (domain: string, job: string) => memo(`cases:${domain}/${job}`, async (): Promise<CasesData> => {
     const r = await run(domain, job), items = new Map<string, CasesData["tickets"][number]>();
     const labels: string[] = [];
-    for (const n of r.stages) {
-      const s = await stage(domain, job, n); labels.push(s.label);
-      const outcome = new Map((await results(domain, job, n)).map((row) => [row.id, row.grading]));
-      for (const c of await definitions(domain, n)) {
+    const loaded = await Promise.all(r.stages.map((n) => Promise.all([stage(domain, job, n), results(domain, job, n), definitions(domain, n)])));
+    for (const [i, n] of r.stages.entries()) {
+      const [s, rows, defs] = loaded[i]; labels.push(s.label);
+      const outcome = new Map(rows.map((row) => [row.id, row.grading]));
+      for (const c of defs) {
         const { id, ...definition } = c;
         if (!outcome.has(id)) throw new Error(`Missing result ${domain}/${job}/${n}/${id}`);
         if (!items.has(id)) items.set(id, { id, versions: [] });

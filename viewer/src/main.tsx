@@ -6,11 +6,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { NotFound } from "@/pages/not-found";
 import { TopLoader } from "@/components/top-loader";
 import { SectionScroll } from "@/components/section-scroll";
+import { prefetchRun } from "@/lib/data";
 import "@fontsource-variable/newsreader";
 import "./fonts.css";
 import "./globals.css";
 
-import { AcquisitionPage, ArchitecturePage, BehaviorPage, Blog, BuildPage, CodePage, Home, JobLayout, OverviewPage, ResearchLayout, Rq1Page, Rq5Page, TaskRuns, TicketsPage } from "@/lib/pages";
+import { AcquisitionPage, ArchitecturePage, BehaviorPage, Blog, BuildPage, CodePage, Home, JobLayout, OverviewPage, preloadPage, ResearchLayout, Rq1Page, Rq5Page, TaskRuns, TicketsPage } from "@/lib/pages";
 
 /** Old run links: /runs/<job>/<rest> → /runs/<job>/research[/<rest>]. */
 function ToResearch({ rest = "" }: { rest?: string }) {
@@ -60,6 +61,15 @@ function App() {
     </Routes>
   );
 }
+
+/** Hovering or focusing a link to a run starts loading it (after 80 ms, so moving the mouse across a list does not). */
+let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+const runOf = (t: EventTarget | null) => (t instanceof Element ? t.closest("a[href*='#/runs/']")?.getAttribute("href")?.match(/#\/runs\/([\w.-]+)\/?(\w*)/) : null);
+document.addEventListener("pointerover", (e) => { clearTimeout(hoverTimer); const m = runOf(e.target); if (m) hoverTimer = setTimeout(() => prefetchRun(m[1], m[2]), 80); });
+document.addEventListener("focusin", (e) => { const m = runOf(e.target); if (m) prefetchRun(m[1], m[2]); });
+
+// The home page and the blog link to each other: once the first page is shown, fetch the other's code too.
+setTimeout(() => { preloadPage("home"); preloadPage("blog"); }, 1500);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
